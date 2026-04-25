@@ -38,6 +38,12 @@ export class AnalysisWizardComponent implements OnInit {
   launching = signal(false);
   error = signal<string | null>(null);
 
+  // NL input (V2)
+  nlInput = signal('');
+  parsingIntent = signal(false);
+  intentError = signal<string | null>(null);
+  intentClarification = signal<string | null>(null);
+
   readyDocs = computed(() => this.documents().filter(d => d.legalExtractionStatus === 'done' && d.legalObjectId));
 
   ngOnInit() {
@@ -194,6 +200,43 @@ export class AnalysisWizardComponent implements OnInit {
 
   cancel() {
     this.router.navigate(['/workspaces', this.wsId]);
+  }
+
+  parseNlIntent() {
+    const message = this.nlInput().trim();
+    if (!message) return;
+    this.parsingIntent.set(true);
+    this.intentError.set(null);
+    this.intentClarification.set(null);
+
+    this.anaService.parseIntent(this.wsId, message).subscribe({
+      next: intent => {
+        this.parsingIntent.set(false);
+        if (intent.clarificationNeeded) {
+          this.intentClarification.set(intent.clarificationNeeded);
+          return;
+        }
+        if (intent.operation === 'unclear') {
+          this.intentError.set("Je n'ai pas su interpréter votre demande. Précisez ou choisissez une opération ci-dessous.");
+          return;
+        }
+        // Pré-remplir le wizard
+        const docs = this.readyDocs();
+        const validIds = new Set(docs.map(d => d.id));
+        const validRefIds = new Set(this.referenceAssets().map(a => a.id));
+
+        this.operation.set(intent.operation as Operation);
+        this.selectedTargetDocIds.set(new Set(intent.targetDocumentIds.filter(id => validIds.has(id))));
+        this.selectedRefDocId.set(intent.referenceDocumentId && validIds.has(intent.referenceDocumentId) ? intent.referenceDocumentId : null);
+        this.selectedRefAssetId.set(intent.referenceAssetId && validRefIds.has(intent.referenceAssetId) ? intent.referenceAssetId : null);
+        this.analysisName.set(intent.suggestedName || this.autoName());
+        this.step.set(3);
+      },
+      error: () => {
+        this.parsingIntent.set(false);
+        this.intentError.set("Erreur lors de l'analyse de la demande. Réessayez ou choisissez une opération.");
+      },
+    });
   }
 
   operationLabel(op: Operation) {

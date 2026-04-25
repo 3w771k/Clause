@@ -36,7 +36,38 @@
       @if (step() === 1) {
         <div>
           <h2 class="text-xl font-semibold text-gray-900 mb-2">Quel type d'analyse voulez-vous mener ?</h2>
-          <p class="text-sm text-gray-500 mb-8">Choisissez l'opération qui correspond à votre besoin.</p>
+          <p class="text-sm text-gray-500 mb-6">Décrivez votre besoin en une phrase, ou choisissez une opération ci-dessous.</p>
+
+          <!-- Zone NL en haut -->
+          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-900 mb-2">
+              Décrivez votre besoin en une phrase
+            </label>
+            <div class="flex gap-2">
+              <input type="text" [value]="nlInput()" (input)="nlInput.set($any($event.target).value)"
+                     placeholder="Ex : Compare ce NDA avec notre NDA standard maison"
+                     class="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all focus:outline-none"
+                     (keydown.enter)="parseNlIntent()" />
+              <button (click)="parseNlIntent()" [disabled]="!nlInput() || parsingIntent()"
+                      class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors text-sm">
+                @if (parsingIntent()) { Analyse... } @else { Lancer }
+              </button>
+            </div>
+            @if (intentError()) {
+              <p class="text-sm text-red-600 mt-2">{{ intentError() }}</p>
+            }
+            @if (intentClarification()) {
+              <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                💡 {{ intentClarification() }}
+              </div>
+            }
+          </div>
+
+          <div class="flex items-center gap-3 mb-6 text-xs text-gray-400">
+            <div class="flex-1 h-px bg-gray-200"></div>
+            <span>OU CHOISISSEZ UNE OPÉRATION</span>
+            <div class="flex-1 h-px bg-gray-200"></div>
+          </div>
 
           <div class="grid grid-cols-2 gap-4">
 

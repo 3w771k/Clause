@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
-  analyses, analysisDocuments, conversationMessages, deliverables,
+  analyses, analysisDocuments, deliverables,
   legalObjects, clauses, referenceAssets, documents,
 } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -896,70 +896,3 @@ Couvre uniquement les types de clause présents dans au moins 2 documents. Trie 
   return [id];
 }
 
-// ─── Main message handler ──────────────────────────────────────────────────────
-
-export async function handleUserMessage(
-  analysisId: string,
-  userMessage: string,
-): Promise<{ assistantMessage: string; deliverableIds: string[] }> {
-  const context = await getAnalysisContext(analysisId);
-  console.log(`[${analysisId}] Context: ${context}`);
-
-  const intent = await parseIntent(userMessage, context);
-  console.log(`[${analysisId}] Intent: operation=${intent.operation}, clarificationNeeded=${intent.clarificationNeeded}`);
-
-  let assistantMessage: string;
-  let deliverableIds: string[] = [];
-
-  if (intent.clarificationNeeded) {
-    assistantMessage = intent.clarificationNeeded;
-  } else {
-    const llmResponse = await llm.complete([
-      { role: 'system', content: `Tu es un assistant juridique expert. Contexte de l'analyse :\n${context}` },
-      { role: 'user', content: userMessage },
-    ]);
-    assistantMessage = llmResponse.content;
-
-    try {
-      if (intent.operation === 'alignment') {
-        console.log(`[${analysisId}] Running alignment...`);
-        deliverableIds = await runAlignment(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai généré une note comparative et un redline. Vous pouvez les consulter dans le panneau de droite.`;
-      } else if (intent.operation === 'confrontation') {
-        console.log(`[${analysisId}] Running confrontation...`);
-        deliverableIds = await runConfrontation(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai généré la note de revue. Vous pouvez la consulter dans le panneau de droite.`;
-      } else if (intent.operation === 'aggregation') {
-        console.log(`[${analysisId}] Running aggregation...`);
-        deliverableIds = await runAggregation(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai constitué le clausier. Vous pouvez le consulter dans le panneau de droite.`;
-      } else if (intent.operation === 'ma_mapping') {
-        console.log(`[${analysisId}] Running M&A mapping...`);
-        deliverableIds = await runMaMapping(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai cartographié les engagements à fort enjeu de transfert. Vous pouvez consulter le tableau dans le panneau de droite.`;
-      } else if (intent.operation === 'deadlines') {
-        console.log(`[${analysisId}] Running deadline extraction...`);
-        deliverableIds = await runDeadlines(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai extrait toutes les échéances contractuelles. Les délais proches sont mis en évidence dans le panneau de droite.`;
-      } else if (intent.operation === 'compliance') {
-        console.log(`[${analysisId}] Running compliance audit...`);
-        deliverableIds = await runCompliance(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nL'audit de conformité réglementaire est disponible dans le panneau de droite.`;
-      } else if (intent.operation === 'inconsistencies') {
-        console.log(`[${analysisId}] Running inconsistency detection...`);
-        deliverableIds = await runInconsistencies(analysisId);
-        assistantMessage = assistantMessage.trim() + `\n\nJ'ai détecté les incohérences inter-contrats. Le rapport est disponible dans le panneau de droite.`;
-      } else {
-        console.log(`[${analysisId}] Operation 'unclear' — no deliverable generated`);
-      }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[${analysisId}] Deliverable generation error (${intent.operation}): ${errMsg}`);
-      if (err instanceof Error && err.stack) console.error(err.stack);
-      assistantMessage = assistantMessage.trim() + `\n\nLa génération a rencontré un problème. Souhaitez-vous réessayer ?`;
-    }
-  }
-
-  console.log(`[${analysisId}] Done. deliverableIds=${JSON.stringify(deliverableIds)}`);
-  return { assistantMessage, deliverableIds };
-}

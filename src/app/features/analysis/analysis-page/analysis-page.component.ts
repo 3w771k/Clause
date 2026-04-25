@@ -1,9 +1,7 @@
-import { Component, inject, signal, OnInit, AfterViewChecked, ViewChild, ElementRef, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { JsonPipe } from '@angular/common';
-import { DomSanitizer } from '@angular/platform-browser';
-import { marked } from 'marked';
 import { AnalysisService } from '../../../core/services/analysis.service';
 import { DocumentService } from '../../../core/services/document.service';
 import { ComparativeNoteComponent } from '../deliverables/comparative-note/comparative-note.component';
@@ -16,7 +14,7 @@ import { MaTableComponent } from '../deliverables/ma-table/ma-table.component';
 import { DeadlinesTableComponent } from '../deliverables/deadlines-table/deadlines-table.component';
 import { ComplianceNoteComponent } from '../deliverables/compliance-note/compliance-note.component';
 import { InconsistenciesReportComponent } from '../deliverables/inconsistencies-report/inconsistencies-report.component';
-import type { Analysis, ConversationMessage } from '../../../core/models/analysis.model';
+import type { Analysis } from '../../../core/models/analysis.model';
 import type { Deliverable } from '../../../core/models/deliverable.model';
 import type { ComparativeNoteContent, RedlineContent, ReviewNoteContent, ClausierContent, DDSynthesisContent, DDTableContent, MaTableContent, DeadlinesTableContent, ComplianceNoteContent, InconsistenciesReportContent } from '../../../core/models/deliverable.model';
 
@@ -25,24 +23,17 @@ import type { ComparativeNoteContent, RedlineContent, ReviewNoteContent, Clausie
   imports: [RouterLink, FormsModule, JsonPipe, ComparativeNoteComponent, RedlineComponent, ReviewNoteComponent, ClausierComponent, DDSynthesisComponent, DDTableComponent, MaTableComponent, DeadlinesTableComponent, ComplianceNoteComponent, InconsistenciesReportComponent],
   templateUrl: './analysis-page.component.html',
 })
-export class AnalysisPageComponent implements OnInit, AfterViewChecked {
-  @ViewChild('chatBottom') chatBottom!: ElementRef;
-
+export class AnalysisPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private anaService = inject(AnalysisService);
   private docService = inject(DocumentService);
-  private sanitizer = inject(DomSanitizer);
 
   wsId = '';
   anaId = '';
 
   analysis = signal<Analysis | null>(null);
-  messages = signal<ConversationMessage[]>([]);
   deliverables = signal<Deliverable[]>([]);
   activeDeliverable = signal<Deliverable | null>(null);
-  sending = signal(false);
-  messageInput = signal('');
-  shouldScroll = false;
 
   // Onglets pour les analyses alignment
   alignmentTab = signal<'note' | 'redline' | 'document'>('note');
@@ -60,6 +51,20 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
   publishName = signal('');
   publishDescription = signal('');
   publishDone = signal(false);
+
+  // Refine deliverable
+  showRefine = signal(false);
+  refineInput = signal('');
+  refining = signal(false);
+  readonly refineExamples = [
+    'Renforce le verdict sur la confidentialité',
+    'Ajoute une recommandation sur la juridiction',
+    'Reformule la synthèse en plus court',
+    'Ajoute un point sur la durée du contrat',
+  ];
+
+  // Polling state
+  private pollHandle: ReturnType<typeof setTimeout> | null = null;
 
   // Computed helpers pour alignment
   comparativeNoteDeliverable = computed(() =>
@@ -79,33 +84,38 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
     this.deliverables().find(d => d.type === 'dd_table') ?? null
   );
 
+  isGenerating = computed(() => this.analysis()?.status === 'generating');
+
   ngOnInit() {
     this.wsId = this.route.snapshot.paramMap.get('wsId')!;
     this.anaId = this.route.snapshot.paramMap.get('anaId')!;
     this.load();
   }
 
-  ngAfterViewChecked() {
-    if (this.shouldScroll) {
-      this.chatBottom?.nativeElement?.scrollIntoView({ behavior: 'smooth' });
-      this.shouldScroll = false;
-    }
+  ngOnDestroy() {
+    if (this.pollHandle) clearTimeout(this.pollHandle);
   }
 
   load() {
-    this.anaService.get(this.wsId, this.anaId).subscribe(ana => this.analysis.set(ana));
-    this.anaService.getMessages(this.wsId, this.anaId).subscribe(msgs => {
-      this.messages.set(msgs);
-      this.shouldScroll = true;
-      // Auto-poll any pending assistant message (e.g. from start-generation)
-      const pending = msgs.find(m => m.role === 'assistant' && m.content === '⏳ Traitement en cours...');
-      if (pending) this.pollAssistantMessage(pending.id);
-    });
-    // Load pre-existing deliverables
     this.anaService.get(this.wsId, this.anaId).subscribe(ana => {
+      this.analysis.set(ana);
       const delIds = (ana.deliverables ?? []).map(d => d.id);
       if (delIds.length) this.loadDeliverables(delIds);
+      if (ana.status === 'generating') this.scheduleRefresh();
     });
+  }
+
+  private scheduleRefresh() {
+    if (this.pollHandle) clearTimeout(this.pollHandle);
+    this.pollHandle = setTimeout(() => {
+      this.anaService.get(this.wsId, this.anaId).subscribe(ana => {
+        this.analysis.set(ana);
+        const known = new Set(this.deliverables().map(d => d.id));
+        const newIds = (ana.deliverables ?? []).map(d => d.id).filter(id => !known.has(id));
+        if (newIds.length) this.loadDeliverables(newIds);
+        if (ana.status === 'generating') this.scheduleRefresh();
+      });
+    }, 2000);
   }
 
   loadDeliverables(ids: string[]) {
@@ -118,77 +128,6 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
         if (!this.activeDeliverable()) this.activeDeliverable.set(del);
       });
     });
-  }
-
-  send() {
-    const content = this.messageInput().trim();
-    if (!content || this.sending()) return;
-
-    const tempMsg: ConversationMessage = {
-      id: 'temp_user',
-      analysisId: this.anaId,
-      timestamp: new Date().toISOString(),
-      role: 'user',
-      content,
-      deliverableReferences: [],
-      citations: [],
-      interpretedIntent: null,
-    };
-
-    this.messages.update(m => [...m, tempMsg]);
-    this.messageInput.set('');
-    this.sending.set(true);
-    this.shouldScroll = true;
-
-    this.anaService.sendMessage(this.wsId, this.anaId, content).subscribe({
-      next: res => {
-        this.messages.update(msgs => [
-          ...msgs.filter(m => m.id !== 'temp_user'),
-          { ...tempMsg, id: res.userMessageId },
-          res.assistantMessage,
-        ]);
-        this.sending.set(false);
-        this.shouldScroll = true;
-        // Poll until the background processing is done
-        this.pollAssistantMessage(res.assistantMessage.id);
-      },
-      error: () => {
-        this.messages.update(m => m.filter(msg => msg.id !== 'temp_user'));
-        this.sending.set(false);
-      }
-    });
-  }
-
-  private pollAssistantMessage(msgId: string, attempts = 0) {
-    if (attempts > 30) return; // max 60s
-    setTimeout(() => {
-      this.anaService.getMessages(this.wsId, this.anaId).subscribe(msgs => {
-        const updated = msgs.find(m => m.id === msgId);
-        if (!updated) return;
-        if (updated.content === '⏳ Traitement en cours...') {
-          this.pollAssistantMessage(msgId, attempts + 1);
-          return;
-        }
-        // Done — update messages and load any new deliverables
-        this.messages.set(msgs);
-        this.shouldScroll = true;
-        const deliverableIds = updated.deliverableReferences ?? [];
-        if (deliverableIds.length) this.loadDeliverables(deliverableIds);
-        this.anaService.get(this.wsId, this.anaId).subscribe(ana => this.analysis.set(ana));
-      });
-    }, 2000);
-  }
-
-  onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.send();
-    }
-  }
-
-  renderMarkdown(text: string): string {
-    const html = marked.parse(text, { async: false }) as string;
-    return html;
   }
 
   openDeliverable(del: Deliverable) {
@@ -210,6 +149,7 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
       this.deliverables.update(list =>
         list.map(d => d.id === deliverableId ? del : d)
       );
+      if (this.activeDeliverable()?.id === deliverableId) this.activeDeliverable.set(del);
     });
   }
 
@@ -294,7 +234,6 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
       .subscribe({
         next: () => {
           this.publishDone.set(true);
-          // Reload deliverable to get updated status
           this.anaService.getDeliverable(id).subscribe(del => {
             this.deliverables.update(list => list.map(d => d.id === id ? del : d));
           });
@@ -312,5 +251,32 @@ export class AnalysisPageComponent implements OnInit, AfterViewChecked {
 
   roleColor(role: string) {
     return { target: 'bg-blue-100 text-blue-700', reference: 'bg-purple-100 text-purple-700' }[role] ?? 'bg-gray-100 text-gray-600';
+  }
+
+  // ─── Refine deliverable (V2 — NL) ────────────────────────────────────────────
+
+  openRefine() {
+    this.refineInput.set('');
+    this.showRefine.set(true);
+  }
+
+  closeRefine() {
+    this.showRefine.set(false);
+    this.refineInput.set('');
+  }
+
+  applyRefine() {
+    const instruction = this.refineInput().trim();
+    const deliverable = this.activeDeliverable();
+    if (!instruction || !deliverable) return;
+    this.refining.set(true);
+    this.anaService.refineDeliverable(deliverable.id, instruction).subscribe({
+      next: () => {
+        this.refining.set(false);
+        this.closeRefine();
+        this.onDeliverableUpdated(deliverable.id);
+      },
+      error: () => this.refining.set(false),
+    });
   }
 }

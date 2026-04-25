@@ -61,7 +61,17 @@ J'ai généré la note de revue.`;
     const p = prompt.toLowerCase();
     const s = system.toLowerCase();
 
-    // NLU intent
+    // V2 — Intent parse for wizard NL input
+    if (s.includes("interpréte des demandes") || s.includes('interprète des demandes') || s.includes('demandes en langage naturel')) {
+      return this.mockParsedIntent(prompt, system);
+    }
+
+    // V2 — Refine deliverable
+    if (s.includes('tu modifies un livrable') || s.includes('instruction de modification') || p.includes('instruction de modification')) {
+      return this.mockRefine(prompt, system);
+    }
+
+    // NLU intent (legacy)
     if (s.includes('interpréteur') || s.includes('opération') || s.includes('operation')) {
       return this.mockIntent(p);
     }
@@ -102,6 +112,167 @@ J'ai généré la note de revue.`;
     }
 
     return {};
+  }
+
+  /** V2 — Mock du parse intent (nouveau format pour le wizard NL). */
+  private mockParsedIntent(prompt: string, _system: string): unknown {
+    const p = prompt.toLowerCase();
+
+    // Extraire les ids de documents disponibles depuis le prompt
+    const docIds: string[] = [];
+    const docMatches = prompt.matchAll(/- id: (doc_[a-zA-Z0-9_]+) \| nom: ([^|]+)\|/g);
+    const docs: Array<{ id: string; name: string }> = [];
+    for (const m of docMatches) {
+      docs.push({ id: m[1], name: m[2].trim() });
+      docIds.push(m[1]);
+    }
+    const assetIds: string[] = [];
+    const assetMatches = prompt.matchAll(/- id: (ref_[a-zA-Z0-9_]+) \| type: ([^|]+)\| nom: ([^\n]+)/g);
+    const assets: Array<{ id: string; type: string; name: string }> = [];
+    for (const m of assetMatches) {
+      assets.push({ id: m[1], type: m[2].trim(), name: m[3].trim() });
+      assetIds.push(m[1]);
+    }
+
+    const findDoc = (kw: string) => docs.find(d => d.name.toLowerCase().includes(kw));
+    const findAsset = (typeKw: string) => assets.find(a => a.type.toLowerCase().includes(typeKw) || a.name.toLowerCase().includes(typeKw));
+
+    if (p.includes('compar') || p.includes(' vs ') || p.includes('aligne')) {
+      const target = findDoc('acme') ?? docs[0];
+      const ref = findDoc('standard') ?? docs.find(d => d.id !== target?.id) ?? null;
+      return {
+        operation: 'alignment',
+        targetDocumentIds: target ? [target.id] : [],
+        referenceDocumentId: ref?.id ?? null,
+        referenceAssetId: null,
+        suggestedName: target && ref ? `Comparaison ${target.name} / ${ref.name}` : 'Comparaison',
+        reasoning: 'La demande mentionne une comparaison entre deux documents.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('audit') || p.includes('revue') || p.includes('confronte') || p.includes('playbook')) {
+      const target = findDoc('prestation') ?? findDoc('contrat') ?? docs[0];
+      const asset = findAsset('playbook') ?? assets[0] ?? null;
+      return {
+        operation: 'confrontation',
+        targetDocumentIds: target ? [target.id] : [],
+        referenceDocumentId: null,
+        referenceAssetId: asset?.id ?? null,
+        suggestedName: target ? `Audit ${target.name}` : 'Audit',
+        reasoning: 'La demande mentionne un audit contre un référentiel.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('clausier') || p.includes('agréger') || p.includes('agreger')) {
+      return {
+        operation: 'aggregation',
+        targetDocumentIds: docIds.slice(0, 3),
+        referenceDocumentId: null,
+        referenceAssetId: null,
+        suggestedName: `Clausier ${new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`,
+        reasoning: 'La demande mentionne la constitution d\'un clausier.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('échéance') || p.includes('echeance') || p.includes('renouvellement') || p.includes('préavis') || p.includes('preavis')) {
+      return {
+        operation: 'deadlines',
+        targetDocumentIds: docIds,
+        referenceDocumentId: null,
+        referenceAssetId: null,
+        suggestedName: 'Échéances contractuelles',
+        reasoning: 'La demande porte sur les échéances et délais.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('m&a') || p.includes('fusion') || p.includes('cession') || p.includes('changement de contrôle')) {
+      return {
+        operation: 'ma_mapping',
+        targetDocumentIds: docIds,
+        referenceDocumentId: null,
+        referenceAssetId: findAsset('dd_grid')?.id ?? null,
+        suggestedName: 'Cartographie M&A',
+        reasoning: 'La demande mentionne une opération M&A.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('conformité') || p.includes('conformite') || p.includes('rgpd') || p.includes('réglement') || p.includes('reglement')) {
+      return {
+        operation: 'compliance',
+        targetDocumentIds: docIds,
+        referenceDocumentId: null,
+        referenceAssetId: null,
+        suggestedName: 'Audit conformité',
+        reasoning: 'La demande porte sur la conformité réglementaire.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('incohérence') || p.includes('incoherence') || p.includes('divergence')) {
+      return {
+        operation: 'inconsistencies',
+        targetDocumentIds: docIds,
+        referenceDocumentId: null,
+        referenceAssetId: null,
+        suggestedName: `Incohérences — ${docIds.length} contrats`,
+        reasoning: 'La demande porte sur des incohérences entre contrats.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+    if (p.includes('due diligence') || p.includes('due-diligence') || p.includes(' dd ')) {
+      return {
+        operation: 'dd',
+        targetDocumentIds: docIds,
+        referenceDocumentId: null,
+        referenceAssetId: findAsset('dd_grid')?.id ?? null,
+        suggestedName: 'Due Diligence',
+        reasoning: 'La demande porte sur une due diligence.',
+        confidence: 'high',
+        clarificationNeeded: null,
+      };
+    }
+
+    return {
+      operation: 'unclear',
+      targetDocumentIds: [],
+      referenceDocumentId: null,
+      referenceAssetId: null,
+      suggestedName: '',
+      reasoning: 'La demande est trop générale pour être interprétée.',
+      confidence: 'low',
+      clarificationNeeded: 'Pourriez-vous préciser : voulez-vous comparer, auditer, constituer un clausier, ou autre ?',
+    };
+  }
+
+  /** V2 — Mock du refine livrable : préfixe la synthèse par "[Affiné] ". */
+  private mockRefine(_prompt: string, system: string): unknown {
+    const m = system.match(/Structure JSON courante :\s*([\s\S]+)$/);
+    if (!m) return {};
+    let current: unknown;
+    try {
+      current = JSON.parse(m[1].trim());
+    } catch {
+      return {};
+    }
+    if (current && typeof current === 'object') {
+      const c = current as Record<string, unknown>;
+      const stamp = ' [Affiné par instruction utilisateur]';
+      if (typeof c['summary'] === 'string') c['summary'] = `${c['summary']}${stamp}`;
+      else if (typeof c['executiveSummary'] === 'string') c['executiveSummary'] = `${c['executiveSummary']}${stamp}`;
+      else if (c['synthesis'] && typeof c['synthesis'] === 'object') {
+        const synth = c['synthesis'] as Record<string, unknown>;
+        if (typeof synth['negotiationRecommendation'] === 'string') {
+          synth['negotiationRecommendation'] = `${synth['negotiationRecommendation']}${stamp}`;
+        }
+      }
+    }
+    return current;
   }
 
   private mockIntent(prompt: string): unknown {
