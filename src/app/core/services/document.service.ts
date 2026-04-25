@@ -46,4 +46,23 @@ export class DocumentService {
   patchClause(loId: string, clauseId: string, data: { type?: string; heading?: string; text?: string; notes?: string }) {
     return this.api.http.patch<Clause>(`${this.api.base}/legal-objects/${loId}/clauses/${clauseId}`, data);
   }
+
+  getSimilarClauses(workspaceId: string, clauseId: string) {
+    return this.api.http.get<{
+      source: { id: string; type?: string; heading?: string | null; text?: string };
+      similar: Array<{
+        id: string;
+        type: string;
+        heading: string | null;
+        text: string;
+        legalObjectId: string;
+        documentName: string;
+        similarity: number;
+      }>;
+    }>(`${this.api.base}/clauses/${clauseId}/similar?workspaceId=${workspaceId}&limit=5`);
+  }
+
+  askClause(clauseId: string, question: string) {
+    return this.api.http.post<{ answer: string }>(`${this.api.base}/clauses/${clauseId}/ask`, { question });
+  }
 }

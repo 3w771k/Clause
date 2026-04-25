@@ -1,14 +1,25 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { SlicePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../core/services/document.service';
 import { PdfViewerComponent } from './pdf-viewer.component';
 import type { Document } from '../../../core/models/document.model';
 import type { LegalObject, Clause } from '../../../core/models/legal-object.model';
 
+interface SimilarClause {
+  id: string;
+  type: string;
+  heading: string | null;
+  text: string;
+  legalObjectId: string;
+  documentName: string;
+  similarity: number;
+}
+
 @Component({
   selector: 'app-document-detail',
-  imports: [SlicePipe, PdfViewerComponent],
+  imports: [SlicePipe, FormsModule, PdfViewerComponent],
   templateUrl: './document-detail.component.html',
 })
 export class DocumentDetailComponent implements OnInit {
@@ -32,12 +43,29 @@ export class DocumentDetailComponent implements OnInit {
   editingClauseForm = signal<{ type: string; heading: string; text: string; notes: string } | null>(null);
   savingClause = signal(false);
 
+  // ─── Similar clauses (V2 — RAG)
+  showSimilarPanel = signal(false);
+  similarSourceClauseId = signal<string | null>(null);
+  similarClauses = signal<SimilarClause[] | null>(null);
+  loadingSimilar = signal(false);
+
+  // ─── Ask clause (V2 — NL)
+  askingClauseId = signal<string | null>(null);
+  askInput = signal('');
+  asking = signal(false);
+  askAnswer = signal<string | null>(null);
+  readonly askExamples = [
+    'Cette clause est-elle standard ?',
+    'Quels sont les risques ?',
+    'Reformule pour une position plus dure',
+  ];
+
   pdfUrl = computed(() => {
     const doc = this.document();
     if (!doc || !doc.hasFile || doc.mimeType !== 'application/pdf') return null;
     return this.docService.fileUrl(this.wsId, this.docId);
   });
-  expandedSection = signal<Record<string, boolean>>({ metadata: true, clauses: true, terms: false });
+  expandedSection = signal<Record<string, boolean>>({ metadata: true, clauses: true, terms: false, crossReferences: false });
   filterLow = signal(false);
   expandedTerm = signal<string | null>(null);
 
@@ -212,5 +240,58 @@ export class DocumentDetailComponent implements OnInit {
 
   confidenceColor(confidence: string): string {
     return { high: 'bg-green-100 text-green-700', medium: 'bg-yellow-100 text-yellow-700', low: 'bg-red-100 text-red-700' }[confidence] ?? 'bg-gray-100 text-gray-500';
+  }
+
+  // ─── Similar clauses (V2 — RAG) ─────────────────────────────────────────────
+
+  loadSimilarClauses(clauseId: string) {
+    this.showSimilarPanel.set(true);
+    this.similarSourceClauseId.set(clauseId);
+    this.loadingSimilar.set(true);
+    this.similarClauses.set(null);
+    this.docService.getSimilarClauses(this.wsId, clauseId).subscribe({
+      next: resp => {
+        this.similarClauses.set(resp.similar);
+        this.loadingSimilar.set(false);
+      },
+      error: () => {
+        this.similarClauses.set([]);
+        this.loadingSimilar.set(false);
+      },
+    });
+  }
+
+  closeSimilarPanel() {
+    this.showSimilarPanel.set(false);
+    this.similarClauses.set(null);
+    this.similarSourceClauseId.set(null);
+  }
+
+  // ─── Ask clause (V2 — NL) ───────────────────────────────────────────────────
+
+  toggleAskClause(clauseId: string) {
+    if (this.askingClauseId() === clauseId) {
+      this.askingClauseId.set(null);
+      this.askInput.set('');
+      this.askAnswer.set(null);
+    } else {
+      this.askingClauseId.set(clauseId);
+      this.askInput.set('');
+      this.askAnswer.set(null);
+    }
+  }
+
+  submitAsk(clauseId: string) {
+    const question = this.askInput().trim();
+    if (!question) return;
+    this.asking.set(true);
+    this.askAnswer.set(null);
+    this.docService.askClause(clauseId, question).subscribe({
+      next: resp => {
+        this.askAnswer.set(resp.answer);
+        this.asking.set(false);
+      },
+      error: () => this.asking.set(false),
+    });
   }
 }

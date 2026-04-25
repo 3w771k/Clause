@@ -111,6 +111,13 @@ export function initDb() {
       citation_json TEXT NOT NULL DEFAULT '{}'
     );
 
+    CREATE TABLE IF NOT EXISTS clause_embeddings (
+      clause_id TEXT PRIMARY KEY REFERENCES clauses(id) ON DELETE CASCADE,
+      vector BLOB NOT NULL,
+      model TEXT NOT NULL DEFAULT 'multilingual-e5-small',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS analyses (
       id TEXT PRIMARY KEY,
       workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
@@ -129,17 +136,6 @@ export function initDb() {
       added_at TEXT NOT NULL DEFAULT (datetime('now')),
       added_by TEXT NOT NULL DEFAULT 'demo-user',
       order_in_analysis INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS conversation_messages (
-      id TEXT PRIMARY KEY,
-      analysis_id TEXT NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
-      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-      role TEXT NOT NULL,
-      content TEXT NOT NULL,
-      deliverable_references TEXT NOT NULL DEFAULT '[]',
-      citations_json TEXT NOT NULL DEFAULT '[]',
-      interpreted_intent_json TEXT
     );
 
     CREATE TABLE IF NOT EXISTS deliverables (
