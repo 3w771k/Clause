@@ -1,0 +1,423 @@
+{
+  "id": "maison",
+  "version": "1.0.0",
+  "name": "Ontologie maison",
+  "description": "Ontologie juridique maison couvrant les 60 types de clauses les plus fréquents dans les contrats commerciaux, NDA et politiques.",
+  "language": "multi",
+  "documentTypes": [
+    { "id": "CONTRAT/NDA_MUTUEL", "parent": "CONTRAT", "name": "NDA mutuel", "description": "Accord de confidentialité mutuel", "typicalClauseTypes": ["DEFINITION_IC", "OBLIGATIONS_CONFIDENTIALITE", "EXCEPTIONS_CONFIDENTIALITE", "DUREE_CONFIDENTIALITE", "RETOUR_DESTRUCTION", "JURIDICTION", "LOI_APPLICABLE", "INTEGRALITE_ACCORD", "RENONCIATION"] },
+    { "id": "CONTRAT/NDA_UNILATERAL", "parent": "CONTRAT", "name": "NDA unilatéral", "description": "Accord de confidentialité unilatéral", "typicalClauseTypes": ["DEFINITION_IC", "OBLIGATIONS_CONFIDENTIALITE", "EXCEPTIONS_CONFIDENTIALITE", "DUREE_CONFIDENTIALITE", "RETOUR_DESTRUCTION", "JURIDICTION"] },
+    { "id": "CONTRAT/PRESTATION_SERVICES", "parent": "CONTRAT", "name": "Contrat de prestation de services", "description": "Contrat de services IT, conseil, intégration", "typicalClauseTypes": ["OBJET", "OBLIGATIONS_PRESTATAIRE", "OBLIGATIONS_CLIENT", "PRIX_REMUNERATION", "MODALITES_PAIEMENT", "PROPRIETE_INTELLECTUELLE", "CONFIDENTIALITE", "LIMITATION_RESPONSABILITE", "GARANTIES", "DUREE_RESILIATION", "SOUS_TRAITANCE"] },
+    { "id": "CONTRAT/DISTRIBUTION", "parent": "CONTRAT", "name": "Contrat de distribution", "description": "Contrat de distribution ou de commercialisation", "typicalClauseTypes": ["OBJET", "TERRITOIRE", "EXCLUSIVITE", "PRIX_REMUNERATION", "DUREE_RESILIATION", "CHANGEMENT_CONTROLE"] },
+    { "id": "CONTRAT/LICENCE_LOGICIEL", "parent": "CONTRAT", "name": "Licence logiciel / SaaS", "description": "Accord de licence logicielle ou SaaS", "typicalClauseTypes": ["OBJET", "PROPRIETE_INTELLECTUELLE", "LIMITATION_RESPONSABILITE", "GARANTIES", "PRIX_REMUNERATION", "DONNEES_RGPD"] },
+    { "id": "POLITIQUE/DPA", "parent": "POLITIQUE", "name": "Data Processing Agreement", "description": "Accord de traitement des données personnelles (RGPD)", "typicalClauseTypes": ["DONNEES_RGPD", "SOUS_TRAITANCE_DONNEES", "SECURITE_DONNEES", "TRANSFERTS_INTERNATIONAUX", "DROIT_PERSONNES"] },
+    { "id": "POLITIQUE/CODE_CONDUITE", "parent": "POLITIQUE", "name": "Code de conduite", "description": "Politique de conformité et éthique", "typicalClauseTypes": ["OBJET", "PERIMETRE_APPLICATION", "OBLIGATIONS_CONFORMITE"] },
+    { "id": "MEMO/CONSULTATION", "parent": "MEMO", "name": "Mémo de consultation juridique", "description": "Note juridique interne ou externe", "typicalClauseTypes": [] }
+  ],
+  "clauseTypes": [
+    {
+      "id": "OBJET",
+      "name": "Objet du contrat",
+      "category": "Périmètre & Définitions",
+      "description": "Décrit la prestation, le produit ou le service objet du contrat",
+      "attributes": [
+        { "id": "scope_description", "name": "Description du périmètre", "type": "string", "required": true, "description": "Résumé de l'objet" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["objet", "objet du contrat", "purpose", "scope", "prestation", "services"]
+    },
+    {
+      "id": "DEFINITION_IC",
+      "name": "Définition des informations confidentielles",
+      "category": "Confidentialité",
+      "description": "Délimite le périmètre des informations couvertes par la confidentialité",
+      "attributes": [
+        { "id": "scope_breadth", "name": "Étendue du périmètre", "type": "enum", "enumValues": ["BROAD", "STANDARD", "NARROW"], "required": false, "description": "Largeur de la définition" },
+        { "id": "includes_verbal", "name": "Inclut les échanges oraux", "type": "boolean", "required": false, "description": "Si les infos verbales sont couvertes" },
+        { "id": "includes_marked_only", "name": "Limité aux docs marqués confidentiel", "type": "boolean", "required": false, "description": "Si seulement les docs explicitement marqués sont couverts" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/NDA_MUTUEL", "CONTRAT/NDA_UNILATERAL"],
+      "typicalKeywords": ["information confidentielle", "confidential information", "informations confidentielles", "définition"]
+    },
+    {
+      "id": "OBLIGATIONS_CONFIDENTIALITE",
+      "name": "Obligations de confidentialité",
+      "category": "Confidentialité",
+      "description": "Obligations des parties relatives à la protection des informations confidentielles",
+      "attributes": [
+        { "id": "standard_of_care", "name": "Standard de soin", "type": "enum", "enumValues": ["SAME_AS_OWN", "REASONABLE", "STRICT"], "required": false, "description": "Niveau de soin requis" },
+        { "id": "need_to_know", "name": "Principe du besoin d'en connaître", "type": "boolean", "required": false, "description": "Restriction aux personnes ayant besoin d'en connaître" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/NDA_MUTUEL", "CONTRAT/NDA_UNILATERAL"],
+      "typicalKeywords": ["obligation", "confidentialité", "protéger", "divulguer", "confidentiality obligations"]
+    },
+    {
+      "id": "EXCEPTIONS_CONFIDENTIALITE",
+      "name": "Exceptions à la confidentialité",
+      "category": "Confidentialité",
+      "description": "Cas dans lesquels les obligations de confidentialité ne s'appliquent pas",
+      "attributes": [
+        { "id": "includes_prior_knowledge", "name": "Exception connaissance préalable", "type": "boolean", "required": false, "description": "Si la connaissance préalable est une exception" },
+        { "id": "includes_public_domain", "name": "Exception domaine public", "type": "boolean", "required": false, "description": "Si le domaine public est une exception" },
+        { "id": "includes_legal_obligation", "name": "Exception obligation légale", "type": "boolean", "required": false, "description": "Si l'obligation légale de divulguer est une exception" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/NDA_MUTUEL", "CONTRAT/NDA_UNILATERAL"],
+      "typicalKeywords": ["exception", "domaine public", "connaissance préalable", "obligation légale"]
+    },
+    {
+      "id": "DUREE_CONFIDENTIALITE",
+      "name": "Durée des obligations de confidentialité",
+      "category": "Confidentialité",
+      "description": "Période pendant laquelle les obligations de confidentialité s'appliquent",
+      "attributes": [
+        { "id": "duration_years", "name": "Durée (années)", "type": "number", "required": false, "description": "Nombre d'années d'obligation" },
+        { "id": "perpetual", "name": "Perpétuelle", "type": "boolean", "required": false, "description": "Si les obligations sont perpétuelles" },
+        { "id": "post_termination", "name": "Survie après résiliation", "type": "boolean", "required": false, "description": "Si les obligations survivent à la résiliation" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/NDA_MUTUEL", "CONTRAT/NDA_UNILATERAL"],
+      "typicalKeywords": ["durée", "période", "ans", "survie", "duration", "term"]
+    },
+    {
+      "id": "RETOUR_DESTRUCTION",
+      "name": "Retour ou destruction des informations",
+      "category": "Confidentialité",
+      "description": "Obligations de retour ou destruction des informations confidentielles à la fin du contrat",
+      "attributes": [
+        { "id": "destruction_required", "name": "Destruction requise", "type": "boolean", "required": false, "description": "Si la destruction est requise" },
+        { "id": "certification_required", "name": "Certification de destruction", "type": "boolean", "required": false, "description": "Si une attestation de destruction est requise" },
+        { "id": "delay_days", "name": "Délai (jours)", "type": "number", "required": false, "description": "Délai pour retourner/détruire" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/NDA_MUTUEL", "CONTRAT/NDA_UNILATERAL"],
+      "typicalKeywords": ["retour", "destruction", "restitution", "return", "destroy"]
+    },
+    {
+      "id": "DUREE_RESILIATION",
+      "name": "Durée et résiliation",
+      "category": "Durée & Résiliation",
+      "description": "Durée du contrat et conditions de résiliation",
+      "attributes": [
+        { "id": "initial_term_value", "name": "Durée initiale", "type": "number", "required": false, "description": "Valeur de la durée initiale" },
+        { "id": "initial_term_unit", "name": "Unité durée initiale", "type": "enum", "enumValues": ["days", "months", "years"], "required": false, "description": "Unité de la durée initiale" },
+        { "id": "renewal_type", "name": "Type de renouvellement", "type": "enum", "enumValues": ["TACITE", "EXPRES", "AUCUN"], "required": false, "description": "Mode de renouvellement" },
+        { "id": "notice_period_days", "name": "Préavis de résiliation (jours)", "type": "number", "required": false, "description": "Préavis requis pour résilier" },
+        { "id": "termination_for_convenience", "name": "Résiliation pour convenance", "type": "boolean", "required": false, "description": "Résiliation possible sans cause" },
+        { "id": "termination_for_cause", "name": "Résiliation pour faute", "type": "boolean", "required": false, "description": "Résiliation possible pour manquement" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["durée", "résiliation", "terme", "renouvellement", "term", "termination", "duration"]
+    },
+    {
+      "id": "LIMITATION_RESPONSABILITE",
+      "name": "Limitation de responsabilité",
+      "category": "Responsabilité & Garanties",
+      "description": "Clause plafonnant ou excluant la responsabilité d'une partie",
+      "attributes": [
+        { "id": "cap_type", "name": "Type de plafond", "type": "enum", "enumValues": ["GLOBAL", "PAR_SINISTRE", "ANNUEL", "PAR_OCCURRENCE"], "required": false, "description": "Nature du plafond de responsabilité" },
+        { "id": "cap_amount", "name": "Montant du cap", "type": "number", "required": false, "description": "Montant absolu du plafond" },
+        { "id": "cap_reference", "name": "Référence du cap", "type": "enum", "enumValues": ["PRIX_CONTRAT", "PRIX_ANNUEL", "FIXE"], "required": false, "description": "Base de référence du cap" },
+        { "id": "carve_outs", "name": "Exclusions du cap", "type": "string", "required": false, "description": "Cas exclus du plafond (faute lourde, RGPD, IP...)" },
+        { "id": "indirect_damages_excluded", "name": "Dommages indirects exclus", "type": "boolean", "required": false, "description": "Si les dommages indirects sont exclus" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["limitation", "responsabilité", "plafond", "cap", "liability", "limited to", "maximum"]
+    },
+    {
+      "id": "GARANTIES",
+      "name": "Garanties",
+      "category": "Responsabilité & Garanties",
+      "description": "Garanties accordées par les parties sur les produits ou services",
+      "attributes": [
+        { "id": "warranty_type", "name": "Type de garantie", "type": "enum", "enumValues": ["CONFORMITE", "TITRE", "NON_INFRINGEMENT", "SATISFAIT_OU_REMBOURSEE", "AUCUNE"], "required": false, "description": "Type de garantie accordée" },
+        { "id": "warranty_period_months", "name": "Durée de garantie (mois)", "type": "number", "required": false, "description": "Durée de la garantie en mois" },
+        { "id": "disclaimer_of_warranties", "name": "Exclusion de garanties", "type": "boolean", "required": false, "description": "Si des garanties légales sont expressément exclues" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["garantie", "warranty", "conformité", "guarantees", "representations"]
+    },
+    {
+      "id": "PROPRIETE_INTELLECTUELLE",
+      "name": "Propriété intellectuelle",
+      "category": "Propriété intellectuelle",
+      "description": "Titularité et cession des droits de propriété intellectuelle",
+      "attributes": [
+        { "id": "ownership_model", "name": "Modèle de propriété", "type": "enum", "enumValues": ["CLIENT_OWNS_ALL", "PRESTATAIRE_OWNS_ALL", "SHARED", "LICENCE_ONLY"], "required": false, "description": "Qui détient la PI" },
+        { "id": "background_ip_retained", "name": "PI préexistante retenue", "type": "boolean", "required": false, "description": "Si la PI préexistante est retenue par chaque partie" },
+        { "id": "work_for_hire", "name": "Œuvre de commande", "type": "boolean", "required": false, "description": "Si les créations sont des œuvres de commande" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["propriété intellectuelle", "droits", "PI", "IP", "intellectual property", "ownership"]
+    },
+    {
+      "id": "PRIX_REMUNERATION",
+      "name": "Prix et rémunération",
+      "category": "Termes commerciaux",
+      "description": "Conditions financières, prix et modalités de facturation",
+      "attributes": [
+        { "id": "price_model", "name": "Modèle de prix", "type": "enum", "enumValues": ["FORFAIT", "REGIE", "ABONNEMENT", "VARIABLE", "MIXTE"], "required": false, "description": "Mode de tarification" },
+        { "id": "currency", "name": "Devise", "type": "string", "required": false, "description": "Devise du contrat" },
+        { "id": "price_revision", "name": "Révision de prix", "type": "boolean", "required": false, "description": "Si le prix peut être révisé" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["prix", "rémunération", "tarif", "honoraires", "price", "fees", "remuneration"]
+    },
+    {
+      "id": "MODALITES_PAIEMENT",
+      "name": "Modalités de paiement",
+      "category": "Termes commerciaux",
+      "description": "Délais de paiement, conditions et pénalités de retard",
+      "attributes": [
+        { "id": "payment_days", "name": "Délai de paiement (jours)", "type": "number", "required": false, "description": "Nombre de jours pour payer" },
+        { "id": "late_penalty", "name": "Pénalités de retard", "type": "boolean", "required": false, "description": "Si des pénalités de retard sont prévues" },
+        { "id": "late_penalty_rate", "name": "Taux des pénalités (%)", "type": "number", "required": false, "description": "Taux annuel des pénalités" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["paiement", "facturation", "délai", "pénalités", "payment", "invoice"]
+    },
+    {
+      "id": "CHANGEMENT_CONTROLE",
+      "name": "Changement de contrôle",
+      "category": "Changement de contrôle",
+      "description": "Droits et obligations en cas de changement d'actionnariat ou de cession",
+      "attributes": [
+        { "id": "trigger_threshold_pct", "name": "Seuil déclencheur (%)", "type": "number", "required": false, "description": "Pourcentage de cession déclenchant la clause" },
+        { "id": "right_to_terminate", "name": "Droit de résiliation", "type": "boolean", "required": false, "description": "Si la partie peut résilier en cas de CoC" },
+        { "id": "right_to_renegotiate", "name": "Droit de renégociation", "type": "boolean", "required": false, "description": "Si la partie peut renégocier en cas de CoC" },
+        { "id": "consent_required", "name": "Consentement préalable requis", "type": "boolean", "required": false, "description": "Si le consentement de l'autre partie est requis" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["changement de contrôle", "cession", "acquisition", "change of control", "assignment"]
+    },
+    {
+      "id": "EXCLUSIVITE",
+      "name": "Exclusivité",
+      "category": "Non-concurrence & Exclusivité",
+      "description": "Clauses d'exclusivité commerciale ou territoriale",
+      "attributes": [
+        { "id": "exclusivity_type", "name": "Type d'exclusivité", "type": "enum", "enumValues": ["TOTALE", "TERRITORIALE", "SECTORIELLE", "AUCUNE"], "required": false, "description": "Nature de l'exclusivité" },
+        { "id": "territory", "name": "Territoire", "type": "string", "required": false, "description": "Territoire couvert par l'exclusivité" },
+        { "id": "duration_months", "name": "Durée (mois)", "type": "number", "required": false, "description": "Durée de l'exclusivité" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["exclusivité", "exclusif", "exclusivity", "exclusive"]
+    },
+    {
+      "id": "NON_CONCURRENCE",
+      "name": "Non-concurrence",
+      "category": "Non-concurrence & Exclusivité",
+      "description": "Interdiction de concurrencer l'autre partie",
+      "attributes": [
+        { "id": "scope", "name": "Périmètre", "type": "string", "required": false, "description": "Activités interdites" },
+        { "id": "duration_months", "name": "Durée (mois)", "type": "number", "required": false, "description": "Durée de la non-concurrence" },
+        { "id": "territory", "name": "Territoire", "type": "string", "required": false, "description": "Territoire couvert" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["non-concurrence", "non-competition", "concurrence", "competition"]
+    },
+    {
+      "id": "FORCE_MAJEURE",
+      "name": "Force majeure",
+      "category": "Force majeure",
+      "description": "Définition et conséquences des événements de force majeure",
+      "attributes": [
+        { "id": "includes_pandemic", "name": "Inclut pandémie", "type": "boolean", "required": false, "description": "Si les pandémies sont incluses" },
+        { "id": "notification_delay_days", "name": "Délai de notification (jours)", "type": "number", "required": false, "description": "Délai pour notifier un FM" },
+        { "id": "termination_right_after_days", "name": "Résiliation après (jours)", "type": "number", "required": false, "description": "Délai après lequel résiliation possible" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["force majeure", "cas fortuit", "force majeure events"]
+    },
+    {
+      "id": "LOI_APPLICABLE",
+      "name": "Loi applicable",
+      "category": "Loi & Juridiction",
+      "description": "Loi régissant le contrat",
+      "attributes": [
+        { "id": "governing_law", "name": "Loi applicable", "type": "string", "required": false, "description": "Juridiction légale applicable" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*", "POLITIQUE/*"],
+      "typicalKeywords": ["loi applicable", "droit applicable", "governing law", "applicable law"]
+    },
+    {
+      "id": "JURIDICTION",
+      "name": "Juridiction compétente",
+      "category": "Loi & Juridiction",
+      "description": "Tribunal ou mode de résolution des litiges",
+      "attributes": [
+        { "id": "dispute_resolution", "name": "Mode de résolution", "type": "enum", "enumValues": ["TRIBUNAL", "ARBITRAGE", "MEDIATION_PUIS_ARBITRAGE", "MEDIATION_PUIS_TRIBUNAL"], "required": false, "description": "Mode de résolution des litiges" },
+        { "id": "jurisdiction_location", "name": "Lieu de juridiction", "type": "string", "required": false, "description": "Ville / tribunal compétent" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["juridiction", "tribunal", "litiges", "jurisdiction", "dispute", "arbitrage"]
+    },
+    {
+      "id": "INTEGRALITE_ACCORD",
+      "name": "Intégralité de l'accord",
+      "category": "Divers",
+      "description": "Clause affirmant que le contrat constitue l'intégralité de l'accord entre les parties",
+      "attributes": [],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["intégralité", "accord complet", "entire agreement", "whole agreement"]
+    },
+    {
+      "id": "RENONCIATION",
+      "name": "Renonciation",
+      "category": "Divers",
+      "description": "Conditions dans lesquelles une partie peut renoncer à ses droits",
+      "attributes": [],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["renonciation", "waiver", "estoppel"]
+    },
+    {
+      "id": "NULLITE_PARTIELLE",
+      "name": "Nullité partielle / divisibilité",
+      "category": "Divers",
+      "description": "Clause préservant la validité du contrat si une clause est nulle",
+      "attributes": [],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["nullité", "divisibilité", "severability", "nullité partielle"]
+    },
+    {
+      "id": "NOTIFICATIONS",
+      "name": "Notifications",
+      "category": "Divers",
+      "description": "Modalités d'envoi des notifications entre les parties",
+      "attributes": [
+        { "id": "email_valid", "name": "Email valide", "type": "boolean", "required": false, "description": "Si l'email est un mode de notification valide" },
+        { "id": "registered_mail_required", "name": "Recommandé requis", "type": "boolean", "required": false, "description": "Si le courrier recommandé est requis pour certaines notifications" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["notification", "notice", "avis", "notifications"]
+    },
+    {
+      "id": "SOUS_TRAITANCE",
+      "name": "Sous-traitance",
+      "category": "Exécution & Livraison",
+      "description": "Conditions et limites de la sous-traitance",
+      "attributes": [
+        { "id": "consent_required", "name": "Consentement requis", "type": "boolean", "required": false, "description": "Si le consentement préalable est requis" },
+        { "id": "list_approved", "name": "Liste de sous-traitants approuvés", "type": "boolean", "required": false, "description": "Si une liste de sous-traitants approuvés existe" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*"],
+      "typicalKeywords": ["sous-traitance", "sous-traitant", "subcontracting", "subcontractor"]
+    },
+    {
+      "id": "OBLIGATIONS_PRESTATAIRE",
+      "name": "Obligations du prestataire",
+      "category": "Exécution & Livraison",
+      "description": "Obligations spécifiques du prestataire ou fournisseur",
+      "attributes": [
+        { "id": "obligation_type", "name": "Type d'obligation", "type": "enum", "enumValues": ["RESULTAT", "MOYENS", "MIXTE"], "required": false, "description": "Nature de l'obligation (résultat vs moyens)" },
+        { "id": "sla_defined", "name": "SLA défini", "type": "boolean", "required": false, "description": "Si des niveaux de service sont définis" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/PRESTATION_SERVICES"],
+      "typicalKeywords": ["obligations", "prestataire", "fournisseur", "services", "deliverables", "livrables"]
+    },
+    {
+      "id": "OBLIGATIONS_CLIENT",
+      "name": "Obligations du client",
+      "category": "Exécution & Livraison",
+      "description": "Obligations du client (accès, ressources, coopération)",
+      "attributes": [],
+      "applicableDocumentTypes": ["CONTRAT/PRESTATION_SERVICES"],
+      "typicalKeywords": ["obligations du client", "client obligations", "coopération", "accès"]
+    },
+    {
+      "id": "DONNEES_RGPD",
+      "name": "Données personnelles / RGPD",
+      "category": "Données & RGPD",
+      "description": "Traitement des données personnelles et obligations RGPD",
+      "attributes": [
+        { "id": "role", "name": "Rôle", "type": "enum", "enumValues": ["RESPONSABLE_TRAITEMENT", "SOUS_TRAITANT", "CO_RESPONSABLE"], "required": false, "description": "Rôle de la partie dans le traitement" },
+        { "id": "dpa_attached", "name": "DPA annexé", "type": "boolean", "required": false, "description": "Si un DPA est annexé ou intégré" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/*", "POLITIQUE/DPA"],
+      "typicalKeywords": ["données personnelles", "RGPD", "GDPR", "data protection", "personal data"]
+    },
+    {
+      "id": "SOUS_TRAITANCE_DONNEES",
+      "name": "Sous-traitance des données",
+      "category": "Données & RGPD",
+      "description": "Liste des sous-traitants ultérieurs et conditions d'autorisation",
+      "attributes": [
+        { "id": "prior_consent", "name": "Consentement préalable", "type": "boolean", "required": false, "description": "Si consentement préalable requis pour ST ultérieurs" },
+        { "id": "list_provided", "name": "Liste fournie", "type": "boolean", "required": false, "description": "Si une liste de ST ultérieurs est fournie" }
+      ],
+      "applicableDocumentTypes": ["POLITIQUE/DPA"],
+      "typicalKeywords": ["sous-traitant ultérieur", "sub-processor", "sous-traitance des données"]
+    },
+    {
+      "id": "SECURITE_DONNEES",
+      "name": "Sécurité des données",
+      "category": "Données & RGPD",
+      "description": "Mesures de sécurité techniques et organisationnelles",
+      "attributes": [
+        { "id": "encryption_required", "name": "Chiffrement requis", "type": "boolean", "required": false, "description": "Si le chiffrement est explicitement requis" },
+        { "id": "breach_notification_hours", "name": "Notification de violation (heures)", "type": "number", "required": false, "description": "Délai de notification en cas de violation (72h standard RGPD)" }
+      ],
+      "applicableDocumentTypes": ["POLITIQUE/DPA"],
+      "typicalKeywords": ["sécurité", "security", "mesures techniques", "violation de données", "data breach"]
+    },
+    {
+      "id": "TRANSFERTS_INTERNATIONAUX",
+      "name": "Transferts internationaux de données",
+      "category": "Données & RGPD",
+      "description": "Conditions des transferts de données hors UE",
+      "attributes": [
+        { "id": "transfer_mechanism", "name": "Mécanisme de transfert", "type": "enum", "enumValues": ["CCT", "BCR", "ADEQUACY_DECISION", "DEROGATION"], "required": false, "description": "Base juridique du transfert" },
+        { "id": "third_countries", "name": "Pays tiers impliqués", "type": "string", "required": false, "description": "Pays vers lesquels les données sont transférées" }
+      ],
+      "applicableDocumentTypes": ["POLITIQUE/DPA"],
+      "typicalKeywords": ["transferts", "pays tiers", "international transfers", "CCT", "BCR"]
+    },
+    {
+      "id": "DROIT_PERSONNES",
+      "name": "Droits des personnes concernées",
+      "category": "Données & RGPD",
+      "description": "Procédures pour exercer les droits RGPD (accès, rectification, effacement...)",
+      "attributes": [],
+      "applicableDocumentTypes": ["POLITIQUE/DPA"],
+      "typicalKeywords": ["droits des personnes", "data subject rights", "accès", "rectification", "effacement"]
+    },
+    {
+      "id": "PERIMETRE_APPLICATION",
+      "name": "Périmètre d'application",
+      "category": "Périmètre & Définitions",
+      "description": "Personnes, entités ou situations auxquelles la politique s'applique",
+      "attributes": [],
+      "applicableDocumentTypes": ["POLITIQUE/*"],
+      "typicalKeywords": ["périmètre", "champ d'application", "scope", "applicabilité"]
+    },
+    {
+      "id": "OBLIGATIONS_CONFORMITE",
+      "name": "Obligations de conformité",
+      "category": "Périmètre & Définitions",
+      "description": "Obligations générales de conformité aux lois, règlements et politiques internes",
+      "attributes": [],
+      "applicableDocumentTypes": ["POLITIQUE/*"],
+      "typicalKeywords": ["conformité", "compliance", "obligations", "respecter", "lois"]
+    },
+    {
+      "id": "CONFIDENTIALITE",
+      "name": "Clause de confidentialité générale",
+      "category": "Confidentialité",
+      "description": "Clause de confidentialité générale dans un contrat non-NDA",
+      "attributes": [
+        { "id": "duration_years", "name": "Durée (années)", "type": "number", "required": false, "description": "Durée des obligations" },
+        { "id": "mutual", "name": "Mutuelle", "type": "boolean", "required": false, "description": "Si la confidentialité est mutuelle" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/PRESTATION_SERVICES", "CONTRAT/DISTRIBUTION", "CONTRAT/LICENCE_LOGICIEL"],
+      "typicalKeywords": ["confidentialité", "confidential", "secret", "discret"]
+    },
+    {
+      "id": "TERRITOIRE",
+      "name": "Territoire",
+      "category": "Périmètre & Définitions",
+      "description": "Territoire géographique couvert par le contrat",
+      "attributes": [
+        { "id": "territories", "name": "Territoires", "type": "string", "required": false, "description": "Liste des territoires" }
+      ],
+      "applicableDocumentTypes": ["CONTRAT/DISTRIBUTION"],
+      "typicalKeywords": ["territoire", "territory", "zone géographique", "geographic scope"]
+    }
+  ]
+}

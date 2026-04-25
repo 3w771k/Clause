@@ -1,0 +1,6 @@
+node_modules/
+dist/
+data/legal-extraction.db
+data/uploads/
+.env
+*.log
