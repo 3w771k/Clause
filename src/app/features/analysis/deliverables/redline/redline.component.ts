@@ -1,5 +1,6 @@
 import { Component, input, output, inject, signal, effect } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 import { AnalysisService } from '../../../../core/services/analysis.service';
 import type { RedlineContent, RedlineChange } from '../../../../core/models/deliverable.model';
 
@@ -29,7 +30,12 @@ export class RedlineComponent {
   }
 
   get safeHtml(): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.content().baseHtml ?? '');
+    const raw = this.content().baseHtml ?? '';
+    const clean = DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: ['p', 'span', 'cite', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'div'],
+      ALLOWED_ATTR: ['class', 'data-change-id', 'data-citation-id'],
+    });
+    return this.sanitizer.bypassSecurityTrustHtml(clean);
   }
 
   allChanges() {
