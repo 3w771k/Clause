@@ -1,0 +1,93 @@
+<div class="space-y-4">
+
+  <!-- Toolbar -->
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <span class="text-xs text-gray-500 shrink-0">
+      {{ filteredRows().length }} ligne{{ filteredRows().length > 1 ? 's' : '' }}
+    </span>
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <button (click)="filterRisk.set('all')"
+        [class]="filterRisk() === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Tout</button>
+      <button (click)="filterRisk.set('critical')"
+        [class]="filterRisk() === 'critical' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Critique</button>
+      <button (click)="filterRisk.set('high')"
+        [class]="filterRisk() === 'high' ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Élevé</button>
+      <button (click)="filterRisk.set('medium')"
+        [class]="filterRisk() === 'medium' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Modéré</button>
+      <button (click)="filterRisk.set('low')"
+        [class]="filterRisk() === 'low' ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Faible</button>
+      <button (click)="filterRisk.set('ok')"
+        [class]="filterRisk() === 'ok' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'"
+        class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">OK</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-40">
+              <button (click)="sort('documentName')" class="flex items-center gap-1 hover:text-gray-900">
+                Document
+                <span class="text-gray-400">{{ sortKey() === 'documentName' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              </button>
+            </th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-40">
+              <button (click)="sort('clauseLabel')" class="flex items-center gap-1 hover:text-gray-900">
+                Clause
+                <span class="text-gray-400">{{ sortKey() === 'clauseLabel' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              </button>
+            </th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-28">
+              <button (click)="sort('riskLevel')" class="flex items-center gap-1 hover:text-gray-900">
+                Risque
+                <span class="text-gray-400">{{ sortKey() === 'riskLevel' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+              </button>
+            </th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Constatation</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Recommandation</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filteredRows(); track row.documentId + row.clauseType; let i = $index) {
+            @let isNewDoc = i === 0 || filteredRows()[i - 1].documentId !== row.documentId;
+            <tr [class]="isNewDoc && i > 0 ? 'border-t-2 border-gray-300 hover:bg-gray-50' : 'border-t border-gray-100 hover:bg-gray-50'"
+              class="transition-colors align-top">
+              <td class="px-4 py-3 text-gray-800 font-medium">
+                @if (isNewDoc) {
+                  {{ row.documentName }}
+                }
+              </td>
+              <td class="px-4 py-3 text-gray-700">
+                <div class="font-medium">{{ row.clauseLabel }}</div>
+                @if (row.clauseText) {
+                  <div class="text-gray-400 mt-0.5 italic">{{ row.clauseText }}</div>
+                }
+              </td>
+              <td class="px-4 py-3">
+                <span [class]="riskColor(row.riskLevel)" class="inline-block text-xs font-medium px-2 py-0.5 rounded-full">
+                  {{ riskLabel(row.riskLevel) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-gray-700 leading-relaxed">{{ row.finding }}</td>
+              <td class="px-4 py-3 text-gray-700 leading-relaxed">{{ row.recommendation }}</td>
+            </tr>
+          }
+          @if (filteredRows().length === 0) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-gray-400">Aucune ligne pour ce filtre.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

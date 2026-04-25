@@ -1,0 +1,251 @@
+<div class="flex h-screen overflow-hidden" style="background: var(--bg-app); font-family: var(--font-sans, Inter, system-ui, sans-serif)">
+
+  <!-- ── Rail global 64px ───────────────────────────────────────────────── -->
+  <div class="w-16 shrink-0 flex flex-col items-center py-3 border-r border-gray-200 z-10"
+       style="background: var(--bg-rail)">
+
+    <!-- Logo Sinequa -->
+    <div class="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center mb-4 shrink-0" title="Sinequa AI Workplace">
+      <span class="text-white font-bold text-sm tracking-tight">S</span>
+    </div>
+
+    <!-- Icône Explorer -->
+    <button class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors mb-1" title="Explorer">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+    </button>
+
+    <!-- Icône Espaces (actif = module Legal Extraction ouvert) -->
+    <a routerLink="/workspaces"
+       class="w-9 h-9 flex items-center justify-center rounded-lg transition-colors mb-1"
+       routerLinkActive="bg-primary-50 text-primary-600"
+       [class]="'text-gray-400 hover:bg-gray-100 hover:text-gray-700'"
+       title="Espaces de travail">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+      </svg>
+    </a>
+
+    <!-- Spacer -->
+    <div class="flex-1"></div>
+
+    <!-- Aide -->
+    <button class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors mb-2" title="Aide">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+      </svg>
+    </button>
+
+    <!-- Avatar utilisateur -->
+    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center shrink-0" title="Utilisateur">
+      <span class="text-white text-xs font-semibold">CW</span>
+    </div>
+
+    <!-- Badge pré-alpha -->
+    <span class="mt-3 text-[9px] font-semibold text-gray-400 tracking-wide rotate-0 leading-none">α</span>
+  </div>
+
+  <!-- ── Sidebar interne 260px ──────────────────────────────────────────── -->
+  @if (sidebarOpen()) {
+    <aside class="w-64 shrink-0 flex flex-col border-r border-gray-200 overflow-hidden"
+           style="background: var(--bg-sidebar)">
+
+      <!-- Workspace switcher -->
+      <div class="px-3 py-3 border-b border-gray-200 shrink-0">
+        @if (currentWorkspace()) {
+          <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
+            <div class="w-6 h-6 rounded bg-indigo-100 flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+              </svg>
+            </div>
+            <span class="text-sm font-medium text-gray-900 truncate flex-1">{{ currentWorkspace()!.name }}</span>
+            <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+            </svg>
+          </div>
+        } @else {
+          <a routerLink="/workspaces" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+              </svg>
+            </div>
+            <span class="text-sm text-gray-600">Espaces de travail</span>
+          </a>
+        }
+      </div>
+
+      <!-- Scrollable content -->
+      <nav class="flex-1 overflow-y-auto px-2 py-2">
+
+        <!-- Section Analyses -->
+        @if (currentWorkspace()) {
+          <div class="mb-4">
+            <div class="flex items-center justify-between px-2 py-1 mb-1">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Analyses</span>
+            </div>
+
+            @for (ana of analyses(); track ana.id) {
+              <a [routerLink]="['/workspaces', currentWsIdFromUrl, 'analyses', ana.id]"
+                 routerLinkActive="bg-indigo-50 text-indigo-700 font-medium"
+                 class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5 group">
+                <svg class="w-3.5 h-3.5 shrink-0 text-gray-400 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                </svg>
+                <span class="truncate flex-1">{{ ana.name }}</span>
+              </a>
+            }
+
+            <a [routerLink]="['/workspaces', currentWsIdFromUrl]"
+               class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-indigo-600 hover:bg-indigo-50 transition-colors mt-1">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+              </svg>
+              Nouvelle analyse
+            </a>
+          </div>
+        } @else {
+          <!-- Pas de workspace sélectionné : liste des workspaces -->
+          <div class="mb-4">
+            <div class="px-2 py-1 mb-1">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Espaces de travail</span>
+            </div>
+            @for (ws of workspaces(); track ws.id) {
+              <a [routerLink]="['/workspaces', ws.id]"
+                 routerLinkActive="bg-indigo-50 text-indigo-700"
+                 class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5">
+                <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+                </svg>
+                <span class="truncate">{{ ws.name }}</span>
+              </a>
+            }
+          </div>
+        }
+
+        <!-- Séparateur -->
+        <div class="border-t border-gray-200 my-2 mx-2"></div>
+
+        <!-- Section Base de référence -->
+        <div>
+          <div class="px-2 py-1 mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Base de référence</span>
+          </div>
+
+          <a routerLink="/reference-base" routerLinkActive="bg-indigo-50 text-indigo-700"
+             class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base leading-none">⚖</span>
+              <span>Playbooks</span>
+            </div>
+            @if (refCounts().playbook) {
+              <span class="text-[11px] text-gray-400">({{ refCounts().playbook }})</span>
+            }
+          </a>
+
+          <a routerLink="/reference-base" routerLinkActive="bg-indigo-50 text-indigo-700"
+             class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base leading-none">📄</span>
+              <span>Standards</span>
+            </div>
+            @if (refCounts().standard) {
+              <span class="text-[11px] text-gray-400">({{ refCounts().standard }})</span>
+            }
+          </a>
+
+          <a routerLink="/reference-base" routerLinkActive="bg-indigo-50 text-indigo-700"
+             class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base leading-none">📋</span>
+              <span>Grilles DD</span>
+            </div>
+            @if (refCounts().grille_dd) {
+              <span class="text-[11px] text-gray-400">({{ refCounts().grille_dd }})</span>
+            }
+          </a>
+
+          <a routerLink="/reference-base" routerLinkActive="bg-indigo-50 text-indigo-700"
+             class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors mb-0.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base leading-none">📚</span>
+              <span>Clausiers</span>
+            </div>
+            @if (refCounts().clausier) {
+              <span class="text-[11px] text-gray-400">({{ refCounts().clausier }})</span>
+            }
+          </a>
+
+          <!-- À venir -->
+          <div class="mt-3 border-t border-gray-200 pt-2 mx-1">
+            <div class="px-1 py-0.5 mb-1">
+              <span class="text-[10px] font-medium text-gray-300 uppercase tracking-wider">À venir</span>
+            </div>
+            @for (item of ['Glossaires', 'Templates', 'Red flags']; track item) {
+              <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-300 cursor-not-allowed mb-0.5">
+                <span class="text-base leading-none opacity-40">📖</span>
+                <span>{{ item }}</span>
+                <span class="ml-auto text-[10px] bg-gray-100 text-gray-300 px-1.5 py-0.5 rounded-full">Bientôt</span>
+              </div>
+            }
+          </div>
+        </div>
+      </nav>
+
+      <!-- Toggle sidebar -->
+      <div class="px-3 py-2 border-t border-gray-200 shrink-0">
+        <button (click)="toggleSidebar()"
+                class="flex items-center gap-2 px-2 py-1 rounded text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors w-full">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"/>
+          </svg>
+          Réduire
+        </button>
+      </div>
+    </aside>
+  } @else {
+    <!-- Sidebar réduite : juste un chevron -->
+    <div class="w-6 shrink-0 flex flex-col items-center justify-start pt-14 border-r border-gray-200" style="background: var(--bg-sidebar)">
+      <button (click)="toggleSidebar()" class="text-gray-300 hover:text-gray-600 transition-colors" title="Ouvrir la sidebar">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 4.5l7.5 7.5-7.5 7.5m6-15l7.5 7.5-7.5 7.5"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- ── Zone principale ────────────────────────────────────────────────── -->
+  <main class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- Breadcrumb + actions bar -->
+    <div class="flex items-center justify-between px-5 h-10 border-b border-gray-200 shrink-0 bg-white">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-1 text-sm min-w-0">
+        @for (seg of breadcrumbs(); track seg.label; let last = $last) {
+          @if (!last) {
+            @if (seg.route) {
+              <a [routerLink]="seg.route" class="text-gray-500 hover:text-gray-800 transition-colors truncate max-w-40">{{ seg.label }}</a>
+            } @else {
+              <span class="text-gray-500 truncate max-w-40">{{ seg.label }}</span>
+            }
+            <svg class="w-3 h-3 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          } @else {
+            <span class="text-gray-900 font-medium truncate max-w-56">{{ seg.label }}</span>
+          }
+        }
+      </nav>
+
+      <!-- Badge pré-alpha -->
+      <span class="text-[10px] font-semibold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full shrink-0">pré-alpha</span>
+    </div>
+
+    <!-- Page content -->
+    <div class="flex-1 overflow-hidden">
+      <router-outlet />
+    </div>
+  </main>
+</div>

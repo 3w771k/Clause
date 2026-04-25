@@ -1,0 +1,64 @@
+<div class="space-y-4">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div>
+      <h3 class="font-semibold text-gray-900">{{ content().title }}</h3>
+      <p class="text-xs text-gray-400 mt-0.5">{{ (content().rows ?? []).length }} échéance(s) trouvée(s)</p>
+    </div>
+    @if (nearTermCount() > 0) {
+      <button (click)="filterNear.update(v => !v)"
+        [class]="filterNear() ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'"
+        class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all">
+        <span>⚠</span>
+        <span>{{ nearTermCount() }} dans les 90 jours</span>
+      </button>
+    }
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-36">Document</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-36">Type</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-36">Date / Formule</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Déclencheur</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Conséquence si inaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filteredRows(); track row.documentId + row.deadlineType + row.dateOrFormula; let i = $index) {
+            @let isNewDoc = i === 0 || filteredRows()[i - 1].documentId !== row.documentId;
+            <tr [class]="isNewDoc && i > 0 ? 'border-t-2 border-gray-300' : 'border-t border-gray-100'"
+              class="hover:bg-gray-50 transition-colors align-top"
+              [class.bg-orange-50]="row.isNearTerm">
+              <td class="px-4 py-3 text-gray-800 font-medium">
+                @if (isNewDoc) { {{ row.documentName }} }
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-block bg-orange-50 text-orange-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">{{ deadlineTypeLabel(row.deadlineType) }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-1.5">
+                  @if (row.isNearTerm) { <span class="text-orange-500 font-bold text-sm">⚠</span> }
+                  <span [class]="row.isNearTerm ? 'font-semibold text-orange-700' : 'text-gray-700'">{{ row.dateOrFormula }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-gray-600 leading-relaxed">{{ row.trigger }}</td>
+              <td class="px-4 py-3 text-gray-700 leading-relaxed">{{ row.consequence }}</td>
+            </tr>
+          }
+          @if (filteredRows().length === 0) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-gray-400">Aucune échéance trouvée.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

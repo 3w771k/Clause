@@ -1,0 +1,84 @@
+<div class="space-y-4">
+
+  <!-- Header + synthesis -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+    <div>
+      <h3 class="font-semibold text-gray-900">{{ content().title }}</h3>
+      <p class="text-xs text-gray-400 mt-0.5">Référentiel : {{ content().framework }}</p>
+    </div>
+    @if (content().synthesis) {
+      <p class="text-sm text-gray-700 leading-relaxed border-l-2 border-cyan-300 pl-3">{{ content().synthesis }}</p>
+    }
+    <!-- Stats -->
+    <div class="flex items-center gap-3 flex-wrap pt-1">
+      <span class="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-lg">
+        ✅ {{ countByStatus('conforme') }} conforme{{ countByStatus('conforme') > 1 ? 's' : '' }}
+      </span>
+      <span class="flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 px-2.5 py-1 rounded-lg">
+        ⚠ {{ countByStatus('attention') }} attention{{ countByStatus('attention') > 1 ? 's' : '' }}
+      </span>
+      <span class="flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-lg">
+        🔴 {{ countByStatus('non_conforme') }} non conforme{{ countByStatus('non_conforme') > 1 ? 's' : '' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="flex items-center gap-1.5 flex-wrap">
+    <button (click)="filterStatus.set('all')"
+      [class]="filterStatus() === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+      class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Tout</button>
+    <button (click)="filterStatus.set('non_conforme')"
+      [class]="filterStatus() === 'non_conforme' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'"
+      class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Non conformes</button>
+    <button (click)="filterStatus.set('attention')"
+      [class]="filterStatus() === 'attention' ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'"
+      class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Attention</button>
+    <button (click)="filterStatus.set('conforme')"
+      [class]="filterStatus() === 'conforme' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'"
+      class="text-xs font-medium px-2.5 py-1 rounded-lg transition-all">Conformes</button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-xs">
+        <thead>
+          <tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-36">Document</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-40">Clause</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 w-28">Statut</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Exigence réglementaire</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600">Action recommandée</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filteredRows(); track row.documentName + row.clauseType; let i = $index) {
+            @let isNewDoc = i === 0 || filteredRows()[i - 1].documentName !== row.documentName;
+            <tr [class]="isNewDoc && i > 0 ? 'border-t-2 border-gray-300 hover:bg-gray-50' : 'border-t border-gray-100 hover:bg-gray-50'"
+              class="transition-colors align-top">
+              <td class="px-4 py-3 text-gray-800 font-medium">
+                @if (isNewDoc) { {{ row.documentName }} }
+              </td>
+              <td class="px-4 py-3 text-gray-700">
+                <div class="font-medium">{{ row.clauseLabel }}</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">{{ row.clauseType }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span [class]="statusColor(row.status)" class="inline-block text-xs font-medium px-2 py-0.5 rounded-full">{{ statusLabel(row.status) }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-600 leading-relaxed">{{ row.requirement }}</td>
+              <td class="px-4 py-3 text-gray-700 leading-relaxed">{{ row.recommendedAction || '—' }}</td>
+            </tr>
+          }
+          @if (filteredRows().length === 0) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-gray-400">Aucune ligne pour ce filtre.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

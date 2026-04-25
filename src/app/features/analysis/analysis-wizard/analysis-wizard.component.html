@@ -1,0 +1,378 @@
+<div class="h-full flex flex-col overflow-hidden bg-gray-50">
+
+  <!-- Header / progress -->
+  <div class="bg-white border-b border-gray-200 px-6 py-4 shrink-0">
+    <div class="flex items-center justify-between max-w-3xl mx-auto">
+      <h1 class="text-base font-semibold text-gray-900">Nouvelle analyse</h1>
+      <!-- Step indicator -->
+      <div class="flex items-center gap-2">
+        @for (s of [1, 2, 3]; track s) {
+          <div class="flex items-center gap-2">
+            <div [class]="step() >= s
+                ? 'w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-semibold'
+                : 'w-6 h-6 rounded-full border border-gray-300 text-gray-400 flex items-center justify-center text-xs'">
+              {{ s }}
+            </div>
+            <span [class]="step() >= s ? 'text-xs font-medium text-gray-700' : 'text-xs text-gray-400'">
+              {{ stepLabel($any(s)) }}
+            </span>
+            @if (s < 3) {
+              <svg class="w-3 h-3 text-gray-300 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            }
+          </div>
+        }
+      </div>
+      <button (click)="cancel()" class="text-sm text-gray-400 hover:text-gray-600">Annuler</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-y-auto py-10 px-6">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- ─── STEP 1 : Choisir l'opération ─── -->
+      @if (step() === 1) {
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900 mb-2">Quel type d'analyse voulez-vous mener ?</h2>
+          <p class="text-sm text-gray-500 mb-8">Choisissez l'opération qui correspond à votre besoin.</p>
+
+          <div class="grid grid-cols-2 gap-4">
+
+            <!-- Confrontation -->
+            <button (click)="selectOperation('confrontation')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-4 group-hover:bg-amber-100 transition-colors">
+                <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.249-8.25-3.285z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Auditer un contrat</h3>
+              <p class="text-sm text-gray-500">Comparez un contrat à un référentiel (playbook, grille de revue) pour identifier les écarts.</p>
+            </button>
+
+            <!-- Alignment -->
+            <button (click)="selectOperation('alignment')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center mb-4 group-hover:bg-violet-100 transition-colors">
+                <svg class="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Comparer deux documents</h3>
+              <p class="text-sm text-gray-500">Alignez deux versions d'un même contrat et générez une note comparative et un redline.</p>
+            </button>
+
+            <!-- Aggregation -->
+            <button (click)="selectOperation('aggregation')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
+                <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Constituer un clausier</h3>
+              <p class="text-sm text-gray-500">Extrayez et consolidez les clauses de plusieurs documents en un clausier structuré.</p>
+            </button>
+
+            <!-- Due Diligence -->
+            <button (click)="selectOperation('dd')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-purple-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center mb-4 group-hover:bg-purple-100 transition-colors">
+                <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Due Diligence</h3>
+              <p class="text-sm text-gray-500">Auditez plusieurs contrats et obtenez une synthèse des risques + tableau détaillé.</p>
+            </button>
+
+            <!-- M&A Mapping -->
+            <button (click)="selectOperation('ma_mapping')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center mb-4 group-hover:bg-rose-100 transition-colors">
+                <svg class="w-5 h-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Cartographie M&A</h3>
+              <p class="text-sm text-gray-500">Identifiez les engagements à fort enjeu de transfert : changement de contrôle, exclusivités, pénalités, non-concurrence.</p>
+            </button>
+
+            <!-- Deadlines -->
+            <button (click)="selectOperation('deadlines')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-4 group-hover:bg-orange-100 transition-colors">
+                <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Échéances contractuelles</h3>
+              <p class="text-sm text-gray-500">Extrayez toutes les dates et triggers temporels : renouvellements, préavis, fins de garantie, délais conditionnels.</p>
+            </button>
+
+            <!-- Compliance -->
+            <button (click)="selectOperation('compliance')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center mb-4 group-hover:bg-cyan-100 transition-colors">
+                <svg class="w-5 h-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Conformité réglementaire</h3>
+              <p class="text-sm text-gray-500">Vérifiez clause par clause la conformité à un référentiel réglementaire (RGPD, droit sectoriel, etc.).</p>
+            </button>
+
+            <!-- Inconsistencies -->
+            <button (click)="selectOperation('inconsistencies')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center mb-4 group-hover:bg-yellow-100 transition-colors">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Incohérences inter-contrats</h3>
+              <p class="text-sm text-gray-500">Repérez les clauses du même type rédigées différemment selon les contrats d'un corpus (au moins 2 documents).</p>
+            </button>
+
+            <!-- Unclear / free -->
+            <button (click)="selectOperation('unclear')"
+              class="group text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-gray-400 hover:shadow-md transition-all">
+              <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-gray-100 transition-colors">
+                <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-1">Démarrage libre</h3>
+              <p class="text-sm text-gray-500">Chargez des documents et posez vos questions directement dans le chat.</p>
+            </button>
+
+          </div>
+        </div>
+      }
+
+      <!-- ─── STEP 2 : Sélection des documents ─── -->
+      @if (step() === 2) {
+        <div>
+          <button (click)="step.set(1)" class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-6">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+            Retour
+          </button>
+
+          <h2 class="text-xl font-semibold text-gray-900 mb-1">
+            @if (operation() === 'confrontation') { Sélectionnez le contrat à auditer }
+            @else if (operation() === 'alignment') { Sélectionnez les deux documents à comparer }
+            @else if (operation() === 'aggregation') { Sélectionnez les documents sources }
+            @else if (operation() === 'dd') { Sélectionnez les contrats à auditer }
+            @else if (operation() === 'ma_mapping') { Sélectionnez les contrats à cartographier }
+            @else if (operation() === 'deadlines') { Sélectionnez les documents à analyser }
+            @else if (operation() === 'compliance') { Sélectionnez les contrats à auditer }
+            @else if (operation() === 'inconsistencies') { Sélectionnez au moins 2 contrats }
+            @else { Sélectionnez des documents (optionnel) }
+          </h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Seuls les documents dont l'extraction est terminée sont disponibles.
+            @if (readyDocs().length === 0) {
+              <span class="text-amber-600 font-medium"> Aucun document extrait dans cet espace.</span>
+            }
+          </p>
+
+          <!-- Confrontation / Compliance: reference asset picker -->
+          @if ((operation() === 'confrontation' || operation() === 'compliance') && referenceAssets().length > 0) {
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-3">Référentiel à appliquer</h3>
+              <div class="space-y-2">
+                @for (asset of referenceAssets(); track asset.id) {
+                  <button (click)="selectedRefAssetId.set(asset.id)"
+                    [class]="selectedRefAssetId() === asset.id
+                      ? 'w-full text-left p-3 rounded-xl border-2 border-indigo-500 bg-indigo-50'
+                      : 'w-full text-left p-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300'"
+                    class="transition-all">
+                    <div class="flex items-center gap-3">
+                      <div [class]="selectedRefAssetId() === asset.id ? 'w-4 h-4 rounded-full border-2 border-indigo-600 bg-indigo-600' : 'w-4 h-4 rounded-full border-2 border-gray-300'"></div>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">{{ asset.name }}</div>
+                        @if (asset.description) {
+                          <div class="text-xs text-gray-400">{{ asset.description }}</div>
+                        }
+                      </div>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Document list -->
+          @if (operation() === 'alignment') {
+            <!-- Alignment: pick target first, then reference -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Document à analyser</h3>
+                <div class="space-y-2">
+                  @for (doc of readyDocs(); track doc.id) {
+                    <button (click)="toggleTargetDoc(doc.id)"
+                      [class]="selectedTargetDocIds().has(doc.id)
+                        ? 'w-full text-left p-3 rounded-xl border-2 border-indigo-500 bg-indigo-50'
+                        : 'w-full text-left p-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300'"
+                      [disabled]="selectedRefDocId() === doc.id"
+                      class="transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                      <div class="flex items-center gap-2">
+                        <div [class]="selectedTargetDocIds().has(doc.id) ? 'w-4 h-4 rounded-full border-2 border-indigo-600 bg-indigo-600' : 'w-4 h-4 rounded-full border-2 border-gray-300'"></div>
+                        <span class="text-sm text-gray-900 truncate">{{ doc.fileName }}</span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+              <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Document de référence</h3>
+                <div class="space-y-2">
+                  @for (doc of readyDocs(); track doc.id) {
+                    <button (click)="selectedRefDocId.set(doc.id)"
+                      [class]="selectedRefDocId() === doc.id
+                        ? 'w-full text-left p-3 rounded-xl border-2 border-violet-500 bg-violet-50'
+                        : 'w-full text-left p-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300'"
+                      [disabled]="selectedTargetDocIds().has(doc.id)"
+                      class="transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                      <div class="flex items-center gap-2">
+                        <div [class]="selectedRefDocId() === doc.id ? 'w-4 h-4 rounded-full border-2 border-violet-600 bg-violet-600' : 'w-4 h-4 rounded-full border-2 border-gray-300'"></div>
+                        <span class="text-sm text-gray-900 truncate">{{ doc.fileName }}</span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          } @else {
+            <!-- Confrontation / aggregation / unclear: simple list -->
+            <div class="space-y-2 mb-4">
+              @for (doc of readyDocs(); track doc.id) {
+                <button (click)="toggleTargetDoc(doc.id)"
+                  [class]="selectedTargetDocIds().has(doc.id)
+                    ? 'w-full text-left p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50'
+                    : 'w-full text-left p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300'"
+                  class="transition-all">
+                  <div class="flex items-center gap-3">
+                    @if (operation() === 'aggregation' || operation() === 'dd' || operation() === 'ma_mapping' || operation() === 'deadlines' || operation() === 'compliance' || operation() === 'inconsistencies') {
+                      <div [class]="selectedTargetDocIds().has(doc.id)
+                        ? 'w-5 h-5 rounded border-2 border-indigo-600 bg-indigo-600 flex items-center justify-center'
+                        : 'w-5 h-5 rounded border-2 border-gray-300'">
+                        @if (selectedTargetDocIds().has(doc.id)) {
+                          <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                          </svg>
+                        }
+                      </div>
+                    } @else {
+                      <div [class]="selectedTargetDocIds().has(doc.id) ? 'w-4 h-4 rounded-full border-2 border-indigo-600 bg-indigo-600' : 'w-4 h-4 rounded-full border-2 border-gray-300'"></div>
+                    }
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-gray-900 truncate">{{ doc.fileName }}</div>
+                    </div>
+                  </div>
+                </button>
+              }
+              @if (readyDocs().length === 0) {
+                <div class="text-center py-10 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
+                  Aucun document extrait. Revenez dans l'espace de travail pour importer et extraire des documents.
+                </div>
+              }
+            </div>
+          }
+
+          <div class="flex justify-end">
+            <button (click)="goToStep3()" [disabled]="!canProceedStep2()"
+              class="px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              Continuer
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ─── STEP 3 : Confirmation ─── -->
+      @if (step() === 3) {
+        <div>
+          <button (click)="step.set(2)" class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-6">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+            Retour
+          </button>
+
+          <h2 class="text-xl font-semibold text-gray-900 mb-6">Confirmez et lancez l'analyse</h2>
+
+          <!-- Recap -->
+          <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-6 space-y-4">
+            <div class="flex gap-4">
+              <span class="text-sm text-gray-500 w-32 shrink-0">Opération</span>
+              <span class="text-sm font-medium text-gray-900">{{ operationLabel(operation()!) }}</span>
+            </div>
+
+            @if (selectedTargetDocIds().size > 0) {
+              <div class="flex gap-4">
+                <span class="text-sm text-gray-500 w-32 shrink-0">
+                  @if (operation() === 'aggregation' || operation() === 'dd' || operation() === 'ma_mapping' || operation() === 'deadlines' || operation() === 'compliance' || operation() === 'inconsistencies') { Documents } @else { Document cible }
+                </span>
+                <div class="space-y-1">
+                  @for (id of selectedTargetDocIds(); track id) {
+                    <span class="inline-block text-sm font-medium text-gray-900">
+                      {{ readyDocs().find(d => d.id === id)?.fileName }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (operation() === 'alignment' && selectedRefDocId()) {
+              <div class="flex gap-4">
+                <span class="text-sm text-gray-500 w-32 shrink-0">Document ref.</span>
+                <span class="text-sm font-medium text-gray-900">{{ readyDocs().find(d => d.id === selectedRefDocId())?.fileName }}</span>
+              </div>
+            }
+
+            @if ((operation() === 'confrontation' || operation() === 'compliance') && selectedRefAssetId()) {
+              <div class="flex gap-4">
+                <span class="text-sm text-gray-500 w-32 shrink-0">Référentiel</span>
+                <span class="text-sm font-medium text-gray-900">{{ referenceAssets().find(a => a.id === selectedRefAssetId())?.name }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Name input -->
+          <div class="mb-8">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nom de l'analyse</label>
+            <input [value]="analysisName()" (input)="analysisName.set($any($event.target).value)"
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Nom de l'analyse..."/>
+          </div>
+
+          @if (error()) {
+            <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ error() }}</div>
+          }
+
+          <div class="flex justify-end gap-3">
+            <button (click)="cancel()" class="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700">Annuler</button>
+            <button (click)="launch()" [disabled]="!analysisName().trim() || launching()"
+              class="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              @if (launching()) {
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Lancement...
+              } @else {
+                Lancer l'analyse
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+
+</div>

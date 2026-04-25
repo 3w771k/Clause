@@ -1,0 +1,433 @@
+<div class="space-y-4">
+
+  <!-- Header + toggle -->
+  <div class="bg-white border border-gray-200 rounded-xl p-4">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 class="font-semibold text-gray-900">{{ content().title }}</h2>
+        <p class="text-sm text-gray-500 mt-1">{{ content().scope }}</p>
+        <div class="mt-2 text-xs text-gray-400">
+          {{ content().entries?.length ?? 0 }} clause(s) · {{ content().createdFromDocumentIds?.length ?? 0 }} document(s) source
+        </div>
+      </div>
+      <!-- View toggle -->
+      <div class="flex bg-gray-100 rounded-lg p-1 gap-1 shrink-0">
+        <button (click)="viewMode.set('clause')"
+          [class]="viewMode() === 'clause' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+          class="px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap">
+          Par clause
+        </button>
+        <button (click)="viewMode.set('document')"
+          [class]="viewMode() === 'document' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+          class="px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap">
+          Par document
+        </button>
+        <button (click)="switchToTableau()"
+          [class]="viewMode() === 'tableau' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+          class="px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap">
+          Tableau
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── VUE PAR CLAUSE ─── -->
+  @if (viewMode() === 'clause') {
+    <div class="space-y-2">
+      @for (entry of content().entries; track entry.clauseType) {
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <button (click)="toggleClause(entry.clauseType)"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shrink-0">{{ entry.clauseType }}</span>
+              <span class="font-medium text-sm text-gray-800 truncate">{{ entry.clauseLabel }}</span>
+              <!-- Divergence badge -->
+              @if (divergenceCount(entry) > 1) {
+                <span class="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                  {{ divergenceCount(entry) }} versions
+                </span>
+              } @else {
+                <span class="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                  Unanime
+                </span>
+              }
+            </div>
+            <svg [class]="expandedClause() === entry.clauseType ? 'rotate-180' : ''"
+              class="w-4 h-4 text-gray-400 transition-transform shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          @if (expandedClause() === entry.clauseType) {
+            <div class="px-4 pb-4 space-y-3 border-t border-gray-100">
+              <div class="mt-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Meilleure formulation</span>
+                  <span class="text-xs text-gray-500">— {{ entry.sourceDocumentName }}</span>
+                </div>
+                <div class="bg-green-50 border border-green-100 rounded-lg p-3 text-sm text-gray-800 leading-relaxed">
+                  {{ entry.bestVersion }}
+                </div>
+              </div>
+
+              @if (entry.alternativeVersions?.length) {
+                <div>
+                  <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Variantes ({{ entry.alternativeVersions.length }})</span>
+                  @for (alt of entry.alternativeVersions; track alt.sourceDocumentId) {
+                    <div class="mt-2 bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm text-gray-600 leading-relaxed">{{ alt.text }}</div>
+                  }
+                </div>
+              }
+
+              @if (entry.notes) {
+                <p class="text-xs text-gray-500 italic">{{ entry.notes }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ─── VUE PAR DOCUMENT ─── -->
+  @if (viewMode() === 'document') {
+    <div class="space-y-2">
+      @for (section of docSections(); track section.docId) {
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <button (click)="toggleDoc(section.docId)"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3">
+              <!-- Doc icon -->
+              <div class="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                </svg>
+              </div>
+              <span class="font-medium text-sm text-gray-900">{{ section.docName }}</span>
+              <span class="text-xs text-gray-400">{{ section.clauses.length }} clause(s)</span>
+              <!-- Divergence summary for this doc -->
+              @if (countDivergent(section.clauses) > 0) {
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 shrink-0">
+                  {{ countDivergent(section.clauses) }} divergence(s)
+                </span>
+              }
+            </div>
+            <svg [class]="expandedDoc() === section.docId ? 'rotate-180' : ''"
+              class="w-4 h-4 text-gray-400 transition-transform shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          @if (expandedDoc() === section.docId) {
+            <div class="border-t border-gray-100">
+              @for (clause of section.clauses; track clause.clauseType) {
+                <div class="px-4 py-3 border-b border-gray-50 last:border-b-0">
+                  <div class="flex items-start gap-3">
+                    <div class="flex items-center gap-2 shrink-0 pt-0.5">
+                      <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{{ clause.clauseType }}</span>
+                      @if (clause.isBestVersion) {
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700">Retenue</span>
+                      } @else {
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Variante</span>
+                      }
+                      @if (clause.divergent) {
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Diverge</span>
+                      }
+                    </div>
+                  </div>
+                  <p class="text-xs font-medium text-gray-500 mt-1 mb-1.5">{{ clause.clauseLabel }}</p>
+                  <p class="text-sm text-gray-700 leading-relaxed">{{ clause.text }}</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ─── VUE TABLEAU ─── -->
+  @if (viewMode() === 'tableau') {
+
+    @if (loadingTcd()) {
+      <div class="flex flex-col items-center justify-center py-16 gap-3">
+        <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-500">Chargement...</p>
+      </div>
+    }
+
+    @else if (!flatView() || flatView()!.rows.length === 0) {
+      <div class="flex flex-col items-center justify-center py-16 gap-3">
+        <p class="text-sm text-gray-500">Aucune clause extraite dans ce clausier.</p>
+      </div>
+    }
+
+    @else {
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+        <!-- Toolbar -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-400">{{ flatView()!.rows.length }} ligne(s)</span>
+            @if (addingColumn()) {
+              <div class="flex items-center gap-1.5 text-xs text-indigo-600 font-medium">
+                <div class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                Extraction en cours...
+              </div>
+            }
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="openAddColumn()" [disabled]="addingColumn()"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+              </svg>
+              Ajouter une colonne
+            </button>
+            <button (click)="exportExcel()"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+              </svg>
+              Exporter Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-50 border-b-2 border-gray-200">
+
+                <th (click)="sort('clauseLabel')"
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none border-r border-gray-200 min-w-[200px]">
+                  <div class="flex items-center gap-1">
+                    Nom de la clause
+                    <span class="text-gray-400 font-normal text-xs">{{ sortKey() === 'clauseLabel' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </div>
+                </th>
+
+                <th (click)="sort('sourceDocumentName')"
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none border-r border-gray-200 min-w-[180px]">
+                  <div class="flex items-center gap-1">
+                    Document source
+                    <span class="text-gray-400 font-normal text-xs">{{ sortKey() === 'sourceDocumentName' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </div>
+                </th>
+
+                <th (click)="sort('clauseType')"
+                  class="px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none border-r border-gray-200 min-w-[130px]">
+                  <div class="flex items-center gap-1">
+                    Type
+                    <span class="text-gray-400 font-normal text-xs">{{ sortKey() === 'clauseType' ? (sortDir() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+                  </div>
+                </th>
+
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 border-r border-gray-200 min-w-[420px]">
+                  Texte de la clause
+                </th>
+
+                @for (key of (flatView()!.selectedStructuredKeys ?? []); track key) {
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-amber-700 bg-amber-50/40 border-r border-gray-200 min-w-[140px] group">
+                    <div class="flex items-center justify-between gap-2">
+                      <span>{{ key }}</span>
+                      <button (click)="deleteStructuredKey(key)"
+                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </th>
+                }
+
+                @for (col of flatView()!.customColumns; track col.id) {
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 border-r border-gray-200 min-w-[160px] group">
+                    <div class="flex items-center justify-between gap-2">
+                      <span>{{ col.name }}</span>
+                      <button (click)="deleteColumn(col.id)"
+                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </th>
+                }
+
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of rowGroups(); track item.row.id) {
+                <tr [class]="item.isGroupStart ? 'border-t-2 border-gray-300' : 'border-t border-gray-100'"
+                  class="hover:bg-gray-50/60 transition-colors">
+
+                  <!-- Nom de la clause -->
+                  <td class="px-4 py-3 border-r border-gray-100 align-top">
+                    <span class="font-semibold text-gray-900 text-sm leading-snug">{{ item.row.clauseLabel }}</span>
+                  </td>
+
+                  <!-- Nom du fonds -->
+                  <td class="px-4 py-3 border-r border-gray-100 align-top text-xs text-gray-700 leading-relaxed">
+                    {{ item.row.sourceDocumentName }}
+                  </td>
+
+                  <!-- Type -->
+                  <td class="px-4 py-3 border-r border-gray-100 align-top">
+                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-medium whitespace-nowrap">{{ item.row.clauseType }}</span>
+                  </td>
+
+                  <!-- Texte -->
+                  <td class="px-4 py-3 border-r border-gray-100 align-top text-xs text-gray-700 leading-relaxed">
+                    {{ item.row.clauseText }}
+                  </td>
+
+                  <!-- Colonnes champs structurés (auto-extraits) -->
+                  @for (key of (flatView()!.selectedStructuredKeys ?? []); track key) {
+                    <td class="px-4 py-3 border-r border-gray-100 align-top bg-amber-50/20">
+                      @if (item.row.structuredFieldsStatus === 'extracting' || item.row.structuredFieldsStatus === 'pending') {
+                        <div class="w-3 h-3 border border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                      } @else if (getStructuredField(item.row, key); as val) {
+                        <span class="text-xs text-amber-900 font-medium">{{ val }}</span>
+                      } @else {
+                        <span class="text-gray-300 text-xs">—</span>
+                      }
+                    </td>
+                  }
+
+                  <!-- Colonnes custom -->
+                  @for (col of flatView()!.customColumns; track col.id) {
+                    <td class="px-4 py-3 border-r border-gray-100 align-top text-xs text-gray-700 leading-relaxed">
+                      @if (getCell(item.row.sourceDocumentId, col.id); as cell) {
+                        @if (!cell.notFound && cell.value !== null) {
+                          {{ cell.value }}
+                        } @else {
+                          <span class="text-gray-300">—</span>
+                        }
+                      } @else {
+                        <span class="text-gray-300">—</span>
+                      }
+                    </td>
+                  }
+
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    }
+  }
+
+</div>
+
+<!-- ─── Modal Ajouter une colonne ─── -->
+@if (addColumnOpen()) {
+  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-900">Ajouter une colonne</h2>
+        <button (click)="addColumnOpen.set(false)" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-100 px-5 pt-3 gap-4">
+        @if (availableStructuredKeys().length) {
+          <button (click)="addColumnMode.set('pick')"
+            [class]="addColumnMode() === 'pick' ? 'text-indigo-600 border-b-2 border-indigo-600 font-medium' : 'text-gray-400 hover:text-gray-600'"
+            class="text-xs pb-2 transition-colors">
+            Champs détectés ({{ availableStructuredKeys().length }})
+          </button>
+        }
+        <button (click)="addColumnMode.set('custom')"
+          [class]="addColumnMode() === 'custom' ? 'text-indigo-600 border-b-2 border-indigo-600 font-medium' : 'text-gray-400 hover:text-gray-600'"
+          class="text-xs pb-2 transition-colors">
+          Colonne personnalisée
+        </button>
+      </div>
+
+      <!-- ── Section : champs détectés ── -->
+      @if (addColumnMode() === 'pick') {
+        <div class="p-5">
+          <p class="text-xs text-gray-500 mb-3">Ces éléments ont été automatiquement extraits lors de la génération du clausier. Cliquez pour les ajouter comme colonnes.</p>
+          <div class="flex flex-wrap gap-2">
+            @for (key of availableStructuredKeys(); track key) {
+              <button (click)="addStructuredKey(key); addColumnOpen.set(false)"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg transition-colors">
+                <svg class="w-3 h-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                {{ key }}
+              </button>
+            }
+          </div>
+        </div>
+        <div class="flex justify-end px-5 pb-5">
+          <button (click)="addColumnOpen.set(false)"
+            class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
+            Fermer
+          </button>
+        </div>
+      }
+
+      <!-- ── Section : colonne personnalisée ── -->
+      @if (addColumnMode() === 'custom') {
+        <div class="p-5 space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Nom de la colonne</label>
+            <input
+              [value]="newColName()"
+              (input)="newColName.set($any($event.target).value)"
+              type="text"
+              placeholder="Ex: Durée du contrat"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Type de donnée</label>
+            <select
+              [value]="newColType()"
+              (change)="newColType.set($any($event.target).value)"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400">
+              <option value="text">Texte</option>
+              <option value="amount">Montant</option>
+              <option value="date">Date</option>
+              <option value="boolean">Booléen</option>
+              <option value="percentage">Pourcentage</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1.5">Instruction d'extraction <span class="font-normal text-gray-400">(optionnel)</span></label>
+            <textarea
+              [value]="newColInstruction()"
+              (input)="newColInstruction.set($any($event.target).value)"
+              rows="3"
+              placeholder="Ex: Montant engagé par l'investisseur"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-none">
+            </textarea>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 px-5 pb-5">
+          <button (click)="addColumnOpen.set(false)"
+            class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
+            Annuler
+          </button>
+          <button (click)="submitAddColumn()" [disabled]="!newColName().trim()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors">
+            Extraire
+          </button>
+        </div>
+      }
+
+    </div>
+  </div>
+}
