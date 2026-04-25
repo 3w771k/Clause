@@ -1,59 +1,108 @@
-# Clause
+# Clause — Module Legal Extraction (pré-alpha)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.8.
+Pré-alpha standalone du module **Legal Extraction** destiné à intégrer la suite **AI Workplace** de Sinequa.
 
-## Development server
+> Ce repo contient un applicatif autonome (frontend Angular + backend Node) qui démontre les capacités du module : extraction structurée de documents juridiques, audit, comparaison, clausier, et 5 autres opérations métier. Il est destiné à servir de base de discussion à l'équipe produit Sinequa.
 
-To start a local development server, run:
+Pour le contexte produit complet, les choix d'architecture, et les écarts vs cadrage initial, voir [DECISIONS.md](./DECISIONS.md).
 
-```bash
-ng serve
-```
+## Prérequis
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js 20+
+- npm 10+
+- ~200 Mo d'espace disque (pour le modèle d'embeddings téléchargé une fois)
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Démarrage rapide
 
 ```bash
-ng generate component component-name
+# 1. Installer les dépendances (frontend + backend)
+npm install
+cd server && npm install && cd ..
+
+# 2. Configurer le serveur
+cd server
+cp .env.example .env
+# (Optionnel) Renseigner ANTHROPIC_API_KEY et passer USE_MOCK_LLM=false pour utiliser un vrai LLM
+cd ..
+
+# 3. Initialiser la base de données et les données de démo
+cd server && npm run db:seed && cd ..
+# La première exécution télécharge le modèle d'embeddings (~120 Mo, une fois)
+
+# 4. Lancer le backend (port 3000)
+cd server && npm run dev
+# Dans un autre terminal :
+
+# 5. Lancer le frontend (port 4200)
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Ouvrir http://localhost:4200 dans le navigateur.
 
-```bash
-ng generate --help
+## Structure du repo
+
+```
+/                          # Frontend Angular
+├── src/app/
+│   ├── core/              # Modèles, services, types
+│   ├── features/          # Workspaces, analyses, livrables, base de référence
+│   └── layout/            # Shell (chrome Sinequa)
+├── public/                # Assets
+└── server/                # Backend Node
+    ├── src/
+    │   ├── routes/        # Endpoints REST
+    │   ├── services/      # Logique métier (extraction, opérations)
+    │   ├── llm/           # Gateway LLM (Anthropic + mock)
+    │   ├── embeddings/    # Service d'embeddings (xenova/transformers)
+    │   ├── db/            # Schéma Drizzle, seed
+    │   └── ontologies/    # Ontologie maison (JSON)
+    └── data/              # Base SQLite (générée)
 ```
 
-## Building
+## Scénarios de démo
 
-To build the project run:
+Le seed contient un workspace de démo avec :
 
-```bash
-ng build
+- 3 documents (NDA mutuel ACME, NDA standard maison, contrat de prestation)
+- 3 actifs de référence (playbook commercial, NDA standard, grille DD M&A)
+- 2 analyses pré-créées (comparaison de NDA, audit du contrat de prestation)
+
+### Scénario 1 — Comparaison de NDA
+
+1. Ouvrir le workspace de démo
+2. Cliquer sur l'analyse "Comparaison NDA ACME vs Standard"
+3. Consulter la note comparative et le redline
+
+### Scénario 2 — Clauses similaires (V2 — RAG)
+
+1. Ouvrir le document "NDA ACME"
+2. Cliquer sur la clause de confidentialité pour la déplier
+3. Cliquer sur "Voir les clauses similaires"
+4. Le panneau affiche les clauses sémantiquement les plus proches dans les autres documents du workspace, avec leur score de similarité
+
+### Scénario 3 — Création d'une analyse en NL (V2 — NL)
+
+1. Sur la page workspace, cliquer "Nouvelle analyse"
+2. Dans le champ NL en haut, taper "Compare le NDA ACME avec notre NDA standard"
+3. Cliquer "Lancer" — le wizard saute à l'étape de confirmation pré-remplie
+4. Valider, l'analyse se lance
+
+## Modes LLM
+
+Par défaut `USE_MOCK_LLM=true` : toutes les opérations utilisent un mock provider qui retourne des résultats plausibles mais codés en dur. Permet de démontrer toute l'UI sans coût ni clé API.
+
+Pour activer Claude réel, dans `server/.env` :
+
+```
+USE_MOCK_LLM=false
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Embeddings
 
-## Running unit tests
+Le service d'embeddings utilise `@xenova/transformers` qui fait tourner un modèle ML directement dans Node.js. La première fois que le serveur ou le seed s'exécute, le modèle (`Xenova/multilingual-e5-small`, ~120 Mo) est téléchargé puis mis en cache localement (`server/.cache/transformers/`). Les exécutions suivantes sont instantanées.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Liens
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [DECISIONS.md](./DECISIONS.md) — décisions de conception et écarts vs cadrage
+- [server/README.md](./server/README.md) — détails du backend

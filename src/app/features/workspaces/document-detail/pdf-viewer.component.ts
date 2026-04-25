@@ -120,7 +120,6 @@ export class PdfViewerComponent implements OnChanges, OnDestroy {
     this.renderTask = page.render({
       canvasContext: canvas.getContext('2d')!,
       viewport,
-      canvas,
     });
     await this.renderTask.promise;
   }
