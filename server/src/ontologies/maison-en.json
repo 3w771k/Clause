@@ -1,0 +1,3459 @@
+{
+  "version": "1.0",
+  "language": "en",
+  "clauseTypes": [
+    {
+      "id": "PARTIES",
+      "name": "Parties to the agreement",
+      "category": "Identification and parties",
+      "attributes": [
+        {
+          "key": "nb_parties",
+          "label": "Number of parties",
+          "type": "number",
+          "required": false,
+          "description": "Total number of contracting parties"
+        },
+        {
+          "key": "designations",
+          "label": "Designations used",
+          "type": "string",
+          "required": false,
+          "description": "Terms used to refer to the parties (Client, Supplier, Lessor, etc.)"
+        },
+        {
+          "key": "legal_forms",
+          "label": "Legal forms",
+          "type": "string",
+          "required": false,
+          "description": "Legal forms of the parties (LLC, Inc., Ltd., individual, etc.)"
+        },
+        {
+          "key": "individual_party_present",
+          "label": "Individual party present",
+          "type": "boolean",
+          "required": false,
+          "description": "At least one party is a natural person"
+        },
+        {
+          "key": "joint_and_several_liability",
+          "label": "Joint and several liability",
+          "type": "boolean",
+          "required": false,
+          "description": "Parties are jointly and severally liable (versus several only)"
+        }
+      ]
+    },
+    {
+      "id": "SIGNATAIRES",
+      "name": "Signatories and representation",
+      "category": "Identification and parties",
+      "attributes": [
+        {
+          "key": "nb_signatories",
+          "label": "Number of signatories",
+          "type": "number",
+          "required": false,
+          "description": "Total number of signatories"
+        },
+        {
+          "key": "capacities",
+          "label": "Capacities of signatories",
+          "type": "string",
+          "required": false,
+          "description": "Roles or capacities of the signatories (CEO, Director, attorney-in-fact, etc.)"
+        },
+        {
+          "key": "power_of_attorney",
+          "label": "Power of attorney mentioned",
+          "type": "boolean",
+          "required": false,
+          "description": "An express power of attorney is referenced"
+        },
+        {
+          "key": "electronic_signature",
+          "label": "Electronic signature",
+          "type": "boolean",
+          "required": false,
+          "description": "Electronic signature is contemplated"
+        },
+        {
+          "key": "counterparts",
+          "label": "Execution in counterparts",
+          "type": "boolean",
+          "required": false,
+          "description": "Agreement may be executed in counterparts"
+        }
+      ]
+    },
+    {
+      "id": "PREAMBULE",
+      "name": "Recitals / Preamble",
+      "category": "Identification and parties",
+      "attributes": [
+        {
+          "key": "recitals_present",
+          "label": "Recitals present",
+          "type": "boolean",
+          "required": false,
+          "description": "The agreement contains recitals (whereas clauses)"
+        },
+        {
+          "key": "contractual_value",
+          "label": "Contractual value",
+          "type": "enum",
+          "values": ["BINDING", "INFORMATIONAL", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Legal weight given to the recitals"
+        },
+        {
+          "key": "commercial_objectives",
+          "label": "Commercial objectives mentioned",
+          "type": "string",
+          "required": false,
+          "description": "Summary of commercial or strategic objectives stated"
+        }
+      ]
+    },
+    {
+      "id": "DOMICILIATION",
+      "name": "Address for service",
+      "category": "Identification and parties",
+      "attributes": [
+        {
+          "key": "registered_office_stated",
+          "label": "Registered office stated",
+          "type": "boolean",
+          "required": false,
+          "description": "Each party's registered office is stated"
+        },
+        {
+          "key": "service_address_elected",
+          "label": "Service address elected",
+          "type": "boolean",
+          "required": false,
+          "description": "A specific address for service of notices is elected"
+        },
+        {
+          "key": "elected_address",
+          "label": "Elected address for service",
+          "type": "string",
+          "required": false,
+          "description": "Address designated for service of notices"
+        }
+      ]
+    },
+    {
+      "id": "OBJET",
+      "name": "Purpose / Subject matter",
+      "category": "Scope and definitions",
+      "attributes": [
+        {
+          "key": "nature",
+          "label": "Nature of engagement",
+          "type": "enum",
+          "values": ["SERVICE_PROVISION", "SALE_OF_GOODS", "SOFTWARE_LICENSE", "SAAS", "DISTRIBUTION", "CONFIDENTIALITY", "ASSIGNMENT_OF_RIGHTS", "DATA_PROCESSING", "MIXED", "OTHER"],
+          "required": false,
+          "description": "Primary category of the contractual purpose"
+        },
+        {
+          "key": "description",
+          "label": "Description of subject matter",
+          "type": "string",
+          "required": true,
+          "description": "Summary of the contract's subject matter"
+        },
+        {
+          "key": "geographic_scope",
+          "label": "Geographic scope",
+          "type": "string",
+          "required": false,
+          "description": "Geographic areas covered by the subject matter"
+        },
+        {
+          "key": "exclusions",
+          "label": "Exclusions",
+          "type": "string",
+          "required": false,
+          "description": "Items expressly excluded from scope"
+        }
+      ]
+    },
+    {
+      "id": "DEFINITIONS_GENERALES",
+      "name": "Definitions",
+      "category": "Scope and definitions",
+      "attributes": [
+        {
+          "key": "definitions_section_present",
+          "label": "Definitions section present",
+          "type": "boolean",
+          "required": false,
+          "description": "A dedicated definitions section is present"
+        },
+        {
+          "key": "nb_defined_terms",
+          "label": "Number of defined terms",
+          "type": "number",
+          "required": false,
+          "description": "Number of terms with a formal definition"
+        },
+        {
+          "key": "key_defined_terms",
+          "label": "Key defined terms",
+          "type": "string",
+          "required": false,
+          "description": "List of the main defined terms"
+        },
+        {
+          "key": "interpretation_rule",
+          "label": "Interpretation rule",
+          "type": "string",
+          "required": false,
+          "description": "Express interpretation rule (e.g., capitalized terms have defined meanings)"
+        }
+      ]
+    },
+    {
+      "id": "PERIMETRE_APPLICATION",
+      "name": "Scope of application",
+      "category": "Scope and definitions",
+      "attributes": [
+        {
+          "key": "covered_entities",
+          "label": "Covered entities",
+          "type": "string",
+          "required": false,
+          "description": "Companies, subsidiaries, branches covered"
+        },
+        {
+          "key": "extends_to_group",
+          "label": "Extends to group",
+          "type": "boolean",
+          "required": false,
+          "description": "Agreement extends to group companies"
+        },
+        {
+          "key": "affiliate_definition",
+          "label": "Affiliate / group definition",
+          "type": "string",
+          "required": false,
+          "description": "Definition retained for affiliates or group"
+        },
+        {
+          "key": "covered_products_services",
+          "label": "Covered products and services",
+          "type": "string",
+          "required": false,
+          "description": "Products or services in scope"
+        }
+      ]
+    },
+    {
+      "id": "TERRITOIRE",
+      "name": "Territory",
+      "category": "Scope and definitions",
+      "attributes": [
+        {
+          "key": "territory_type",
+          "label": "Territory type",
+          "type": "enum",
+          "values": ["WORLDWIDE", "CONTINENTAL", "MULTI_COUNTRY", "NATIONAL", "REGIONAL", "LOCAL"],
+          "required": false,
+          "description": "Geographic extent of the territory"
+        },
+        {
+          "key": "included_countries",
+          "label": "Included countries or zones",
+          "type": "string",
+          "required": false,
+          "description": "List of countries or geographic zones included"
+        },
+        {
+          "key": "excluded_countries",
+          "label": "Excluded countries or zones",
+          "type": "string",
+          "required": false,
+          "description": "List of countries or zones expressly excluded"
+        },
+        {
+          "key": "territory_modifiable",
+          "label": "Territory modifiable",
+          "type": "boolean",
+          "required": false,
+          "description": "Territory may be amended during the term"
+        }
+      ]
+    },
+    {
+      "id": "ANNEXES",
+      "name": "Schedules and exhibits",
+      "category": "Scope and definitions",
+      "attributes": [
+        {
+          "key": "nb_schedules",
+          "label": "Number of schedules",
+          "type": "number",
+          "required": false,
+          "description": "Total number of schedules or exhibits"
+        },
+        {
+          "key": "schedules_list",
+          "label": "List of schedules",
+          "type": "string",
+          "required": false,
+          "description": "Enumeration of schedules (titles or subjects)"
+        },
+        {
+          "key": "legal_status",
+          "label": "Legal status",
+          "type": "enum",
+          "values": ["INTEGRAL_PART", "INFORMATIONAL", "BODY_PREVAILS", "SCHEDULES_PREVAIL", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Status of schedules relative to the body"
+        },
+        {
+          "key": "order_of_precedence",
+          "label": "Order of precedence",
+          "type": "string",
+          "required": false,
+          "description": "Hierarchy in case of conflict between body and schedules"
+        }
+      ]
+    },
+    {
+      "id": "PRIX_REMUNERATION",
+      "name": "Price and consideration",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "pricing_structure",
+          "label": "Pricing structure",
+          "type": "enum",
+          "values": ["FIXED_FEE", "TIME_AND_MATERIALS", "SUBSCRIPTION", "USAGE_BASED", "MIXED", "FREE", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Pricing model retained"
+        },
+        {
+          "key": "total_amount",
+          "label": "Total amount",
+          "type": "number",
+          "required": false,
+          "description": "Total contract value in absolute terms"
+        },
+        {
+          "key": "currency",
+          "label": "Currency",
+          "type": "string",
+          "required": false,
+          "description": "Currency used (EUR, USD, GBP, etc.)"
+        },
+        {
+          "key": "tax_treatment",
+          "label": "Tax treatment",
+          "type": "enum",
+          "values": ["EXCLUDING_TAX", "INCLUDING_TAX", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Whether prices are stated excluding or including applicable taxes"
+        },
+        {
+          "key": "fees_included",
+          "label": "Fees included",
+          "type": "string",
+          "required": false,
+          "description": "Fees included in price (travel, lodging, etc.)"
+        },
+        {
+          "key": "fees_excluded",
+          "label": "Fees excluded",
+          "type": "string",
+          "required": false,
+          "description": "Fees rechargeable in addition to price"
+        }
+      ]
+    },
+    {
+      "id": "MODALITES_PAIEMENT",
+      "name": "Payment terms",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "payment_term_days",
+          "label": "Payment term (days)",
+          "type": "number",
+          "required": false,
+          "description": "Payment due period from invoicing, in days"
+        },
+        {
+          "key": "term_starting_point",
+          "label": "Starting point of payment term",
+          "type": "enum",
+          "values": ["INVOICE_ISSUE", "INVOICE_RECEIPT", "MONTH_END", "SERVICE_DATE", "OTHER"],
+          "required": false,
+          "description": "Triggering event for the payment term"
+        },
+        {
+          "key": "invoicing_frequency",
+          "label": "Invoicing frequency",
+          "type": "enum",
+          "values": ["ONE_TIME", "MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "MILESTONE", "OTHER"],
+          "required": false,
+          "description": "Frequency of invoice issuance"
+        },
+        {
+          "key": "payment_method",
+          "label": "Payment method",
+          "type": "enum",
+          "values": ["BANK_TRANSFER", "CHECK", "DIRECT_DEBIT", "CARD", "OTHER"],
+          "required": false,
+          "description": "Accepted or required payment method"
+        },
+        {
+          "key": "deposit_percentage",
+          "label": "Deposit (%)",
+          "type": "number",
+          "required": false,
+          "description": "Percentage required as deposit"
+        },
+        {
+          "key": "milestone_schedule",
+          "label": "Payment schedule or milestones",
+          "type": "string",
+          "required": false,
+          "description": "Description of payment schedule or milestones"
+        }
+      ]
+    },
+    {
+      "id": "REVISION_PRIX",
+      "name": "Price revision",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "revision_provided",
+          "label": "Price revision provided",
+          "type": "boolean",
+          "required": false,
+          "description": "A price revision clause is included"
+        },
+        {
+          "key": "revision_type",
+          "label": "Type of revision",
+          "type": "enum",
+          "values": ["INDEXATION", "FIXED_INCREASE", "NEGOTIATION", "OTHER"],
+          "required": false,
+          "description": "Revision mechanism retained"
+        },
+        {
+          "key": "reference_index",
+          "label": "Reference index",
+          "type": "string",
+          "required": false,
+          "description": "Index used for indexation (CPI, Syntec, ONS, etc.)"
+        },
+        {
+          "key": "revision_frequency",
+          "label": "Revision frequency",
+          "type": "enum",
+          "values": ["ANNUAL", "BIANNUAL", "TRIENNIAL", "AD_HOC", "OTHER"],
+          "required": false,
+          "description": "Revision periodicity"
+        },
+        {
+          "key": "revision_cap",
+          "label": "Revision cap (%)",
+          "type": "number",
+          "required": false,
+          "description": "Maximum percentage increase per revision"
+        }
+      ]
+    },
+    {
+      "id": "PENALITES_RETARD_PAIEMENT",
+      "name": "Late payment penalties",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "penalty_rate",
+          "label": "Penalty rate",
+          "type": "string",
+          "required": false,
+          "description": "Applicable rate (e.g., 3x statutory rate, ECB+10pts, 1.5% per month)"
+        },
+        {
+          "key": "fixed_recovery_indemnity",
+          "label": "Fixed recovery indemnity",
+          "type": "number",
+          "required": false,
+          "description": "Fixed indemnity amount (€40 statutory in France; varies elsewhere)"
+        },
+        {
+          "key": "automatic_application",
+          "label": "Automatic application",
+          "type": "boolean",
+          "required": false,
+          "description": "Penalties accrue without notice or formal demand"
+        },
+        {
+          "key": "right_to_suspend",
+          "label": "Right to suspend services",
+          "type": "boolean",
+          "required": false,
+          "description": "Right to suspend performance upon late payment"
+        }
+      ]
+    },
+    {
+      "id": "FACTURATION",
+      "name": "Invoicing",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "invoice_format",
+          "label": "Invoice format",
+          "type": "enum",
+          "values": ["PAPER", "ELECTRONIC", "DEDICATED_PORTAL", "EDI", "OTHER"],
+          "required": false,
+          "description": "Required format for invoices"
+        },
+        {
+          "key": "required_references",
+          "label": "Required references on invoice",
+          "type": "string",
+          "required": false,
+          "description": "Required references (PO number, project code, etc.)"
+        },
+        {
+          "key": "invoice_recipient",
+          "label": "Invoice recipient",
+          "type": "string",
+          "required": false,
+          "description": "Recipient department or person"
+        },
+        {
+          "key": "dispute_period_days",
+          "label": "Dispute period (days)",
+          "type": "number",
+          "required": false,
+          "description": "Period to dispute an invoice, in days"
+        }
+      ]
+    },
+    {
+      "id": "TVA_FISCALITE",
+      "name": "VAT and taxes",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "vat_regime",
+          "label": "VAT / sales tax regime",
+          "type": "enum",
+          "values": ["DOMESTIC", "INTRA_EU", "EXPORT", "REVERSE_CHARGE", "EXEMPT", "OTHER"],
+          "required": false,
+          "description": "Applicable VAT or sales tax regime"
+        },
+        {
+          "key": "vat_rate",
+          "label": "VAT / tax rate",
+          "type": "string",
+          "required": false,
+          "description": "Applicable rate (20%, 10%, 7%, etc.)"
+        },
+        {
+          "key": "withholding_tax",
+          "label": "Withholding tax applicable",
+          "type": "boolean",
+          "required": false,
+          "description": "Withholding tax may apply"
+        },
+        {
+          "key": "gross_up",
+          "label": "Gross-up clause",
+          "type": "boolean",
+          "required": false,
+          "description": "Payer must gross up to neutralize withholding"
+        }
+      ]
+    },
+    {
+      "id": "DEVISE",
+      "name": "Currency",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "primary_currency",
+          "label": "Primary currency",
+          "type": "string",
+          "required": false,
+          "description": "ISO code of primary currency (EUR, USD, etc.)"
+        },
+        {
+          "key": "multi_currency",
+          "label": "Multi-currency contract",
+          "type": "boolean",
+          "required": false,
+          "description": "Multiple currencies are used"
+        },
+        {
+          "key": "fx_risk_allocation",
+          "label": "FX risk allocation",
+          "type": "string",
+          "required": false,
+          "description": "Party bearing FX risk"
+        }
+      ]
+    },
+    {
+      "id": "GARANTIE_FINANCIERE",
+      "name": "Financial guarantee",
+      "category": "Commercial terms",
+      "attributes": [
+        {
+          "key": "guarantee_type",
+          "label": "Type of guarantee",
+          "type": "enum",
+          "values": ["BANK_GUARANTEE", "CASH_DEPOSIT", "PARENT_GUARANTEE", "RETENTION", "NONE"],
+          "required": false,
+          "description": "Nature of the financial guarantee required"
+        },
+        {
+          "key": "guarantee_amount",
+          "label": "Amount or percentage",
+          "type": "string",
+          "required": false,
+          "description": "Absolute amount or percentage of contract guaranteed"
+        },
+        {
+          "key": "guarantee_duration",
+          "label": "Duration",
+          "type": "string",
+          "required": false,
+          "description": "Period during which the guarantee remains callable"
+        },
+        {
+          "key": "call_conditions",
+          "label": "Call conditions",
+          "type": "string",
+          "required": false,
+          "description": "Cases and formalities for calling the guarantee"
+        }
+      ]
+    },
+    {
+      "id": "DUREE_CONTRAT",
+      "name": "Term",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "term_type",
+          "label": "Type of term",
+          "type": "enum",
+          "values": ["FIXED_TERM", "INDEFINITE", "FIXED_PLUS_RENEWAL"],
+          "required": false,
+          "description": "Nature of the contract term"
+        },
+        {
+          "key": "initial_term",
+          "label": "Initial term",
+          "type": "string",
+          "required": false,
+          "description": "Initial term as expressed (e.g., 3 years, 12 months)"
+        },
+        {
+          "key": "start_date",
+          "label": "Start date",
+          "type": "date",
+          "required": false,
+          "description": "Effective start date"
+        },
+        {
+          "key": "end_date",
+          "label": "End date",
+          "type": "date",
+          "required": false,
+          "description": "End date if fixed-term"
+        }
+      ]
+    },
+    {
+      "id": "ENTREE_VIGUEUR",
+      "name": "Effective date",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "trigger_event",
+          "label": "Trigger event",
+          "type": "enum",
+          "values": ["SIGNATURE", "FIXED_DATE", "CONDITIONS_PRECEDENT", "DEPOSIT_PAYMENT", "OTHER"],
+          "required": false,
+          "description": "Event triggering effectiveness"
+        },
+        {
+          "key": "effective_date",
+          "label": "Effective date",
+          "type": "date",
+          "required": false,
+          "description": "Effective date if fixed"
+        },
+        {
+          "key": "conditions_precedent",
+          "label": "Conditions precedent",
+          "type": "string",
+          "required": false,
+          "description": "Conditions precedent to effectiveness"
+        },
+        {
+          "key": "retroactive_effect",
+          "label": "Retroactive effect",
+          "type": "boolean",
+          "required": false,
+          "description": "Agreement has retroactive effect"
+        }
+      ]
+    },
+    {
+      "id": "RENOUVELLEMENT",
+      "name": "Renewal",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "renewal_type",
+          "label": "Renewal type",
+          "type": "enum",
+          "values": ["AUTO_RENEWAL", "EXPRESS_RENEWAL", "NONE", "ON_NOTICE"],
+          "required": false,
+          "description": "Renewal mechanism"
+        },
+        {
+          "key": "renewal_period",
+          "label": "Renewal period",
+          "type": "string",
+          "required": false,
+          "description": "Length of each renewal period"
+        },
+        {
+          "key": "non_renewal_notice",
+          "label": "Non-renewal notice period",
+          "type": "string",
+          "required": false,
+          "description": "Notice period to opt out of renewal"
+        },
+        {
+          "key": "max_renewals",
+          "label": "Maximum number of renewals",
+          "type": "number",
+          "required": false,
+          "description": "Cap on the number of renewals"
+        }
+      ]
+    },
+    {
+      "id": "DUREE_RESILIATION",
+      "name": "Term and termination (general)",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "termination_modes",
+          "label": "Available termination modes",
+          "type": "string",
+          "required": false,
+          "description": "Enumeration of termination modes (cause, convenience, etc.)"
+        },
+        {
+          "key": "general_notice",
+          "label": "General notice period",
+          "type": "string",
+          "required": false,
+          "description": "General termination notice period if any"
+        },
+        {
+          "key": "formality",
+          "label": "Formality required",
+          "type": "enum",
+          "values": ["CERTIFIED_MAIL", "EMAIL", "WRITTEN_FREE_FORM", "BAILIFF_LRAR", "OTHER"],
+          "required": false,
+          "description": "Required formality for termination notice"
+        },
+        {
+          "key": "termination_indemnity",
+          "label": "Termination indemnity",
+          "type": "boolean",
+          "required": false,
+          "description": "An indemnity is due upon termination"
+        }
+      ]
+    },
+    {
+      "id": "RESILIATION_FAUTE",
+      "name": "Termination for cause / breach",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "notice_required",
+          "label": "Notice / cure required",
+          "type": "boolean",
+          "required": false,
+          "description": "Prior notice or formal demand is required"
+        },
+        {
+          "key": "cure_period",
+          "label": "Cure period",
+          "type": "string",
+          "required": false,
+          "description": "Period granted to remedy the breach"
+        },
+        {
+          "key": "listed_breaches",
+          "label": "Listed material breaches",
+          "type": "string",
+          "required": false,
+          "description": "List of breaches triggering termination"
+        },
+        {
+          "key": "automatic_termination",
+          "label": "Automatic termination",
+          "type": "boolean",
+          "required": false,
+          "description": "Termination occurs automatically without judicial intervention"
+        },
+        {
+          "key": "damages_provided",
+          "label": "Damages provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Damages are provided in addition to termination"
+        }
+      ]
+    },
+    {
+      "id": "RESILIATION_CONVENANCE",
+      "name": "Termination for convenience",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "convenience_termination_provided",
+          "label": "Termination for convenience provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Discretionary termination is permitted"
+        },
+        {
+          "key": "entitled_parties",
+          "label": "Entitled parties",
+          "type": "enum",
+          "values": ["CUSTOMER_ONLY", "SUPPLIER_ONLY", "BOTH", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Parties entitled to terminate for convenience"
+        },
+        {
+          "key": "notice_period",
+          "label": "Notice period",
+          "type": "string",
+          "required": false,
+          "description": "Required notice period"
+        },
+        {
+          "key": "indemnity_payable",
+          "label": "Indemnity payable",
+          "type": "string",
+          "required": false,
+          "description": "Indemnity payable upon convenience termination"
+        }
+      ]
+    },
+    {
+      "id": "RESILIATION_INSOLVABILITE",
+      "name": "Termination for insolvency",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "trigger_events",
+          "label": "Trigger events",
+          "type": "string",
+          "required": false,
+          "description": "Events triggering termination (bankruptcy, liquidation, insolvency, etc.)"
+        },
+        {
+          "key": "automatic",
+          "label": "Automatic termination",
+          "type": "boolean",
+          "required": false,
+          "description": "Termination is automatic upon occurrence"
+        },
+        {
+          "key": "ipso_facto_safe_harbor",
+          "label": "Ipso facto / French L.622-13 compliance",
+          "type": "boolean",
+          "required": false,
+          "description": "Clause respects insolvency law constraints (e.g., FR Code de commerce L.622-13, US Bankruptcy Code §365)"
+        }
+      ]
+    },
+    {
+      "id": "EFFETS_RESILIATION",
+      "name": "Effects of termination",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "residual_obligations",
+          "label": "Residual obligations",
+          "type": "string",
+          "required": false,
+          "description": "Obligations surviving termination"
+        },
+        {
+          "key": "return_of_documents",
+          "label": "Return of documents",
+          "type": "boolean",
+          "required": false,
+          "description": "Return or destruction of documents required"
+        },
+        {
+          "key": "transition_period",
+          "label": "Transition / reversibility period",
+          "type": "string",
+          "required": false,
+          "description": "Period to ensure transition or reversibility"
+        },
+        {
+          "key": "payment_for_completed_work",
+          "label": "Payment for completed work",
+          "type": "string",
+          "required": false,
+          "description": "Treatment of payment for work already performed"
+        }
+      ]
+    },
+    {
+      "id": "SURVIVANCE",
+      "name": "Survival",
+      "category": "Term and termination",
+      "attributes": [
+        {
+          "key": "surviving_clauses",
+          "label": "Surviving clauses",
+          "type": "string",
+          "required": false,
+          "description": "List or categories of clauses surviving termination"
+        },
+        {
+          "key": "survival_period",
+          "label": "Survival period",
+          "type": "string",
+          "required": false,
+          "description": "Duration of survival for the relevant clauses"
+        },
+        {
+          "key": "indefinite_survival",
+          "label": "Indefinite survival",
+          "type": "boolean",
+          "required": false,
+          "description": "Some clauses survive indefinitely"
+        }
+      ]
+    },
+    {
+      "id": "OBLIGATIONS_PRESTATAIRE",
+      "name": "Supplier obligations",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "obligation_nature",
+          "label": "Nature of obligation",
+          "type": "enum",
+          "values": ["MEANS", "RESULT", "MIXED", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Civil law qualification of the principal obligation (means vs result)"
+        },
+        {
+          "key": "efforts_standard",
+          "label": "Efforts standard",
+          "type": "enum",
+          "values": ["BEST_EFFORTS", "COMMERCIALLY_REASONABLE_EFFORTS", "REASONABLE_EFFORTS", "GOOD_FAITH_EFFORTS", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Common law efforts standard expressed"
+        },
+        {
+          "key": "principal_obligations",
+          "label": "Principal obligations",
+          "type": "string",
+          "required": false,
+          "description": "Summary of supplier's principal obligations"
+        },
+        {
+          "key": "duty_to_advise",
+          "label": "Duty to advise",
+          "type": "boolean",
+          "required": false,
+          "description": "Express duty to advise or warn"
+        },
+        {
+          "key": "duty_to_cooperate",
+          "label": "Duty to cooperate",
+          "type": "boolean",
+          "required": false,
+          "description": "Express duty to cooperate"
+        },
+        {
+          "key": "required_resources",
+          "label": "Required human and technical resources",
+          "type": "string",
+          "required": false,
+          "description": "Required human, technical or organizational resources"
+        }
+      ]
+    },
+    {
+      "id": "OBLIGATIONS_CLIENT",
+      "name": "Customer obligations",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "principal_obligations",
+          "label": "Principal obligations",
+          "type": "string",
+          "required": false,
+          "description": "Summary of customer's principal obligations"
+        },
+        {
+          "key": "duty_to_cooperate",
+          "label": "Duty to cooperate",
+          "type": "boolean",
+          "required": false,
+          "description": "Express duty to cooperate"
+        },
+        {
+          "key": "information_supply",
+          "label": "Information supply",
+          "type": "string",
+          "required": false,
+          "description": "Information or resources customer must provide"
+        },
+        {
+          "key": "designated_representative",
+          "label": "Designated representative",
+          "type": "boolean",
+          "required": false,
+          "description": "Customer must designate a point of contact"
+        },
+        {
+          "key": "follow_recommendations",
+          "label": "Follow supplier recommendations",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to follow supplier's recommendations"
+        }
+      ]
+    },
+    {
+      "id": "LIVRABLES",
+      "name": "Deliverables",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "deliverables_list",
+          "label": "List of deliverables",
+          "type": "string",
+          "required": false,
+          "description": "Enumeration of expected deliverables"
+        },
+        {
+          "key": "deliverables_format",
+          "label": "Format of deliverables",
+          "type": "string",
+          "required": false,
+          "description": "Required format or medium for each deliverable"
+        },
+        {
+          "key": "delivery_method",
+          "label": "Delivery method",
+          "type": "enum",
+          "values": ["PHYSICAL", "ELECTRONIC", "PORTAL", "DEPOSIT", "OTHER"],
+          "required": false,
+          "description": "Method of delivery"
+        },
+        {
+          "key": "delivery_dates",
+          "label": "Delivery dates",
+          "type": "string",
+          "required": false,
+          "description": "Schedule of delivery"
+        }
+      ]
+    },
+    {
+      "id": "DELAIS_LIVRAISON",
+      "name": "Delivery and performance deadlines",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "overall_deadline",
+          "label": "Overall deadline",
+          "type": "string",
+          "required": false,
+          "description": "Overall deadline for performance"
+        },
+        {
+          "key": "milestones",
+          "label": "Intermediate milestones",
+          "type": "string",
+          "required": false,
+          "description": "Defined intermediate milestones"
+        },
+        {
+          "key": "time_of_the_essence",
+          "label": "Time is of the essence",
+          "type": "boolean",
+          "required": false,
+          "description": "Deadlines are expressly of the essence (firm)"
+        },
+        {
+          "key": "late_delivery_penalties",
+          "label": "Late delivery penalties",
+          "type": "string",
+          "required": false,
+          "description": "Penalties for late delivery"
+        },
+        {
+          "key": "liquidated_damages",
+          "label": "Liquidated damages qualifier",
+          "type": "boolean",
+          "required": false,
+          "description": "Penalties expressly qualified as liquidated damages (not penalty)"
+        }
+      ]
+    },
+    {
+      "id": "RECETTE_ACCEPTATION",
+      "name": "Acceptance",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "acceptance_procedure",
+          "label": "Acceptance procedure",
+          "type": "boolean",
+          "required": false,
+          "description": "A formal acceptance procedure is provided"
+        },
+        {
+          "key": "acceptance_period_days",
+          "label": "Acceptance period (days)",
+          "type": "number",
+          "required": false,
+          "description": "Period granted to customer to accept"
+        },
+        {
+          "key": "deemed_acceptance",
+          "label": "Deemed acceptance",
+          "type": "boolean",
+          "required": false,
+          "description": "Silence constitutes acceptance"
+        },
+        {
+          "key": "acceptance_criteria",
+          "label": "Acceptance criteria",
+          "type": "string",
+          "required": false,
+          "description": "Acceptance criteria or test plan referenced"
+        },
+        {
+          "key": "defects_classified",
+          "label": "Classification of defects",
+          "type": "boolean",
+          "required": false,
+          "description": "Defects are classified (blocking, major, minor)"
+        }
+      ]
+    },
+    {
+      "id": "SLA_NIVEAU_SERVICE",
+      "name": "Service level agreement (SLA)",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "sla_defined",
+          "label": "SLA defined",
+          "type": "boolean",
+          "required": false,
+          "description": "Service level commitments are defined"
+        },
+        {
+          "key": "uptime_percentage",
+          "label": "Uptime percentage",
+          "type": "number",
+          "required": false,
+          "description": "Required uptime percentage"
+        },
+        {
+          "key": "time_to_repair",
+          "label": "Guaranteed time to repair",
+          "type": "string",
+          "required": false,
+          "description": "Guaranteed time to repair / restore"
+        },
+        {
+          "key": "time_to_respond",
+          "label": "Guaranteed time to respond",
+          "type": "string",
+          "required": false,
+          "description": "Guaranteed response / intervention time"
+        },
+        {
+          "key": "sla_credits",
+          "label": "SLA credits / penalties",
+          "type": "string",
+          "required": false,
+          "description": "Service credit or penalty mechanism for SLA breaches"
+        },
+        {
+          "key": "service_hours",
+          "label": "Service hours",
+          "type": "string",
+          "required": false,
+          "description": "Covered service hours (24/7, business hours, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "REVERSIBILITE",
+      "name": "Reversibility / Exit assistance",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "reversibility_provided",
+          "label": "Reversibility provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Reversibility / exit assistance obligation is provided"
+        },
+        {
+          "key": "reversibility_duration",
+          "label": "Duration of reversibility",
+          "type": "string",
+          "required": false,
+          "description": "Period over which reversibility applies"
+        },
+        {
+          "key": "data_scope",
+          "label": "Scope of data",
+          "type": "string",
+          "required": false,
+          "description": "Data and formats returned during reversibility"
+        },
+        {
+          "key": "reversibility_pricing",
+          "label": "Pricing",
+          "type": "enum",
+          "values": ["FREE", "FIXED_FEE", "TIME_AND_MATERIALS", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Pricing model for reversibility services"
+        }
+      ]
+    },
+    {
+      "id": "MAINTENANCE_ASSISTANCE",
+      "name": "Maintenance and support",
+      "category": "Performance and delivery",
+      "attributes": [
+        {
+          "key": "maintenance_type",
+          "label": "Type of maintenance",
+          "type": "enum",
+          "values": ["CORRECTIVE", "EVOLUTIVE", "PREVENTIVE", "ADAPTIVE", "MIXED"],
+          "required": false,
+          "description": "Functional scope of maintenance"
+        },
+        {
+          "key": "support_hours",
+          "label": "Support hours",
+          "type": "string",
+          "required": false,
+          "description": "Support opening hours"
+        },
+        {
+          "key": "support_channels",
+          "label": "Support channels",
+          "type": "string",
+          "required": false,
+          "description": "Channels to contact support (phone, email, portal)"
+        },
+        {
+          "key": "maintenance_exclusions",
+          "label": "Maintenance exclusions",
+          "type": "string",
+          "required": false,
+          "description": "Cases not covered by maintenance"
+        }
+      ]
+    },
+    {
+      "id": "PROPRIETE_INTELLECTUELLE",
+      "name": "Intellectual property (general)",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "general_regime",
+          "label": "General regime",
+          "type": "enum",
+          "values": ["ASSIGNMENT", "LICENSE", "MIXED", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Overall mechanism for IP rights"
+        },
+        {
+          "key": "rights_scope",
+          "label": "Scope of rights",
+          "type": "string",
+          "required": false,
+          "description": "Rights covered (reproduction, distribution, adaptation, etc.)"
+        },
+        {
+          "key": "exclusive",
+          "label": "Exclusive",
+          "type": "boolean",
+          "required": false,
+          "description": "Rights transferred are exclusive"
+        },
+        {
+          "key": "specific_compensation",
+          "label": "Specific compensation",
+          "type": "boolean",
+          "required": false,
+          "description": "Specific compensation is provided for IP rights"
+        }
+      ]
+    },
+    {
+      "id": "TITULARITE_PI",
+      "name": "Ownership of work product",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "work_product_owner",
+          "label": "Owner of work product",
+          "type": "enum",
+          "values": ["CUSTOMER", "SUPPLIER", "JOINT", "CASE_BY_CASE"],
+          "required": false,
+          "description": "Party owning the work product"
+        },
+        {
+          "key": "transfer_trigger",
+          "label": "Transfer trigger",
+          "type": "enum",
+          "values": ["CREATION", "PAYMENT", "ACCEPTANCE", "TERMINATION", "OTHER"],
+          "required": false,
+          "description": "Event triggering transfer of ownership"
+        },
+        {
+          "key": "moral_rights",
+          "label": "Moral rights",
+          "type": "string",
+          "required": false,
+          "description": "Treatment of moral rights (waiver, attribution, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "LICENCE_DROITS_USAGE",
+      "name": "License / usage rights",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "license_type",
+          "label": "Type of license",
+          "type": "enum",
+          "values": ["EXCLUSIVE", "NON_EXCLUSIVE", "FREE", "PAID", "OPEN_SOURCE", "OTHER"],
+          "required": false,
+          "description": "Nature of the license granted"
+        },
+        {
+          "key": "license_duration",
+          "label": "Duration of license",
+          "type": "string",
+          "required": false,
+          "description": "License duration (term-bound, perpetual, etc.)"
+        },
+        {
+          "key": "license_territory",
+          "label": "Territory of license",
+          "type": "string",
+          "required": false,
+          "description": "Territory in which rights may be exercised"
+        },
+        {
+          "key": "rights_granted",
+          "label": "Rights granted",
+          "type": "string",
+          "required": false,
+          "description": "Specific rights granted (use, reproduce, modify, etc.)"
+        },
+        {
+          "key": "sublicensing_allowed",
+          "label": "Sublicensing allowed",
+          "type": "boolean",
+          "required": false,
+          "description": "Licensee may grant sublicenses"
+        }
+      ]
+    },
+    {
+      "id": "CESSION_DROITS",
+      "name": "Assignment of rights",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "rights_assigned",
+          "label": "Rights assigned",
+          "type": "string",
+          "required": false,
+          "description": "List of rights assigned (reproduction, performance, adaptation, etc.)"
+        },
+        {
+          "key": "assignment_duration",
+          "label": "Duration of assignment",
+          "type": "string",
+          "required": false,
+          "description": "Duration for which rights are assigned"
+        },
+        {
+          "key": "assignment_territory",
+          "label": "Territory of assignment",
+          "type": "string",
+          "required": false,
+          "description": "Territory covered by the assignment"
+        },
+        {
+          "key": "media_modes",
+          "label": "Media and modes of exploitation",
+          "type": "string",
+          "required": false,
+          "description": "Media and exploitation modes covered"
+        },
+        {
+          "key": "proportional_remuneration",
+          "label": "Proportional remuneration",
+          "type": "boolean",
+          "required": false,
+          "description": "Assignment is remunerated proportionally (relevant for FR copyright law)"
+        }
+      ]
+    },
+    {
+      "id": "CODE_SOURCE_ESCROW",
+      "name": "Source code escrow",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "escrow_provided",
+          "label": "Escrow provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Source code escrow is provided"
+        },
+        {
+          "key": "escrow_agent",
+          "label": "Escrow agent",
+          "type": "string",
+          "required": false,
+          "description": "Identity of the designated escrow agent"
+        },
+        {
+          "key": "release_events",
+          "label": "Release events",
+          "type": "string",
+          "required": false,
+          "description": "Events triggering release of the source code"
+        },
+        {
+          "key": "fees_allocation",
+          "label": "Allocation of fees",
+          "type": "string",
+          "required": false,
+          "description": "Party bearing escrow fees"
+        }
+      ]
+    },
+    {
+      "id": "DROITS_PREEXISTANTS",
+      "name": "Pre-existing rights / Background IP",
+      "category": "Intellectual property",
+      "attributes": [
+        {
+          "key": "background_identified",
+          "label": "Background IP identified",
+          "type": "boolean",
+          "required": false,
+          "description": "Pre-existing IP elements are identified"
+        },
+        {
+          "key": "background_regime",
+          "label": "Background regime",
+          "type": "enum",
+          "values": ["AUTOMATIC_LICENSE", "NO_TRANSFER", "ASSIGNMENT", "OTHER"],
+          "required": false,
+          "description": "Regime applied to background IP"
+        },
+        {
+          "key": "third_party_rights",
+          "label": "Third-party rights",
+          "type": "boolean",
+          "required": false,
+          "description": "Third-party rights are embedded in the deliverables"
+        },
+        {
+          "key": "quiet_enjoyment",
+          "label": "Quiet enjoyment warranty",
+          "type": "boolean",
+          "required": false,
+          "description": "Warranty of quiet enjoyment is provided"
+        }
+      ]
+    },
+    {
+      "id": "CONFIDENTIALITE",
+      "name": "Confidentiality (general)",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "mutual_undertaking",
+          "label": "Mutual undertaking",
+          "type": "boolean",
+          "required": false,
+          "description": "Undertaking is mutual (vs unilateral)"
+        },
+        {
+          "key": "general_scope",
+          "label": "General scope",
+          "type": "string",
+          "required": false,
+          "description": "General description of confidentiality scope"
+        },
+        {
+          "key": "separate_nda_referenced",
+          "label": "Separate NDA referenced",
+          "type": "boolean",
+          "required": false,
+          "description": "Clause refers to a separate non-disclosure agreement"
+        }
+      ]
+    },
+    {
+      "id": "DEFINITION_IC",
+      "name": "Definition of confidential information",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "definition_scope",
+          "label": "Scope of definition",
+          "type": "enum",
+          "values": ["BROAD_ANY_INFORMATION", "NARROW_MARKED_ONLY", "MIXED"],
+          "required": false,
+          "description": "Scope of the definition (broad vs limited to marked information)"
+        },
+        {
+          "key": "marking_required",
+          "label": "Marking required",
+          "type": "boolean",
+          "required": false,
+          "description": "Express marking is required to qualify as confidential"
+        },
+        {
+          "key": "oral_information_covered",
+          "label": "Oral information covered",
+          "type": "boolean",
+          "required": false,
+          "description": "Information disclosed orally is covered"
+        },
+        {
+          "key": "examples",
+          "label": "Examples of covered information",
+          "type": "string",
+          "required": false,
+          "description": "Examples or categories listed in the definition"
+        }
+      ]
+    },
+    {
+      "id": "OBLIGATIONS_CONFIDENTIALITE",
+      "name": "Confidentiality obligations",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "non_disclosure",
+          "label": "Non-disclosure",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation not to disclose to third parties"
+        },
+        {
+          "key": "non_use",
+          "label": "Non-use",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation not to use for purposes beyond those agreed"
+        },
+        {
+          "key": "authorized_persons",
+          "label": "Authorized persons (need-to-know)",
+          "type": "string",
+          "required": false,
+          "description": "Categories of persons who may access information (need-to-know basis)"
+        },
+        {
+          "key": "personnel_undertakings",
+          "label": "Personnel undertakings",
+          "type": "boolean",
+          "required": false,
+          "description": "Personnel must sign individual confidentiality undertakings"
+        },
+        {
+          "key": "standard_of_care",
+          "label": "Standard of care",
+          "type": "enum",
+          "values": ["SAME_AS_OWN", "REASONABLE_CARE", "HIGHEST_DEGREE_OF_CARE", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Required standard of care"
+        }
+      ]
+    },
+    {
+      "id": "EXCEPTIONS_CONFIDENTIALITE",
+      "name": "Exceptions to confidentiality",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "public_domain",
+          "label": "Public domain",
+          "type": "boolean",
+          "required": false,
+          "description": "Exception for information in the public domain"
+        },
+        {
+          "key": "independent_development",
+          "label": "Independent development",
+          "type": "boolean",
+          "required": false,
+          "description": "Exception for information independently developed"
+        },
+        {
+          "key": "third_party_legitimate",
+          "label": "Received from a legitimate third party",
+          "type": "boolean",
+          "required": false,
+          "description": "Exception for information lawfully obtained from a third party"
+        },
+        {
+          "key": "legal_obligation",
+          "label": "Legal or judicial obligation",
+          "type": "boolean",
+          "required": false,
+          "description": "Exception in case of legal or court-ordered disclosure"
+        },
+        {
+          "key": "notification_obligation",
+          "label": "Notification obligation",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to notify the other party of compelled disclosure"
+        }
+      ]
+    },
+    {
+      "id": "DUREE_CONFIDENTIALITE",
+      "name": "Duration of confidentiality",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "during_term",
+          "label": "During term",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation applies during the entire term"
+        },
+        {
+          "key": "post_termination",
+          "label": "Post-termination duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of post-termination obligation"
+        },
+        {
+          "key": "indefinite_duration",
+          "label": "Indefinite duration",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation has no time limit"
+        },
+        {
+          "key": "trade_secrets_specific_duration",
+          "label": "Trade secrets specific duration",
+          "type": "string",
+          "required": false,
+          "description": "Specific duration applicable to trade secrets (if distinct)"
+        }
+      ]
+    },
+    {
+      "id": "RETOUR_DESTRUCTION",
+      "name": "Return or destruction of information",
+      "category": "Confidentiality",
+      "attributes": [
+        {
+          "key": "return_required",
+          "label": "Return required",
+          "type": "boolean",
+          "required": false,
+          "description": "Information must be returned"
+        },
+        {
+          "key": "destruction_required",
+          "label": "Destruction required",
+          "type": "boolean",
+          "required": false,
+          "description": "Information must be destroyed"
+        },
+        {
+          "key": "choice_belongs_to",
+          "label": "Choice belongs to",
+          "type": "enum",
+          "values": ["DISCLOSING_PARTY", "RECEIVING_PARTY", "OTHER"],
+          "required": false,
+          "description": "Party entitled to choose between return and destruction"
+        },
+        {
+          "key": "execution_period",
+          "label": "Execution period",
+          "type": "string",
+          "required": false,
+          "description": "Period to perform return or destruction"
+        },
+        {
+          "key": "destruction_certificate",
+          "label": "Destruction certificate",
+          "type": "boolean",
+          "required": false,
+          "description": "A destruction certificate is required"
+        },
+        {
+          "key": "archival_exceptions",
+          "label": "Archival exceptions",
+          "type": "boolean",
+          "required": false,
+          "description": "Retention for legal obligations or archives is permitted"
+        }
+      ]
+    },
+    {
+      "id": "DONNEES_RGPD",
+      "name": "Personal data and GDPR (general)",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "gdpr_applicable",
+          "label": "GDPR applicable",
+          "type": "boolean",
+          "required": false,
+          "description": "GDPR is expressly contemplated"
+        },
+        {
+          "key": "data_categories",
+          "label": "Data categories",
+          "type": "string",
+          "required": false,
+          "description": "Categories of data processed (identification, HR, health, etc.)"
+        },
+        {
+          "key": "special_categories",
+          "label": "Special category data",
+          "type": "boolean",
+          "required": false,
+          "description": "Special category / sensitive data is processed"
+        },
+        {
+          "key": "data_subjects",
+          "label": "Categories of data subjects",
+          "type": "string",
+          "required": false,
+          "description": "Categories of data subjects (customers, employees, prospects, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "ROLE_RGPD",
+      "name": "Roles of the parties (GDPR)",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "party_a_role",
+          "label": "Role of party A",
+          "type": "enum",
+          "values": ["CONTROLLER", "PROCESSOR", "JOINT_CONTROLLER", "RECIPIENT", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "GDPR qualification of the first party"
+        },
+        {
+          "key": "party_b_role",
+          "label": "Role of party B",
+          "type": "enum",
+          "values": ["CONTROLLER", "PROCESSOR", "JOINT_CONTROLLER", "RECIPIENT", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "GDPR qualification of the second party"
+        },
+        {
+          "key": "separate_dpa",
+          "label": "Separate DPA",
+          "type": "boolean",
+          "required": false,
+          "description": "A separate Data Processing Agreement is referenced"
+        },
+        {
+          "key": "joint_controllership_arrangement",
+          "label": "Joint controllership arrangement",
+          "type": "string",
+          "required": false,
+          "description": "Description of allocation if joint controllers"
+        }
+      ]
+    },
+    {
+      "id": "FINALITES_TRAITEMENT",
+      "name": "Purposes and duration of processing",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "purposes",
+          "label": "Purposes",
+          "type": "string",
+          "required": false,
+          "description": "Purposes of processing as described"
+        },
+        {
+          "key": "legal_basis",
+          "label": "Legal basis",
+          "type": "enum",
+          "values": ["CONSENT", "CONTRACT", "LEGAL_OBLIGATION", "LEGITIMATE_INTERESTS", "PUBLIC_TASK", "VITAL_INTERESTS", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Legal basis for processing"
+        },
+        {
+          "key": "retention_period",
+          "label": "Retention period",
+          "type": "string",
+          "required": false,
+          "description": "Data retention period"
+        },
+        {
+          "key": "fate_after_processing",
+          "label": "Fate of data after processing",
+          "type": "enum",
+          "values": ["RETURN", "DESTRUCTION", "ANONYMIZATION", "CONTROLLER_CHOICE", "OTHER"],
+          "required": false,
+          "description": "Treatment of data at end of processing"
+        }
+      ]
+    },
+    {
+      "id": "SOUS_TRAITANCE_DONNEES",
+      "name": "Onward subprocessing (GDPR)",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "authorization_regime",
+          "label": "Authorization regime",
+          "type": "enum",
+          "values": ["GENERAL", "SPECIFIC", "PROHIBITED", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Regime for onward subprocessing"
+        },
+        {
+          "key": "subprocessor_list",
+          "label": "Subprocessor list",
+          "type": "boolean",
+          "required": false,
+          "description": "A list of onward subprocessors is appended"
+        },
+        {
+          "key": "advance_notice_period",
+          "label": "Advance notice period",
+          "type": "string",
+          "required": false,
+          "description": "Notice period before subprocessor change"
+        },
+        {
+          "key": "right_to_object",
+          "label": "Right to object",
+          "type": "boolean",
+          "required": false,
+          "description": "Controller may object to a subprocessor change"
+        },
+        {
+          "key": "back_to_back_obligations",
+          "label": "Back-to-back obligations",
+          "type": "boolean",
+          "required": false,
+          "description": "Processor must impose the same obligations on subprocessors"
+        }
+      ]
+    },
+    {
+      "id": "SECURITE_DONNEES",
+      "name": "Data security",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "technical_measures",
+          "label": "Technical measures",
+          "type": "string",
+          "required": false,
+          "description": "Technical measures described (encryption, pseudonymization, etc.)"
+        },
+        {
+          "key": "organizational_measures",
+          "label": "Organizational measures",
+          "type": "string",
+          "required": false,
+          "description": "Organizational measures described (access control, training, etc.)"
+        },
+        {
+          "key": "certifications",
+          "label": "Required certifications",
+          "type": "string",
+          "required": false,
+          "description": "Required certifications (ISO 27001, SOC 2, HDS, SecNumCloud, etc.)"
+        },
+        {
+          "key": "security_policy_referenced",
+          "label": "Security policy referenced",
+          "type": "boolean",
+          "required": false,
+          "description": "Clause refers to a security policy or dedicated annex"
+        }
+      ]
+    },
+    {
+      "id": "NOTIFICATION_VIOLATION",
+      "name": "Personal data breach notification",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "notification_required",
+          "label": "Notification required",
+          "type": "boolean",
+          "required": false,
+          "description": "Processor must notify any breach"
+        },
+        {
+          "key": "notification_period",
+          "label": "Notification period",
+          "type": "string",
+          "required": false,
+          "description": "Period to notify (without delay, 24h, 48h, 72h, etc.)"
+        },
+        {
+          "key": "notification_content",
+          "label": "Notification content",
+          "type": "string",
+          "required": false,
+          "description": "Information to be provided in the notification"
+        },
+        {
+          "key": "regulator_assistance",
+          "label": "Assistance with regulator notification",
+          "type": "boolean",
+          "required": false,
+          "description": "Processor assists controller in notifying the supervisory authority"
+        }
+      ]
+    },
+    {
+      "id": "TRANSFERTS_INTERNATIONAUX",
+      "name": "International data transfers",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "transfers_outside_eea",
+          "label": "Transfers outside EEA",
+          "type": "boolean",
+          "required": false,
+          "description": "Transfers outside the European Economic Area are contemplated"
+        },
+        {
+          "key": "destination_countries",
+          "label": "Destination countries",
+          "type": "string",
+          "required": false,
+          "description": "Countries to which data may be transferred"
+        },
+        {
+          "key": "transfer_mechanism",
+          "label": "Transfer mechanism",
+          "type": "enum",
+          "values": ["ADEQUACY_DECISION", "SCC_2021", "BCR", "DEROGATION", "OTHER", "NONE"],
+          "required": false,
+          "description": "Transfer mechanism used"
+        },
+        {
+          "key": "tia_required",
+          "label": "Transfer Impact Assessment",
+          "type": "boolean",
+          "required": false,
+          "description": "A TIA is referenced or required"
+        },
+        {
+          "key": "supplementary_measures",
+          "label": "Supplementary measures",
+          "type": "string",
+          "required": false,
+          "description": "Supplementary measures provided (encryption, EU hosting, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "DROIT_PERSONNES",
+      "name": "Data subject rights",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "rights_assistance",
+          "label": "Assistance with data subject rights",
+          "type": "boolean",
+          "required": false,
+          "description": "Processor assists controller with data subject requests"
+        },
+        {
+          "key": "transmission_period",
+          "label": "Transmission period",
+          "type": "string",
+          "required": false,
+          "description": "Period to forward requests to the controller"
+        },
+        {
+          "key": "no_direct_response",
+          "label": "No direct response",
+          "type": "boolean",
+          "required": false,
+          "description": "Processor may not respond directly to data subjects"
+        },
+        {
+          "key": "assistance_pricing",
+          "label": "Pricing of assistance",
+          "type": "enum",
+          "values": ["FREE", "CHARGEABLE", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Pricing model for the assistance"
+        }
+      ]
+    },
+    {
+      "id": "AUDIT_RGPD",
+      "name": "GDPR audit",
+      "category": "Personal data and GDPR",
+      "attributes": [
+        {
+          "key": "audit_right",
+          "label": "Audit right",
+          "type": "boolean",
+          "required": false,
+          "description": "A GDPR audit right is provided"
+        },
+        {
+          "key": "audit_frequency",
+          "label": "Audit frequency",
+          "type": "string",
+          "required": false,
+          "description": "Maximum or minimum audit frequency"
+        },
+        {
+          "key": "audit_notice",
+          "label": "Notice period",
+          "type": "string",
+          "required": false,
+          "description": "Notice required before audit"
+        },
+        {
+          "key": "auditor",
+          "label": "Auditor",
+          "type": "enum",
+          "values": ["CUSTOMER_INTERNAL", "INDEPENDENT_THIRD_PARTY", "CUSTOMER_CHOICE", "SUPPLIER_CHOICE", "OTHER"],
+          "required": false,
+          "description": "Person entitled to audit"
+        },
+        {
+          "key": "reports_certifications_accepted",
+          "label": "Reports or certifications accepted",
+          "type": "boolean",
+          "required": false,
+          "description": "Reports or certifications may substitute for an audit"
+        }
+      ]
+    },
+    {
+      "id": "LIMITATION_RESPONSABILITE",
+      "name": "Limitation of liability",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "cap_type",
+          "label": "Type of cap",
+          "type": "enum",
+          "values": ["AGGREGATE", "PER_CLAIM", "ANNUAL", "PER_OCCURRENCE", "MIXED"],
+          "required": false,
+          "description": "Nature of the liability cap"
+        },
+        {
+          "key": "cap_amount",
+          "label": "Cap in absolute value",
+          "type": "number",
+          "required": false,
+          "description": "Cap amount in absolute value"
+        },
+        {
+          "key": "cap_reference",
+          "label": "Cap reference",
+          "type": "enum",
+          "values": ["CONTRACT_PRICE", "ANNUAL_PRICE", "TRAILING_12_MONTHS", "AFFECTED_PRESTATION_PRICE", "ABSOLUTE_VALUE", "OTHER"],
+          "required": false,
+          "description": "Calculation base for the cap"
+        },
+        {
+          "key": "cap_multiplier",
+          "label": "Multiplier",
+          "type": "number",
+          "required": false,
+          "description": "Multiplier applied to the base (e.g., 1x, 2x, 3x the price)"
+        },
+        {
+          "key": "carve_outs",
+          "label": "Carve-outs from cap",
+          "type": "string",
+          "required": false,
+          "description": "Cases excluded from the cap (gross negligence, willful misconduct, GDPR, IP, bodily injury, etc.)"
+        },
+        {
+          "key": "super_cap",
+          "label": "Super-cap categories",
+          "type": "string",
+          "required": false,
+          "description": "Categories with a higher (super) cap if any"
+        },
+        {
+          "key": "consequential_damages_excluded",
+          "label": "Consequential / indirect damages excluded",
+          "type": "boolean",
+          "required": false,
+          "description": "Consequential and indirect damages are excluded"
+        },
+        {
+          "key": "data_loss_excluded",
+          "label": "Data loss excluded",
+          "type": "boolean",
+          "required": false,
+          "description": "Loss of data is expressly excluded"
+        }
+      ]
+    },
+    {
+      "id": "EXCLUSION_DOMMAGES_INDIRECTS",
+      "name": "Exclusion of consequential damages",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "exclusion_provided",
+          "label": "Exclusion provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Exclusion of consequential / indirect damages is provided"
+        },
+        {
+          "key": "indirect_definition",
+          "label": "Definition of indirect / consequential",
+          "type": "string",
+          "required": false,
+          "description": "Definition retained for indirect or consequential damages"
+        },
+        {
+          "key": "examples_excluded",
+          "label": "Examples of excluded damages",
+          "type": "string",
+          "required": false,
+          "description": "Examples listed (loss of profits, loss of revenue, reputational harm, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "GARANTIES",
+      "name": "Warranties (general)",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "warranties_granted",
+          "label": "Warranties granted",
+          "type": "string",
+          "required": false,
+          "description": "List of warranties granted (compliance, eviction, defects, performance, etc.)"
+        },
+        {
+          "key": "warranty_duration",
+          "label": "Warranty duration",
+          "type": "string",
+          "required": false,
+          "description": "Period during which warranties apply"
+        },
+        {
+          "key": "warranty_exclusions",
+          "label": "Exclusions",
+          "type": "string",
+          "required": false,
+          "description": "Cases excluded from warranties"
+        },
+        {
+          "key": "remedies",
+          "label": "Remedies provided",
+          "type": "string",
+          "required": false,
+          "description": "Remedies provided (repair, replacement, refund)"
+        },
+        {
+          "key": "representations_distinguished",
+          "label": "Representations distinguished from warranties",
+          "type": "boolean",
+          "required": false,
+          "description": "Representations are expressly distinguished from warranties (common law)"
+        }
+      ]
+    },
+    {
+      "id": "GARANTIE_CONFORMITE",
+      "name": "Compliance / conformity warranty",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "reference_specifications",
+          "label": "Reference specifications",
+          "type": "string",
+          "required": false,
+          "description": "Documents or specifications used as reference"
+        },
+        {
+          "key": "warranty_duration",
+          "label": "Warranty duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration during which conformity is warranted"
+        },
+        {
+          "key": "remediation_period",
+          "label": "Remediation period",
+          "type": "string",
+          "required": false,
+          "description": "Period to remedy a non-conformity"
+        }
+      ]
+    },
+    {
+      "id": "GARANTIE_EVICTION",
+      "name": "Quiet enjoyment / IP infringement warranty",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "warranty_provided",
+          "label": "Warranty provided",
+          "type": "boolean",
+          "required": false,
+          "description": "An IP infringement / quiet enjoyment warranty is provided"
+        },
+        {
+          "key": "geographic_scope",
+          "label": "Geographic scope",
+          "type": "string",
+          "required": false,
+          "description": "Countries or zones covered by the warranty"
+        },
+        {
+          "key": "duty_to_defend",
+          "label": "Duty to defend",
+          "type": "boolean",
+          "required": false,
+          "description": "Warrantor controls and bears defense in case of action"
+        },
+        {
+          "key": "specific_cap",
+          "label": "Specific cap",
+          "type": "string",
+          "required": false,
+          "description": "Specific cap applicable to this warranty"
+        }
+      ]
+    },
+    {
+      "id": "INDEMNISATION",
+      "name": "Indemnification",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "indemnification_cases",
+          "label": "Indemnification cases",
+          "type": "string",
+          "required": false,
+          "description": "Cases triggering indemnification"
+        },
+        {
+          "key": "claim_procedure",
+          "label": "Claim procedure",
+          "type": "string",
+          "required": false,
+          "description": "Procedure to bring a claim"
+        },
+        {
+          "key": "defense_control",
+          "label": "Control of defense",
+          "type": "enum",
+          "values": ["INDEMNIFIER", "INDEMNIFIED", "SHARED", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Party controlling the defense"
+        },
+        {
+          "key": "specific_cap",
+          "label": "Specific cap",
+          "type": "string",
+          "required": false,
+          "description": "Specific cap applicable to indemnification"
+        }
+      ]
+    },
+    {
+      "id": "ASSURANCE",
+      "name": "Insurance",
+      "category": "Liability and warranties",
+      "attributes": [
+        {
+          "key": "required_policies",
+          "label": "Required policies",
+          "type": "string",
+          "required": false,
+          "description": "Required insurance policies (professional liability, general liability, cyber, etc.)"
+        },
+        {
+          "key": "minimum_amounts",
+          "label": "Minimum amounts",
+          "type": "string",
+          "required": false,
+          "description": "Minimum coverage amounts required"
+        },
+        {
+          "key": "certificate_required",
+          "label": "Certificate required",
+          "type": "boolean",
+          "required": false,
+          "description": "An insurance certificate must be provided"
+        },
+        {
+          "key": "maintained_throughout",
+          "label": "Maintained throughout term",
+          "type": "boolean",
+          "required": false,
+          "description": "Insurance must be maintained throughout the term"
+        }
+      ]
+    },
+    {
+      "id": "CHANGEMENT_CONTROLE",
+      "name": "Change of control",
+      "category": "Assignment and change of control",
+      "attributes": [
+        {
+          "key": "control_definition",
+          "label": "Definition of control",
+          "type": "string",
+          "required": false,
+          "description": "Definition retained for control (capital, voting rights, management)"
+        },
+        {
+          "key": "trigger_threshold",
+          "label": "Trigger threshold (%)",
+          "type": "number",
+          "required": false,
+          "description": "Threshold triggering the clause"
+        },
+        {
+          "key": "notice_obligation",
+          "label": "Notice obligation",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to notify the other party"
+        },
+        {
+          "key": "consequence",
+          "label": "Consequence",
+          "type": "enum",
+          "values": ["RIGHT_TO_TERMINATE", "RENEGOTIATION", "PRIOR_CONSENT", "NOTICE_ONLY", "OTHER"],
+          "required": false,
+          "description": "Consequence of change of control"
+        },
+        {
+          "key": "carve_outs",
+          "label": "Carve-outs",
+          "type": "string",
+          "required": false,
+          "description": "Excluded cases (intra-group reorganization, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "CESSION_CONTRAT",
+      "name": "Assignment of the agreement",
+      "category": "Assignment and change of control",
+      "attributes": [
+        {
+          "key": "assignment_regime",
+          "label": "Assignment regime",
+          "type": "enum",
+          "values": ["FREE", "PRIOR_CONSENT", "PROHIBITED", "FREE_INTRA_GROUP", "OTHER"],
+          "required": false,
+          "description": "Regime applicable to assignment"
+        },
+        {
+          "key": "consent_required",
+          "label": "Consent required",
+          "type": "boolean",
+          "required": false,
+          "description": "Written consent of the other party is required"
+        },
+        {
+          "key": "consent_not_unreasonably_withheld",
+          "label": "Consent not unreasonably withheld",
+          "type": "boolean",
+          "required": false,
+          "description": "Consent shall not be unreasonably withheld"
+        },
+        {
+          "key": "assignor_residual_liability",
+          "label": "Residual liability of assignor",
+          "type": "string",
+          "required": false,
+          "description": "Residual liability regime of the assignor"
+        }
+      ]
+    },
+    {
+      "id": "TRANSMISSION_UNIVERSELLE",
+      "name": "Universal transfer / Merger and de-merger",
+      "category": "Assignment and change of control",
+      "attributes": [
+        {
+          "key": "covered",
+          "label": "Universal transfer covered",
+          "type": "boolean",
+          "required": false,
+          "description": "Universal transfer is expressly addressed"
+        },
+        {
+          "key": "applied_regime",
+          "label": "Applied regime",
+          "type": "enum",
+          "values": ["SAME_AS_ASSIGNMENT", "SAME_AS_CHANGE_OF_CONTROL", "AUTOMATIC", "OTHER"],
+          "required": false,
+          "description": "Regime applied to universal transfer"
+        },
+        {
+          "key": "merger_demerger",
+          "label": "Merger / de-merger treatment",
+          "type": "string",
+          "required": false,
+          "description": "Specific treatment of mergers and de-mergers"
+        }
+      ]
+    },
+    {
+      "id": "NON_CONCURRENCE",
+      "name": "Non-compete",
+      "category": "Non-compete and exclusivity",
+      "attributes": [
+        {
+          "key": "activity_scope",
+          "label": "Activity scope",
+          "type": "string",
+          "required": false,
+          "description": "Competing activities prohibited"
+        },
+        {
+          "key": "geographic_scope",
+          "label": "Geographic scope",
+          "type": "string",
+          "required": false,
+          "description": "Geographic scope of the restriction"
+        },
+        {
+          "key": "duration",
+          "label": "Duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of the non-compete"
+        },
+        {
+          "key": "financial_consideration",
+          "label": "Financial consideration",
+          "type": "string",
+          "required": false,
+          "description": "Financial consideration provided"
+        },
+        {
+          "key": "breach_penalty",
+          "label": "Breach penalty",
+          "type": "string",
+          "required": false,
+          "description": "Penalty in case of breach"
+        }
+      ]
+    },
+    {
+      "id": "NON_SOLLICITATION",
+      "name": "Non-solicitation of customers",
+      "category": "Non-compete and exclusivity",
+      "attributes": [
+        {
+          "key": "customer_scope",
+          "label": "Customer scope",
+          "type": "string",
+          "required": false,
+          "description": "Categories of customers covered"
+        },
+        {
+          "key": "duration",
+          "label": "Duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of the undertaking"
+        },
+        {
+          "key": "exceptions",
+          "label": "Exceptions",
+          "type": "string",
+          "required": false,
+          "description": "Excluded cases (unsolicited approach, etc.)"
+        },
+        {
+          "key": "breach_penalty",
+          "label": "Penalty",
+          "type": "string",
+          "required": false,
+          "description": "Penalty in case of breach"
+        }
+      ]
+    },
+    {
+      "id": "NON_DEBAUCHAGE",
+      "name": "Non-solicitation of personnel",
+      "category": "Non-compete and exclusivity",
+      "attributes": [
+        {
+          "key": "personnel_scope",
+          "label": "Personnel scope",
+          "type": "string",
+          "required": false,
+          "description": "Categories of employees covered"
+        },
+        {
+          "key": "duration",
+          "label": "Duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of the undertaking"
+        },
+        {
+          "key": "unsolicited_application_carve_out",
+          "label": "Unsolicited application carve-out",
+          "type": "boolean",
+          "required": false,
+          "description": "Unsolicited applications are excluded"
+        },
+        {
+          "key": "fixed_indemnity",
+          "label": "Fixed indemnity",
+          "type": "string",
+          "required": false,
+          "description": "Fixed indemnity in case of hire"
+        }
+      ]
+    },
+    {
+      "id": "EXCLUSIVITE",
+      "name": "Exclusivity",
+      "category": "Non-compete and exclusivity",
+      "attributes": [
+        {
+          "key": "exclusivity_type",
+          "label": "Type of exclusivity",
+          "type": "enum",
+          "values": ["MUTUAL", "UNILATERAL", "TERRITORIAL", "PRODUCTS", "CUSTOMERS", "OTHER"],
+          "required": false,
+          "description": "Nature of the exclusivity granted"
+        },
+        {
+          "key": "scope",
+          "label": "Scope",
+          "type": "string",
+          "required": false,
+          "description": "Material and geographic scope of exclusivity"
+        },
+        {
+          "key": "duration",
+          "label": "Duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of exclusivity"
+        },
+        {
+          "key": "consideration",
+          "label": "Consideration",
+          "type": "string",
+          "required": false,
+          "description": "Consideration for the exclusivity (targets, minimums, etc.)"
+        },
+        {
+          "key": "exceptions",
+          "label": "Exceptions",
+          "type": "string",
+          "required": false,
+          "description": "Exceptions to exclusivity"
+        }
+      ]
+    },
+    {
+      "id": "FORCE_MAJEURE",
+      "name": "Force majeure",
+      "category": "Force majeure and hardship",
+      "attributes": [
+        {
+          "key": "definition_type",
+          "label": "Definition type",
+          "type": "enum",
+          "values": ["STATUTORY", "BROADENED", "EXHAUSTIVE_LIST", "OTHER"],
+          "required": false,
+          "description": "Type of definition retained"
+        },
+        {
+          "key": "listed_events",
+          "label": "Listed events",
+          "type": "string",
+          "required": false,
+          "description": "Events expressly qualified as force majeure"
+        },
+        {
+          "key": "epidemic_pandemic",
+          "label": "Epidemic / pandemic included",
+          "type": "boolean",
+          "required": false,
+          "description": "Epidemics or pandemics are expressly included"
+        },
+        {
+          "key": "notification_period",
+          "label": "Notification period",
+          "type": "string",
+          "required": false,
+          "description": "Period to notify a force majeure event"
+        },
+        {
+          "key": "termination_threshold_duration",
+          "label": "Duration triggering termination",
+          "type": "string",
+          "required": false,
+          "description": "Persistence period allowing termination"
+        }
+      ]
+    },
+    {
+      "id": "IMPREVISION_HARDSHIP",
+      "name": "Hardship",
+      "category": "Force majeure and hardship",
+      "attributes": [
+        {
+          "key": "waiver_french_1195",
+          "label": "Waiver of FR Civil Code Art. 1195",
+          "type": "boolean",
+          "required": false,
+          "description": "Parties expressly waive French Civil Code Article 1195 (hardship statutory rule)"
+        },
+        {
+          "key": "hardship_clause",
+          "label": "Hardship clause",
+          "type": "boolean",
+          "required": false,
+          "description": "A contractual hardship clause is provided"
+        },
+        {
+          "key": "trigger_criteria",
+          "label": "Trigger criteria",
+          "type": "string",
+          "required": false,
+          "description": "Conditions triggering renegotiation"
+        },
+        {
+          "key": "consequences",
+          "label": "Consequences",
+          "type": "enum",
+          "values": ["RENEGOTIATION", "ARBITRATION", "TERMINATION", "CONTINUE_PERFORMANCE", "OTHER"],
+          "required": false,
+          "description": "Consequences if renegotiation fails"
+        }
+      ]
+    },
+    {
+      "id": "LOI_APPLICABLE",
+      "name": "Governing law",
+      "category": "Governing law and dispute resolution",
+      "attributes": [
+        {
+          "key": "chosen_law",
+          "label": "Chosen law",
+          "type": "string",
+          "required": false,
+          "description": "Designated law (French law, English law, New York law, etc.)"
+        },
+        {
+          "key": "conflict_of_laws_excluded",
+          "label": "Conflict-of-laws rules excluded",
+          "type": "boolean",
+          "required": false,
+          "description": "Conflict-of-laws rules are expressly excluded"
+        },
+        {
+          "key": "cisg_excluded",
+          "label": "CISG excluded",
+          "type": "boolean",
+          "required": false,
+          "description": "United Nations Convention on Contracts for the International Sale of Goods is excluded"
+        }
+      ]
+    },
+    {
+      "id": "JURIDICTION",
+      "name": "Jurisdiction",
+      "category": "Governing law and dispute resolution",
+      "attributes": [
+        {
+          "key": "designated_court",
+          "label": "Designated court",
+          "type": "string",
+          "required": false,
+          "description": "Competent court or jurisdiction"
+        },
+        {
+          "key": "exclusivity",
+          "label": "Exclusivity",
+          "type": "enum",
+          "values": ["EXCLUSIVE", "NON_EXCLUSIVE", "AT_CLAIMANT_OPTION", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Exclusive nature of the jurisdiction"
+        },
+        {
+          "key": "geographic_seat",
+          "label": "Geographic seat",
+          "type": "string",
+          "required": false,
+          "description": "City and level of court (commercial, civil, etc.)"
+        },
+        {
+          "key": "consumer_carve_out",
+          "label": "Consumer / public order carve-out",
+          "type": "boolean",
+          "required": false,
+          "description": "A consumer or public order reservation is mentioned"
+        }
+      ]
+    },
+    {
+      "id": "ARBITRAGE",
+      "name": "Arbitration",
+      "category": "Governing law and dispute resolution",
+      "attributes": [
+        {
+          "key": "arbitration_provided",
+          "label": "Arbitration provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Arbitration is provided"
+        },
+        {
+          "key": "institution",
+          "label": "Arbitral institution",
+          "type": "string",
+          "required": false,
+          "description": "Designated arbitral institution (ICC, LCIA, AAA, CMAP, etc.)"
+        },
+        {
+          "key": "seat",
+          "label": "Seat of arbitration",
+          "type": "string",
+          "required": false,
+          "description": "Seat of arbitration"
+        },
+        {
+          "key": "language",
+          "label": "Language of arbitration",
+          "type": "string",
+          "required": false,
+          "description": "Language of the proceedings"
+        },
+        {
+          "key": "nb_arbitrators",
+          "label": "Number of arbitrators",
+          "type": "number",
+          "required": false,
+          "description": "Number of arbitrators"
+        },
+        {
+          "key": "arbitration_type",
+          "label": "Arbitration type",
+          "type": "enum",
+          "values": ["AD_HOC", "INSTITUTIONAL"],
+          "required": false,
+          "description": "Ad hoc or institutional arbitration"
+        }
+      ]
+    },
+    {
+      "id": "RESOLUTION_AMIABLE",
+      "name": "Pre-litigation amicable resolution",
+      "category": "Governing law and dispute resolution",
+      "attributes": [
+        {
+          "key": "amicable_phase_required",
+          "label": "Amicable phase required",
+          "type": "boolean",
+          "required": false,
+          "description": "A prior amicable phase is required"
+        },
+        {
+          "key": "mechanism_type",
+          "label": "Type of mechanism",
+          "type": "enum",
+          "values": ["NEGOTIATION", "MEDIATION", "CONCILIATION", "EXPERT_DETERMINATION", "ESCALATION", "OTHER"],
+          "required": false,
+          "description": "Amicable mechanism retained"
+        },
+        {
+          "key": "amicable_period",
+          "label": "Amicable phase duration",
+          "type": "string",
+          "required": false,
+          "description": "Duration of the amicable phase before litigation"
+        },
+        {
+          "key": "escalation_levels",
+          "label": "Escalation levels",
+          "type": "string",
+          "required": false,
+          "description": "Successive levels (operational, executive, etc.)"
+        }
+      ]
+    },
+    {
+      "id": "OBLIGATIONS_CONFORMITE",
+      "name": "Compliance obligations (general)",
+      "category": "Compliance and regulatory",
+      "attributes": [
+        {
+          "key": "covered_areas",
+          "label": "Covered areas",
+          "type": "string",
+          "required": false,
+          "description": "Compliance areas covered (anti-corruption, sanctions, GDPR, ESG, etc.)"
+        },
+        {
+          "key": "general_undertaking",
+          "label": "General undertaking",
+          "type": "boolean",
+          "required": false,
+          "description": "General undertaking to comply with applicable laws"
+        },
+        {
+          "key": "code_of_conduct_referenced",
+          "label": "Code of conduct referenced",
+          "type": "boolean",
+          "required": false,
+          "description": "Reference to a code of conduct or charter"
+        },
+        {
+          "key": "notification_obligation",
+          "label": "Notification obligation",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to notify in case of investigation or non-compliance"
+        }
+      ]
+    },
+    {
+      "id": "ANTI_CORRUPTION",
+      "name": "Anti-corruption",
+      "category": "Compliance and regulatory",
+      "attributes": [
+        {
+          "key": "applicable_laws",
+          "label": "Applicable laws",
+          "type": "string",
+          "required": false,
+          "description": "Referenced laws (FCPA, UK Bribery Act, Sapin II, etc.)"
+        },
+        {
+          "key": "zero_tolerance",
+          "label": "Zero tolerance",
+          "type": "boolean",
+          "required": false,
+          "description": "Zero tolerance commitment expressed"
+        },
+        {
+          "key": "due_diligence",
+          "label": "Due diligence",
+          "type": "boolean",
+          "required": false,
+          "description": "Anti-corruption due diligence is provided"
+        },
+        {
+          "key": "audit_right",
+          "label": "Audit right",
+          "type": "boolean",
+          "required": false,
+          "description": "An anti-corruption audit right is provided"
+        },
+        {
+          "key": "immediate_termination",
+          "label": "Immediate termination",
+          "type": "boolean",
+          "required": false,
+          "description": "Immediate termination available upon breach"
+        }
+      ]
+    },
+    {
+      "id": "SANCTIONS_EMBARGO",
+      "name": "Sanctions and embargoes",
+      "category": "Compliance and regulatory",
+      "attributes": [
+        {
+          "key": "sanctions_regimes",
+          "label": "Sanctions regimes",
+          "type": "string",
+          "required": false,
+          "description": "Referenced sanctions regimes (OFAC, EU, UN, UK OFSI, etc.)"
+        },
+        {
+          "key": "non_listing_undertaking",
+          "label": "Non-listing undertaking",
+          "type": "boolean",
+          "required": false,
+          "description": "Parties represent they are not on sanctions lists"
+        },
+        {
+          "key": "notification_obligation",
+          "label": "Notification obligation",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to notify any subsequent listing"
+        },
+        {
+          "key": "automatic_termination",
+          "label": "Automatic termination",
+          "type": "boolean",
+          "required": false,
+          "description": "Automatic termination upon listing"
+        }
+      ]
+    },
+    {
+      "id": "DEVOIR_VIGILANCE",
+      "name": "Supply chain due diligence",
+      "category": "Compliance and regulatory",
+      "attributes": [
+        {
+          "key": "applicable_law",
+          "label": "Applicable law",
+          "type": "enum",
+          "values": ["FRENCH_VIGILANCE_LAW", "EU_CSDDD", "GERMAN_LKSG", "UK_MODERN_SLAVERY", "OTHER", "NOT_SPECIFIED"],
+          "required": false,
+          "description": "Reference text retained"
+        },
+        {
+          "key": "covered_areas",
+          "label": "Covered areas",
+          "type": "string",
+          "required": false,
+          "description": "Areas covered (human rights, environment, health and safety)"
+        },
+        {
+          "key": "supplier_obligations",
+          "label": "Supplier obligations",
+          "type": "string",
+          "required": false,
+          "description": "Obligations imposed on the supplier"
+        },
+        {
+          "key": "audit_right",
+          "label": "Audit right",
+          "type": "boolean",
+          "required": false,
+          "description": "Audit right under supply chain due diligence"
+        }
+      ]
+    },
+    {
+      "id": "ETHIQUE_RSE",
+      "name": "Ethics and ESG",
+      "category": "Compliance and regulatory",
+      "attributes": [
+        {
+          "key": "charter_referenced",
+          "label": "Charter referenced",
+          "type": "boolean",
+          "required": false,
+          "description": "Reference to an ethics or ESG charter"
+        },
+        {
+          "key": "environmental_commitments",
+          "label": "Environmental commitments",
+          "type": "string",
+          "required": false,
+          "description": "Environmental commitments mentioned (CO2, waste, etc.)"
+        },
+        {
+          "key": "social_commitments",
+          "label": "Social commitments",
+          "type": "string",
+          "required": false,
+          "description": "Social commitments mentioned (diversity, human rights, etc.)"
+        },
+        {
+          "key": "quantified_objectives",
+          "label": "Quantified objectives",
+          "type": "boolean",
+          "required": false,
+          "description": "Quantified targets are provided"
+        }
+      ]
+    },
+    {
+      "id": "SOUS_TRAITANCE",
+      "name": "Subcontracting",
+      "category": "Subcontracting and personnel",
+      "attributes": [
+        {
+          "key": "subcontracting_regime",
+          "label": "Regime",
+          "type": "enum",
+          "values": ["FREE", "PRIOR_CONSENT", "APPROVED_LIST", "PROHIBITED", "OTHER"],
+          "required": false,
+          "description": "Regime applicable to subcontracting"
+        },
+        {
+          "key": "prime_remains_liable",
+          "label": "Prime remains fully liable",
+          "type": "boolean",
+          "required": false,
+          "description": "Main supplier remains fully liable for subcontractors"
+        },
+        {
+          "key": "back_to_back_obligations",
+          "label": "Back-to-back obligations",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligations are passed through to subcontractors"
+        },
+        {
+          "key": "french_subcontracting_act_1975",
+          "label": "French Subcontracting Act 1975 referenced",
+          "type": "boolean",
+          "required": false,
+          "description": "French Act of 31 December 1975 on subcontracting is referenced"
+        }
+      ]
+    },
+    {
+      "id": "PERSONNEL_DEDIE",
+      "name": "Dedicated personnel",
+      "category": "Subcontracting and personnel",
+      "attributes": [
+        {
+          "key": "named_personnel",
+          "label": "Named personnel",
+          "type": "boolean",
+          "required": false,
+          "description": "Personnel is named in the agreement"
+        },
+        {
+          "key": "replacement_regime",
+          "label": "Replacement regime",
+          "type": "string",
+          "required": false,
+          "description": "Replacement conditions (approval, equivalent profile, etc.)"
+        },
+        {
+          "key": "exclusively_dedicated",
+          "label": "Exclusively dedicated",
+          "type": "boolean",
+          "required": false,
+          "description": "Personnel is exclusively dedicated to the engagement"
+        },
+        {
+          "key": "no_employment_relationship",
+          "label": "No employment relationship",
+          "type": "boolean",
+          "required": false,
+          "description": "Express disclaimer of employment / labour-leasing relationship"
+        }
+      ]
+    },
+    {
+      "id": "TRANSFERT_PERSONNEL",
+      "name": "Transfer of personnel (TUPE / FR L.1224-1)",
+      "category": "Subcontracting and personnel",
+      "attributes": [
+        {
+          "key": "transfer_provided",
+          "label": "Transfer provided",
+          "type": "boolean",
+          "required": false,
+          "description": "A personnel transfer is provided"
+        },
+        {
+          "key": "legal_basis",
+          "label": "Legal basis",
+          "type": "enum",
+          "values": ["FR_L1224_1", "TUPE_UK", "ACQUIRED_RIGHTS_DIRECTIVE", "INDUSTRY_AGREEMENT", "VOLUNTARY", "OTHER"],
+          "required": false,
+          "description": "Legal basis for the transfer"
+        },
+        {
+          "key": "covered_employees",
+          "label": "Covered employees",
+          "type": "string",
+          "required": false,
+          "description": "Scope of employees concerned"
+        },
+        {
+          "key": "passed_through_warranties",
+          "label": "Passed-through warranties",
+          "type": "string",
+          "required": false,
+          "description": "Warranties given regarding social liabilities"
+        }
+      ]
+    },
+    {
+      "id": "AUDIT_CONTROLE",
+      "name": "Audit and inspection",
+      "category": "Audit and control",
+      "attributes": [
+        {
+          "key": "audit_right",
+          "label": "Audit right",
+          "type": "boolean",
+          "required": false,
+          "description": "An audit right is provided"
+        },
+        {
+          "key": "audit_scope",
+          "label": "Scope",
+          "type": "string",
+          "required": false,
+          "description": "Scope of audit (financial, technical, security, compliance, etc.)"
+        },
+        {
+          "key": "frequency",
+          "label": "Frequency",
+          "type": "string",
+          "required": false,
+          "description": "Maximum or minimum frequency"
+        },
+        {
+          "key": "notice",
+          "label": "Notice",
+          "type": "string",
+          "required": false,
+          "description": "Notice required before audit"
+        },
+        {
+          "key": "fees_borne_by",
+          "label": "Fees borne by",
+          "type": "enum",
+          "values": ["AUDITOR", "AUDITEE", "SHARED", "AUDITEE_IF_FINDING"],
+          "required": false,
+          "description": "Party bearing audit fees"
+        }
+      ]
+    },
+    {
+      "id": "REPORTING",
+      "name": "Reporting",
+      "category": "Audit and control",
+      "attributes": [
+        {
+          "key": "reporting_provided",
+          "label": "Reporting provided",
+          "type": "boolean",
+          "required": false,
+          "description": "Regular reporting is provided"
+        },
+        {
+          "key": "frequency",
+          "label": "Frequency",
+          "type": "enum",
+          "values": ["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "OTHER"],
+          "required": false,
+          "description": "Reporting frequency"
+        },
+        {
+          "key": "content",
+          "label": "Content",
+          "type": "string",
+          "required": false,
+          "description": "Indicators and information to be provided"
+        },
+        {
+          "key": "format_medium",
+          "label": "Format and medium",
+          "type": "string",
+          "required": false,
+          "description": "Format and medium of the reporting"
+        }
+      ]
+    },
+    {
+      "id": "INTEGRALITE_ACCORD",
+      "name": "Entire agreement",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "clause_present",
+          "label": "Clause present",
+          "type": "boolean",
+          "required": false,
+          "description": "An entire agreement clause is present"
+        },
+        {
+          "key": "superseded_documents",
+          "label": "Superseded documents",
+          "type": "string",
+          "required": false,
+          "description": "Prior documents expressly superseded"
+        },
+        {
+          "key": "schedules_included",
+          "label": "Schedules included",
+          "type": "boolean",
+          "required": false,
+          "description": "Schedules are part of the entire agreement"
+        }
+      ]
+    },
+    {
+      "id": "RENONCIATION",
+      "name": "Waiver",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "no_implied_waiver",
+          "label": "No implied waiver",
+          "type": "boolean",
+          "required": false,
+          "description": "Failure to act does not constitute waiver"
+        },
+        {
+          "key": "writing_required",
+          "label": "Writing required",
+          "type": "boolean",
+          "required": false,
+          "description": "Any waiver must be in writing"
+        },
+        {
+          "key": "specific_waiver",
+          "label": "Specific waiver only",
+          "type": "boolean",
+          "required": false,
+          "description": "Waiver of one breach does not extend to future breaches"
+        }
+      ]
+    },
+    {
+      "id": "NULLITE_PARTIELLE",
+      "name": "Severability",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "clause_present",
+          "label": "Clause present",
+          "type": "boolean",
+          "required": false,
+          "description": "A severability clause is present"
+        },
+        {
+          "key": "obligation_to_renegotiate",
+          "label": "Obligation to renegotiate",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to replace the void clause with a valid one"
+        },
+        {
+          "key": "preserve_economy",
+          "label": "Preserve overall economy",
+          "type": "boolean",
+          "required": false,
+          "description": "Undertaking to preserve the overall economy of the contract"
+        }
+      ]
+    },
+    {
+      "id": "NOTIFICATIONS",
+      "name": "Notices",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "accepted_means",
+          "label": "Accepted means",
+          "type": "string",
+          "required": false,
+          "description": "Accepted means of notification (certified mail, email, courier, etc.)"
+        },
+        {
+          "key": "designated_addresses",
+          "label": "Designated addresses",
+          "type": "boolean",
+          "required": false,
+          "description": "Specific notice addresses are designated"
+        },
+        {
+          "key": "effective_moment",
+          "label": "Effective moment",
+          "type": "enum",
+          "values": ["DISPATCH", "RECEIPT", "DELIVERY_ATTEMPTED", "OTHER"],
+          "required": false,
+          "description": "Moment at which notification is effective"
+        },
+        {
+          "key": "address_change_obligation",
+          "label": "Obligation to notify address change",
+          "type": "boolean",
+          "required": false,
+          "description": "Obligation to notify any address change"
+        }
+      ]
+    },
+    {
+      "id": "MODIFICATION_AVENANT",
+      "name": "Amendments",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "writing_required",
+          "label": "Writing required",
+          "type": "boolean",
+          "required": false,
+          "description": "All amendments must be in writing"
+        },
+        {
+          "key": "duly_authorized_signatures",
+          "label": "Duly authorized signatures",
+          "type": "boolean",
+          "required": false,
+          "description": "Signature by duly authorized representatives required"
+        },
+        {
+          "key": "no_oral_modification",
+          "label": "No oral modification",
+          "type": "boolean",
+          "required": false,
+          "description": "Oral modifications are expressly excluded"
+        }
+      ]
+    },
+    {
+      "id": "INDEPENDANCE_PARTIES",
+      "name": "Independent contractors / no partnership",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "no_de_facto_partnership",
+          "label": "No de facto partnership",
+          "type": "boolean",
+          "required": false,
+          "description": "Express disclaimer of partnership, joint venture, etc."
+        },
+        {
+          "key": "no_agency",
+          "label": "No agency",
+          "type": "boolean",
+          "required": false,
+          "description": "Neither party may bind the other"
+        },
+        {
+          "key": "no_employment",
+          "label": "No employment relationship",
+          "type": "boolean",
+          "required": false,
+          "description": "Express disclaimer of employment relationship"
+        }
+      ]
+    },
+    {
+      "id": "LANGUE_CONTRAT",
+      "name": "Language",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "primary_language",
+          "label": "Primary language",
+          "type": "string",
+          "required": false,
+          "description": "Primary language of the contract"
+        },
+        {
+          "key": "translation_exists",
+          "label": "Translated version exists",
+          "type": "boolean",
+          "required": false,
+          "description": "A translated version exists"
+        },
+        {
+          "key": "controlling_version",
+          "label": "Controlling version",
+          "type": "string",
+          "required": false,
+          "description": "Version prevailing in case of discrepancy"
+        },
+        {
+          "key": "french_toubon_law",
+          "label": "FR Toubon Law",
+          "type": "boolean",
+          "required": false,
+          "description": "Reference or reservation regarding the French Toubon Law"
+        }
+      ]
+    },
+    {
+      "id": "TITRES_INTERPRETATION",
+      "name": "Headings and interpretation",
+      "category": "Miscellaneous (boilerplate)",
+      "attributes": [
+        {
+          "key": "headings_no_effect",
+          "label": "Headings without effect",
+          "type": "boolean",
+          "required": false,
+          "description": "Headings have no interpretative value"
+        },
+        {
+          "key": "interpretation_rules",
+          "label": "Interpretation rules",
+          "type": "string",
+          "required": false,
+          "description": "Interpretation rules provided (singular/plural, days, etc.)"
+        },
+        {
+          "key": "computation_of_periods",
+          "label": "Computation of periods",
+          "type": "string",
+          "required": false,
+          "description": "Rules for computing time periods (business days, calendar days, holidays)"
+        }
+      ]
+    }
+  ]
+}

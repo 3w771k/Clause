@@ -1,32 +1,113 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
-import { documents, legalObjects, clauses, definedTerms, textPassages, clauseEmbeddings, crossReferences } from '../db/schema.js';
+import { documents, legalObjects, clauses, definedTerms, textPassages } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { llm } from '../llm/index.js';
 import { LegalExtractionResultSchema } from '../types/api.js';
 import type { LegalExtractionResult } from '../types/api.js';
-import maisontOntology from '../ontologies/maison.json' assert { type: 'json' };
-import { embedPassage, vectorToBuffer } from '../embeddings/embedding.service.js';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import frOntologyRaw from '../ontologies/maison-fr.json';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import enOntologyRaw from '../ontologies/maison-en.json';
+const frOntology = frOntologyRaw as unknown as { clauseTypes: OntologyClauseType[] };
+const enOntology = enOntologyRaw as unknown as { clauseTypes: OntologyClauseType[] };
 
-// ─── Mock extraction for pre-alpha (no real PDF parsing yet) ──────────────────
+type OntologyAttr = {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  description: string;
+  values?: string[];
+};
 
-function buildExtractionPrompt(text: string): string {
-  const clauseTypes = (maisontOntology as { clauseTypes: Array<{ id: string; name: string; category: string }> })
-    .clauseTypes.map((c) => `${c.id}: ${c.name} (${c.category})`).join('\n');
+type OntologyClauseType = {
+  id: string;
+  name: string;
+  category: string;
+  attributes: OntologyAttr[];
+};
+
+function detectLanguage(text: string): 'fr' | 'en' {
+  const sample = text.substring(0, 2000).toLowerCase();
+  const frScore = (sample.match(/\b(le|la|les|de|du|des|un|une|que|qui|est|dans|pour|avec|sur|par|tout|contrat|article|clause|société|parties|prestataire|conformément|ci-après|présent)\b/g) || []).length;
+  const enScore = (sample.match(/\b(the|of|and|to|in|is|for|with|on|by|this|that|shall|party|parties|agreement|contract|company|services|provider|client|pursuant|hereby|thereof|whereas|herein)\b/g) || []).length;
+  return frScore >= enScore ? 'fr' : 'en';
+}
+
+function buildAttributeSpec(attrs: OntologyAttr[]): string {
+  if (!attrs?.length) return '';
+  return ' → ' + attrs.map(a => {
+    const typeStr = a.values?.length ? `enum(${a.values.join('|')})` : a.type;
+    return `${a.key}(${typeStr}):"${a.description}"`;
+  }).join(', ');
+}
+
+function buildExtractionPrompt(text: string, lang: 'fr' | 'en'): string {
+  const ontology = lang === 'fr' ? frOntology : enOntology;
+  const clauseTypeList = ontology.clauseTypes
+    .map(c => `${c.id}: ${c.name}${buildAttributeSpec(c.attributes)}`)
+    .join('\n');
+
+  if (lang === 'en') {
+    return `You are an expert legal assistant. Extract structured information from the following contract.
+
+Return valid JSON with the exact following structure:
+{
+  "documentType": "string (e.g. AGREEMENT, AMENDMENT, NDA)",
+  "documentSubtype": "string or null",
+  "language": "en",
+  "overallConfidence": "high|medium|low",
+  "metadata": {
+    "parties": [{ "name": "...", "role": "...", "citation": { "page": null, "extract": null } }],
+    "date": { "value": "YYYY-MM-DD or null", "confidence": "high|medium|low" },
+    "duration": { "value": "...", "confidence": "high|medium|low" },
+    "governingLaw": { "value": "...", "confidence": "high|medium|low" }
+  },
+  "clauses": [
+    {
+      "id": "uuid",
+      "type": "CLAUSE_TYPE (from list below)",
+      "heading": "clause title or null",
+      "sequenceNumber": "e.g. 1, 2.1 or null",
+      "text": "full clause text",
+      "attributes": { "key": value_or_null },
+      "confidence": "high|medium|low",
+      "linkedDefinedTerms": []
+    }
+  ],
+  "definedTerms": [
+    {
+      "id": "uuid",
+      "term": "defined term",
+      "definition": "full definition",
+      "confidence": "high"
+    }
+  ]
+}
+
+For "attributes": use ONLY the keys listed for each clause type below. Set value to null if not found in the text. Do not invent keys that are not listed.
+
+Available clause types (format: ID: name → key(type):"description"):
+${clauseTypeList}
+
+Contract text:
+${text.substring(0, 60000)}`;
+  }
 
   return `Tu es un assistant juridique expert. Extrais les informations structurées du contrat suivant.
 
 Retourne un JSON valide avec la structure exacte suivante :
 {
-  "documentType": "string (ex: CONTRAT, AVENANT, MEMO)",
+  "documentType": "string (ex: CONTRAT, AVENANT, NDA, MEMO)",
   "documentSubtype": "string ou null (ex: NDA_MUTUEL, PRESTATION_SERVICES)",
   "language": "fr",
   "overallConfidence": "high|medium|low",
   "metadata": {
-    "parties": [],
-    "date": null,
-    "duration": null,
-    "governingLaw": null
+    "parties": [{ "name": "...", "role": "...", "citation": { "page": null, "extract": null } }],
+    "date": { "value": "YYYY-MM-DD ou null", "confidence": "high|medium|low" },
+    "duration": { "value": "...", "confidence": "high|medium|low" },
+    "governingLaw": { "value": "...", "confidence": "high|medium|low" }
   },
   "clauses": [
     {
@@ -35,7 +116,7 @@ Retourne un JSON valide avec la structure exacte suivante :
       "heading": "titre de la clause ou null",
       "sequenceNumber": "ex: 1, 2.1 ou null",
       "text": "texte complet de la clause",
-      "attributes": {},
+      "attributes": { "clé": valeur_ou_null },
       "confidence": "high|medium|low",
       "linkedDefinedTerms": []
     }
@@ -50,11 +131,13 @@ Retourne un JSON valide avec la structure exacte suivante :
   ]
 }
 
-Types de clauses disponibles :
-${clauseTypes}
+Pour "attributes" : utilise UNIQUEMENT les clés listées pour chaque type de clause ci-dessous. Mets null si l'attribut est absent du texte. N'invente pas de clés supplémentaires.
+
+Types de clauses disponibles (format : ID: nom → clé(type):"description") :
+${clauseTypeList}
 
 Texte du contrat :
-${text.substring(0, 8000)}`;
+${text.substring(0, 60000)}`;
 }
 
 export async function extractLegalObject(documentId: string): Promise<string> {
@@ -66,14 +149,21 @@ export async function extractLegalObject(documentId: string): Promise<string> {
     .where(eq(documents.id, documentId));
 
   try {
-    const prompt = buildExtractionPrompt(doc.extractedText);
-    const result: LegalExtractionResult = await llm.completeStructured(
+    const lang = detectLanguage(doc.extractedText);
+    const prompt = buildExtractionPrompt(doc.extractedText, lang);
+
+    const result = await llm.completeStructured(
       [
-        { role: 'system', content: 'Tu es un expert juridique. Retourne uniquement du JSON valide.' },
+        {
+          role: 'system',
+          content: lang === 'en'
+            ? 'You are a legal expert. Return only valid JSON.'
+            : 'Tu es un expert juridique. Retourne uniquement du JSON valide.',
+        },
         { role: 'user', content: prompt },
       ],
       LegalExtractionResultSchema,
-    );
+    ) as LegalExtractionResult;
 
     const loId = `lo_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
 
@@ -85,18 +175,16 @@ export async function extractLegalObject(documentId: string): Promise<string> {
       extractionVersion: 1,
       documentType: result.documentType,
       documentSubtype: result.documentSubtype ?? null,
-      language: result.language,
+      language: result.language ?? lang,
       overallConfidence: result.overallConfidence,
       metadataJson: JSON.stringify(result.metadata),
       userEditsJson: '[]',
     });
 
-    const insertedClauses: Array<{ id: string; type: string; heading: string | null; text: string }> = [];
     for (let i = 0; i < result.clauses.length; i++) {
       const c = result.clauses[i];
-      const clauseId = `cl_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
       await db.insert(clauses).values({
-        id: clauseId,
+        id: `cl_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
         legalObjectId: loId,
         type: c.type,
         heading: c.heading ?? null,
@@ -111,21 +199,6 @@ export async function extractLegalObject(documentId: string): Promise<string> {
         linkedDefinedTerms: JSON.stringify(c.linkedDefinedTerms),
         linkedClauses: '[]',
       });
-      insertedClauses.push({ id: clauseId, type: c.type, heading: c.heading ?? null, text: c.text });
-    }
-
-    for (const clause of insertedClauses) {
-      const textToEmbed = `[${clause.type}] ${clause.heading ?? ''}\n${clause.text}`.trim();
-      try {
-        const vector = await embedPassage(textToEmbed);
-        await db.insert(clauseEmbeddings).values({
-          clauseId: clause.id,
-          vector: vectorToBuffer(vector),
-          model: 'multilingual-e5-small',
-        });
-      } catch (err) {
-        console.error('[embeddings] failed to embed clause', clause.id, err);
-      }
     }
 
     for (const dt of result.definedTerms) {
@@ -167,9 +240,6 @@ export async function getLegalObjectFull(loId: string) {
   const termRows = await db.select().from(definedTerms)
     .where(eq(definedTerms.legalObjectId, loId));
 
-  const crossRefRows = await db.select().from(crossReferences)
-    .where(eq(crossReferences.legalObjectId, loId));
-
   return {
     ...lo,
     metadata: JSON.parse(lo.metadataJson),
@@ -185,10 +255,6 @@ export async function getLegalObjectFull(loId: string) {
       ...dt,
       citation: JSON.parse(dt.citationJson),
       referencedInClauses: JSON.parse(dt.referencedInClauses),
-    })),
-    crossReferences: crossRefRows.map((cr) => ({
-      ...cr,
-      citation: JSON.parse(cr.citationJson),
     })),
   };
 }
