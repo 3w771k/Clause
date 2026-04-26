@@ -5,7 +5,9 @@ import {
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Le worker est copié dans le dossier de sortie via angular.json (assets).
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.mjs';
+// Leading slash obligatoire : sinon la string est résolue contre la route courante
+// (ex. /workspaces/ws_x/documents/pdf.worker.min.mjs → 404 → canvas blanc).
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -44,19 +46,18 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.mjs';
         </div>
       </div>
 
-      <!-- Canvas area -->
-      <div class="flex-1 overflow-auto bg-gray-200 flex justify-center py-4">
+      <!-- Canvas area : le canvas reste toujours monté pour que ViewChild soit défini. -->
+      <div class="flex-1 overflow-auto bg-gray-200 flex justify-center py-4 relative">
+        <canvas #pdfCanvas class="shadow-lg bg-white" [class.invisible]="loading() || !!error()"></canvas>
         @if (loading()) {
-          <div class="flex items-center justify-center w-full">
+          <div class="absolute inset-0 flex items-center justify-center">
             <svg class="w-6 h-6 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
           </div>
         } @else if (error()) {
-          <div class="flex items-center justify-center w-full text-sm text-gray-500">{{ error() }}</div>
-        } @else {
-          <canvas #pdfCanvas class="shadow-lg bg-white"></canvas>
+          <div class="absolute inset-0 flex items-center justify-center text-sm text-gray-500 px-6 text-center">{{ error() }}</div>
         }
       </div>
     </div>
