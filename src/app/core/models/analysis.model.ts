@@ -23,17 +23,6 @@ export interface AnalysisDocument {
   documentSubtype?: string | null;
 }
 
-export interface ConversationMessage {
-  id: string;
-  analysisId: string;
-  timestamp: string;
-  role: 'user' | 'assistant';
-  content: string;
-  deliverableReferences: string[];
-  citations: unknown[];
-  interpretedIntent: unknown | null;
-}
-
 export interface DeliverableSummary {
   id: string;
   type: string;

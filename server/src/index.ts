@@ -10,6 +10,9 @@ import { deliverablesRouter } from './routes/deliverables.js';
 import { referenceBaseRouter } from './routes/reference-base.js';
 import { exportRouter } from './routes/export.js';
 import { tcdRouter } from './routes/tcd.js';
+import { clausesRouter } from './routes/clauses.js';
+import { intentRouter } from './routes/intent.js';
+import { preloadEmbeddings } from './embeddings/embedding.service.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
@@ -31,6 +34,8 @@ app.use('/api/legal-objects', legalObjectsRouter);
 app.use('/api/deliverables', deliverablesRouter);
 app.use('/api/reference-base', referenceBaseRouter);
 app.use('/api/deliverables', exportRouter);
+app.use('/api/clauses', clausesRouter);
+app.use('/api/intent', intentRouter);
 app.use('/api', tcdRouter);
 
 // ─── Error handler ────────────────────────────────────────────────────────────
@@ -42,6 +47,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 initDb();
+preloadEmbeddings().catch((err) => console.error('[embeddings] preload failed:', err));
 app.listen(PORT, () => {
   console.log(`Clause-server listening on http://localhost:${PORT}`);
   console.log(`  CORS: ${FRONT_URL}`);

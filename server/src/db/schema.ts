@@ -103,6 +103,13 @@ export const crossReferences = sqliteTable('cross_references', {
   citationJson: text('citation_json').notNull().default('{}'),
 });
 
+export const clauseEmbeddings = sqliteTable('clause_embeddings', {
+  clauseId: text('clause_id').primaryKey().references(() => clauses.id, { onDelete: 'cascade' }),
+  vector: blob('vector', { mode: 'buffer' }).notNull(),
+  model: text('model').notNull().default('multilingual-e5-small'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
 // ─── Analyses ─────────────────────────────────────────────────────────────────
 
 export const analyses = sqliteTable('analyses', {
@@ -125,17 +132,6 @@ export const analysisDocuments = sqliteTable('analysis_documents', {
   addedAt: text('added_at').notNull().default(sql`(datetime('now'))`),
   addedBy: text('added_by').notNull().default('demo-user'),
   orderInAnalysis: integer('order_in_analysis').notNull().default(0),
-});
-
-export const conversationMessages = sqliteTable('conversation_messages', {
-  id: text('id').primaryKey(),
-  analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
-  timestamp: text('timestamp').notNull().default(sql`(datetime('now'))`),
-  role: text('role').notNull(),
-  content: text('content').notNull(),
-  deliverableReferences: text('deliverable_references').notNull().default('[]'),
-  citationsJson: text('citations_json').notNull().default('[]'),
-  interpretedIntentJson: text('interpreted_intent_json'),
 });
 
 // ─── Deliverables ─────────────────────────────────────────────────────────────

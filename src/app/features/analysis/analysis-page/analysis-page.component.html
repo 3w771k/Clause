@@ -70,94 +70,12 @@
     </div>
   }
 
-  <!-- Main content: Chat + Deliverable panel -->
-  <div class="flex-1 flex overflow-hidden min-h-0">
+  <!-- Main content: full-width Deliverable panel -->
+  <div class="flex-1 flex overflow-hidden min-h-0 bg-gray-50">
 
-    <!-- LEFT: Chat -->
-    <div class="flex flex-col w-96 min-w-96 border-r border-gray-200 bg-white overflow-hidden">
-
-      <!-- Messages -->
-      <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        @if (messages().length === 0) {
-          <div class="flex flex-col items-center justify-center h-full text-center px-6">
-            <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mb-3">
-              <svg class="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
-              </svg>
-            </div>
-            <p class="text-sm text-gray-500 leading-relaxed">Posez une question sur les documents. Par exemple :</p>
-            <div class="mt-3 space-y-2 w-full">
-              @for (suggestion of [
-                'Compare ces deux NDA',
-                'Audite ce contrat par rapport au playbook',
-                'Constitue un clausier'
-              ]; track suggestion) {
-                <button (click)="messageInput.set(suggestion)"
-                  class="w-full text-left text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors">
-                  {{ suggestion }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-
-        @for (msg of messages(); track msg.id) {
-          <div [class]="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
-            <div [class]="msg.role === 'user'
-              ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-72'
-              : 'bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-80'">
-              @if (msg.role === 'assistant') {
-                <div class="text-sm prose-chat leading-relaxed" [innerHTML]="renderMarkdown(msg.content)"></div>
-              } @else {
-                <p class="text-sm">{{ msg.content }}</p>
-              }
-
-            </div>
-          </div>
-        }
-
-        <!-- Typing indicator -->
-        @if (sending()) {
-          <div class="flex justify-start">
-            <div class="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
-              <div class="flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 150ms"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style="animation-delay: 300ms"></span>
-              </div>
-            </div>
-          </div>
-        }
-
-        <div #chatBottom></div>
-      </div>
-
-      <!-- Input -->
-      <div class="px-4 py-3 border-t border-gray-100 shrink-0">
-        <div class="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-indigo-400 focus-within:bg-white transition-all">
-          <textarea [value]="messageInput()" (input)="messageInput.set($any($event.target).value)"
-            (keydown)="onKeydown($event)"
-            placeholder="Demandez une comparaison, un audit..."
-            rows="1"
-            class="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none resize-none max-h-32 leading-relaxed"
-            [disabled]="sending()">
-          </textarea>
-          <button (click)="send()" [disabled]="!messageInput().trim() || sending()"
-            class="w-8 h-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 rounded-lg flex items-center justify-center transition-colors shrink-0 mb-0.5">
-            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
-            </svg>
-          </button>
-        </div>
-        <p class="text-[10px] text-gray-400 mt-1.5 text-center">Entrée pour envoyer · Maj+Entrée pour saut de ligne</p>
-      </div>
-    </div>
-
-    <!-- RIGHT: Deliverable panel -->
-    <div class="flex-1 flex flex-col overflow-hidden bg-gray-50">
-
-      @if (analysis()?.operation === 'alignment' && deliverables().length > 0) {
-        <!-- ALIGNMENT MODE: 3 onglets fixes -->
+    @if (analysis()?.operation === 'alignment' && deliverables().length > 0) {
+      <!-- ALIGNMENT MODE: 3 onglets fixes -->
+      <div class="flex-1 flex flex-col overflow-hidden">
         <div class="bg-white border-b border-gray-200 px-4 shrink-0">
           <div class="flex items-center gap-1 py-2">
             <button (click)="alignmentTab.set('note')"
@@ -182,6 +100,16 @@
           <div class="max-w-4xl mx-auto">
             @if (alignmentTab() === 'note') {
               @if (comparativeNoteDeliverable(); as noteDel) {
+                <div class="flex items-center justify-between mb-3">
+                  <div class="text-sm font-medium text-gray-700">{{ noteDel.name }}</div>
+                  <button (click)="activeDeliverable.set(noteDel); openRefine()"
+                    class="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                    </svg>
+                    Affiner
+                  </button>
+                </div>
                 <app-comparative-note [content]="asComparativeNote(noteDel)" />
               } @else {
                 <p class="text-sm text-gray-400 text-center py-8">Note comparative non disponible.</p>
@@ -211,9 +139,11 @@
             }
           </div>
         </div>
+      </div>
 
-      } @else if (analysis()?.operation === 'dd' && deliverables().length > 0) {
-        <!-- DD MODE: 2 onglets fixes -->
+    } @else if (analysis()?.operation === 'dd' && deliverables().length > 0) {
+      <!-- DD MODE: 2 onglets fixes -->
+      <div class="flex-1 flex flex-col overflow-hidden">
         <div class="bg-white border-b border-gray-200 px-4 shrink-0">
           <div class="flex items-center gap-1 py-2">
             <button (click)="ddTab.set('synthesis')"
@@ -247,9 +177,11 @@
             }
           </div>
         </div>
+      </div>
 
-      } @else {
-        <!-- MODE STANDARD: tabs par livrable -->
+    } @else {
+      <!-- MODE STANDARD: tabs par livrable -->
+      <div class="flex-1 flex flex-col overflow-hidden">
         @if (deliverables().length > 0) {
           <div class="bg-white border-b border-gray-200 px-4 shrink-0">
             <div class="flex items-center gap-1 overflow-x-auto py-2">
@@ -284,15 +216,24 @@
                     <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{{ del.status }}</span>
                   </div>
                 </div>
-                @if (isPublishableType(del.type)) {
-                  <button (click)="openPublish(del)"
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg transition-colors">
+                <div class="flex items-center gap-2">
+                  <button (click)="openRefine()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3.75 3.75 0 013.547 3.618A4.5 4.5 0 0117.25 19.5H6.75z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
                     </svg>
-                    Publier comme référentiel
+                    Affiner
                   </button>
-                }
+                  @if (isPublishableType(del.type)) {
+                    <button (click)="openPublish(del)"
+                      class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3.75 3.75 0 013.547 3.618A4.5 4.5 0 0117.25 19.5H6.75z"/>
+                      </svg>
+                      Publier comme référentiel
+                    </button>
+                  }
+                </div>
               </div>
 
               @switch (del.type) {
@@ -332,6 +273,15 @@
                 }
               }
             </div>
+          } @else if (isGenerating()) {
+            <div class="flex flex-col items-center justify-center h-full text-center">
+              <svg class="w-8 h-8 text-indigo-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <p class="text-sm text-gray-500">Génération en cours...</p>
+              <p class="text-xs text-gray-400 mt-1">Les livrables apparaîtront ici dès qu'ils sont prêts.</p>
+            </div>
           } @else {
             <div class="flex flex-col items-center justify-center h-full text-center">
               <div class="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center mb-4">
@@ -339,13 +289,13 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
               </div>
-              <p class="text-sm text-gray-400">Les livrables générés apparaîtront ici</p>
+              <p class="text-sm text-gray-400">Aucun livrable disponible</p>
               <p class="text-xs text-gray-300 mt-1">Notes comparatives, redlines, notes de revue...</p>
             </div>
           }
         </div>
-      }
-    </div>
+      </div>
+    }
 
   </div>
 </div>
@@ -413,6 +363,32 @@
           </button>
         </div>
       }
+    </div>
+  </div>
+}
+
+<!-- ─── Modal Affiner ─── -->
+@if (showRefine()) {
+  <div class="fixed inset-0 bg-black/30 z-40" (click)="closeRefine()"></div>
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] bg-white rounded-2xl shadow-2xl z-50 p-6">
+    <h3 class="text-base font-semibold text-gray-900 mb-3">Affiner ce livrable</h3>
+    <textarea [value]="refineInput()" (input)="refineInput.set($any($event.target).value)"
+      rows="3" placeholder="Ex : Renforce le verdict sur la clause de confidentialité"
+      class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm focus:outline-none"></textarea>
+    <div class="flex flex-wrap gap-1.5 mt-2 mb-4">
+      @for (ex of refineExamples; track ex) {
+        <button (click)="refineInput.set(ex)"
+          class="text-xs px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700">
+          {{ ex }}
+        </button>
+      }
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button (click)="closeRefine()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annuler</button>
+      <button (click)="applyRefine()" [disabled]="!refineInput() || refining()"
+        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+        @if (refining()) { En cours... } @else { Appliquer }
+      </button>
     </div>
   </div>
 }

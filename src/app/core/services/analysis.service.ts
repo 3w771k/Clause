@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiService } from './api.service';
-import type { Analysis, AnalysisDocument, ConversationMessage } from '../models/analysis.model';
+import type { Analysis, AnalysisDocument } from '../models/analysis.model';
 import type { Deliverable } from '../models/deliverable.model';
 
 @Injectable({ providedIn: 'root' })
@@ -22,7 +22,7 @@ export class AnalysisService {
   }
 
   startGeneration(wsId: string, anaId: string) {
-    return this.api.http.post<{ assistantMessageId: string }>(
+    return this.api.http.post<{ status: string }>(
       `${this.api.base}/workspaces/${wsId}/analyses/${anaId}/start-generation`, {}
     );
   }
@@ -40,20 +40,6 @@ export class AnalysisService {
 
   removeDocument(wsId: string, anaId: string, adId: string) {
     return this.api.http.delete(`${this.api.base}/workspaces/${wsId}/analyses/${anaId}/documents/${adId}`);
-  }
-
-  getMessages(wsId: string, anaId: string) {
-    return this.api.http.get<ConversationMessage[]>(
-      `${this.api.base}/workspaces/${wsId}/analyses/${anaId}/messages`
-    );
-  }
-
-  sendMessage(wsId: string, anaId: string, content: string) {
-    return this.api.http.post<{
-      userMessageId: string;
-      assistantMessage: ConversationMessage;
-      deliverableIds: string[];
-    }>(`${this.api.base}/workspaces/${wsId}/analyses/${anaId}/messages`, { content });
   }
 
   getDeliverable(id: string) {
@@ -81,6 +67,26 @@ export class AnalysisService {
       `${this.api.base}/deliverables/${id}/publish`,
       { name, description }
     );
+  }
+
+  refineDeliverable(id: string, instruction: string) {
+    return this.api.http.post<{ id: string; currentVersion: number; content: unknown }>(
+      `${this.api.base}/deliverables/${id}/refine`,
+      { instruction }
+    );
+  }
+
+  parseIntent(workspaceId: string, message: string) {
+    return this.api.http.post<{
+      operation: 'confrontation' | 'alignment' | 'aggregation' | 'dd' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies' | 'unclear';
+      targetDocumentIds: string[];
+      referenceDocumentId: string | null;
+      referenceAssetId: string | null;
+      suggestedName: string;
+      reasoning: string;
+      confidence: 'high' | 'medium' | 'low';
+      clarificationNeeded: string | null;
+    }>(`${this.api.base}/intent/parse`, { workspaceId, message });
   }
 
   listAllDeliverables() {

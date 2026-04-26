@@ -114,7 +114,7 @@ documentsRouter.post('/', upload.single('file'), async (req, res) => {
     });
   }
 
-  res.status(201).json(doc);
+  res.status(201).json(serializeDoc(doc));
 });
 
 // GET /api/workspaces/:wsId/documents/:id

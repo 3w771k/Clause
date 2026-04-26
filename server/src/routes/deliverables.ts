@@ -3,8 +3,12 @@ import { db } from '../db/index.js';
 import { deliverables, deliverableVersions, referenceAssets, referenceAssetVersions } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { llm } from '../llm/index.js';
+import type { ZodSchema } from 'zod';
 
 export const deliverablesRouter = Router();
+
+const passthrough = { parse: (v: unknown) => v } as unknown as ZodSchema<unknown>;
 
 deliverablesRouter.get('/', async (_req, res) => {
   const rows = await db.select({
@@ -178,4 +182,61 @@ deliverablesRouter.post('/:id/redline/reject-all', async (req, res) => {
     .where(eq(deliverables.id, req.params.id));
 
   res.json({ rejectedAll: true });
+});
+
+// Refine deliverable via NL instruction
+deliverablesRouter.post('/:id/refine', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { instruction } = req.body as { instruction?: string };
+    if (!instruction || typeof instruction !== 'string') {
+      res.status(400).json({ error: 'instruction is required' });
+      return;
+    }
+
+    const [del] = await db.select().from(deliverables).where(eq(deliverables.id, id));
+    if (!del) {
+      res.status(404).json({ error: 'Deliverable not found' });
+      return;
+    }
+
+    const currentContent = JSON.parse(del.contentJson);
+
+    const systemPrompt = `Tu modifies un livrable juridique selon les instructions de l'utilisateur. Conserve la structure JSON du livrable. Modifie UNIQUEMENT ce qui est demandé. Retourne le JSON complet du livrable modifié.
+
+Type de livrable : ${del.type}
+
+Structure JSON courante :
+${JSON.stringify(currentContent, null, 2)}`;
+
+    const userPrompt = `INSTRUCTION DE MODIFICATION :
+"${instruction}"
+
+Retourne le JSON complet du livrable modifié, en respectant strictement la même structure.`;
+
+    const newContent = await llm.completeStructured(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      passthrough,
+    );
+
+    const newVersion = del.currentVersion + 1;
+    await db.insert(deliverableVersions).values({
+      id: `dv_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
+      deliverableId: id,
+      version: newVersion,
+      summary: `Affinement utilisateur : "${instruction.substring(0, 80)}"`,
+      contentJson: JSON.stringify(newContent),
+    });
+
+    await db.update(deliverables)
+      .set({ contentJson: JSON.stringify(newContent), currentVersion: newVersion })
+      .where(eq(deliverables.id, id));
+
+    res.json({ id, currentVersion: newVersion, content: newContent });
+  } catch (err) {
+    next(err);
+  }
 });

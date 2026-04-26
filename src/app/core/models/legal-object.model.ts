@@ -33,6 +33,16 @@ export interface DefinedTerm {
   referencedInClauses: string[];
 }
 
+export interface CrossReference {
+  id: string;
+  legalObjectId: string;
+  sourceClauseId: string;
+  targetClauseId: string | null;
+  targetAnnex: string | null;
+  rawText: string;
+  citation: Citation;
+}
+
 export interface LegalObject {
   id: string;
   documentId: string;
@@ -45,4 +55,5 @@ export interface LegalObject {
   metadata: Record<string, unknown>;
   clauses: Clause[];
   definedTerms: DefinedTerm[];
+  crossReferences: CrossReference[];
 }

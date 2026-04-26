@@ -1,18 +1,20 @@
 import 'dotenv/config';
 import { v4 as uuidv4 } from 'uuid';
 import { db, initDb, sqlite } from './index.js';
+import { embedPassage, vectorToBuffer } from '../embeddings/embedding.service.js';
 
 console.log('🌱 Seeding database...');
 
 initDb();
 
 // Clear all tables
+try { sqlite.exec(`DELETE FROM clause_embeddings`); } catch {}
+try { sqlite.exec(`DELETE FROM conversation_messages`); } catch {}
 sqlite.exec(`
   DELETE FROM reference_asset_versions;
   DELETE FROM reference_assets;
   DELETE FROM deliverable_versions;
   DELETE FROM deliverables;
-  DELETE FROM conversation_messages;
   DELETE FROM analysis_documents;
   DELETE FROM analyses;
   DELETE FROM cross_references;
@@ -450,11 +452,7 @@ insertAnaDoc.run(uuidv4(), analysis1Id, lo1Id, 'target', 0);
 insertAnaDoc.run(uuidv4(), analysis1Id, lo2Id, 'reference', 1);
 insertAnaDoc.run(uuidv4(), analysis2Id, lo3Id, 'target', 0);
 
-// Seed conversation messages for analysis 1
-const insertMsg = sqlite.prepare(`INSERT INTO conversation_messages (id, analysis_id, role, content, deliverable_references, interpreted_intent_json) VALUES (?, ?, ?, ?, ?, ?)`);
 const delivId1 = 'del_comparative_note_001';
-insertMsg.run(uuidv4(), analysis1Id, 'user', 'Compare ce NDA à notre NDA standard maison', '[]', JSON.stringify({ operation: 'alignment', targetDocuments: [lo1Id], referenceAssets: [lo2Id], deliverableTypes: ['comparative_note', 'redline'], clarificationNeeded: null, confidence: 'high' }));
-insertMsg.run(uuidv4(), analysis1Id, 'assistant', 'J\'ai analysé les deux documents. Le NDA entrant présente **3 écarts significatifs** par rapport à votre NDA standard maison :\n\n1. **Durée des obligations de confidentialité** : 2 ans dans le NDA entrant vs **5 ans** dans votre standard → écart défavorable\n2. **Juridiction** : tribunaux de Londres dans le NDA entrant vs **Paris** dans votre standard → à renégocier\n3. **Retour/destruction** : pas d\'attestation de destruction demandée dans le NDA entrant → votre standard exige une attestation écrite\n\nJ\'ai généré la note comparative et le redline ci-dessous.', JSON.stringify([delivId1]), null);
 
 // ─── Deliverables ─────────────────────────────────────────────────────────────
 
@@ -625,3 +623,22 @@ console.log(`   Documents: ${doc1Id}, ${doc2Id}, ${doc3Id}`);
 console.log(`   Legal Objects: ${lo1Id}, ${lo2Id}, ${lo3Id}`);
 console.log(`   Analyses: ${analysis1Id}, ${analysis2Id}`);
 console.log(`   Reference Assets: ${asset1Id}, ${asset2Id}, ${asset3Id}`);
+
+console.log('🔢 Indexation vectorielle des clauses du seed (peut prendre 1-3 min la première fois)...');
+const allClauses = sqlite.prepare(`SELECT id, type, heading, text FROM clauses`).all() as Array<{ id: string; type: string; heading: string | null; text: string }>;
+const insertEmbedding = sqlite.prepare(`
+  INSERT OR REPLACE INTO clause_embeddings (clause_id, vector, model, created_at)
+  VALUES (?, ?, 'multilingual-e5-small', datetime('now'))
+`);
+let indexed = 0;
+for (const c of allClauses) {
+  const textToEmbed = `[${c.type}] ${c.heading ?? ''}\n${c.text}`.trim();
+  try {
+    const vec = await embedPassage(textToEmbed);
+    insertEmbedding.run(c.id, vectorToBuffer(vec));
+    indexed++;
+  } catch (err) {
+    console.error(`  ✗ Échec embedding clause ${c.id}:`, err);
+  }
+}
+console.log(`✅ ${indexed}/${allClauses.length} clauses indexées.`);

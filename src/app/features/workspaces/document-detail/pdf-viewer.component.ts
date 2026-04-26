@@ -4,10 +4,8 @@ import {
 } from '@angular/core';
 import * as pdfjsLib from 'pdfjs-dist';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url,
-).toString();
+// Le worker est copié dans le dossier de sortie via angular.json (assets).
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.mjs';
 
 @Component({
   selector: 'app-pdf-viewer',
@@ -120,7 +118,6 @@ export class PdfViewerComponent implements OnChanges, OnDestroy {
     this.renderTask = page.render({
       canvasContext: canvas.getContext('2d')!,
       viewport,
-      canvas,
     });
     await this.renderTask.promise;
   }

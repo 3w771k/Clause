@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
-import { documents, legalObjects, clauses, definedTerms, textPassages } from '../db/schema.js';
+import { documents, legalObjects, clauses, definedTerms, textPassages, clauseEmbeddings, crossReferences } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { llm } from '../llm/index.js';
 import { LegalExtractionResultSchema } from '../types/api.js';
 import type { LegalExtractionResult } from '../types/api.js';
 import maisontOntology from '../ontologies/maison.json' assert { type: 'json' };
+import { embedPassage, vectorToBuffer } from '../embeddings/embedding.service.js';
 
 // ─── Mock extraction for pre-alpha (no real PDF parsing yet) ──────────────────
 
@@ -90,10 +91,12 @@ export async function extractLegalObject(documentId: string): Promise<string> {
       userEditsJson: '[]',
     });
 
+    const insertedClauses: Array<{ id: string; type: string; heading: string | null; text: string }> = [];
     for (let i = 0; i < result.clauses.length; i++) {
       const c = result.clauses[i];
+      const clauseId = `cl_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
       await db.insert(clauses).values({
-        id: `cl_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
+        id: clauseId,
         legalObjectId: loId,
         type: c.type,
         heading: c.heading ?? null,
@@ -108,6 +111,21 @@ export async function extractLegalObject(documentId: string): Promise<string> {
         linkedDefinedTerms: JSON.stringify(c.linkedDefinedTerms),
         linkedClauses: '[]',
       });
+      insertedClauses.push({ id: clauseId, type: c.type, heading: c.heading ?? null, text: c.text });
+    }
+
+    for (const clause of insertedClauses) {
+      const textToEmbed = `[${clause.type}] ${clause.heading ?? ''}\n${clause.text}`.trim();
+      try {
+        const vector = await embedPassage(textToEmbed);
+        await db.insert(clauseEmbeddings).values({
+          clauseId: clause.id,
+          vector: vectorToBuffer(vector),
+          model: 'multilingual-e5-small',
+        });
+      } catch (err) {
+        console.error('[embeddings] failed to embed clause', clause.id, err);
+      }
     }
 
     for (const dt of result.definedTerms) {
@@ -149,6 +167,9 @@ export async function getLegalObjectFull(loId: string) {
   const termRows = await db.select().from(definedTerms)
     .where(eq(definedTerms.legalObjectId, loId));
 
+  const crossRefRows = await db.select().from(crossReferences)
+    .where(eq(crossReferences.legalObjectId, loId));
+
   return {
     ...lo,
     metadata: JSON.parse(lo.metadataJson),
@@ -164,6 +185,10 @@ export async function getLegalObjectFull(loId: string) {
       ...dt,
       citation: JSON.parse(dt.citationJson),
       referencedInClauses: JSON.parse(dt.referencedInClauses),
+    })),
+    crossReferences: crossRefRows.map((cr) => ({
+      ...cr,
+      citation: JSON.parse(cr.citationJson),
     })),
   };
 }
