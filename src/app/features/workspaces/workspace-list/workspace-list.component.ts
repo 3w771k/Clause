@@ -42,6 +42,14 @@ export class WorkspaceListComponent implements OnInit {
     });
   }
 
+  deleteWorkspace(ws: Workspace, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Supprimer l'espace « ${ws.name} » et tous ses documents ?`)) return;
+    this.wsService.delete(ws.id).subscribe(() => {
+      this.workspaces.update(list => list.filter(w => w.id !== ws.id));
+    });
+  }
+
   formatDate(d: string) {
     return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
