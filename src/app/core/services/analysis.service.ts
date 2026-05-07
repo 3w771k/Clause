@@ -144,6 +144,36 @@ export class AnalysisService {
     );
   }
 
+  updateTabularColumn(
+    anaId: string, trId: string, colId: string,
+    payload: { label?: string; question?: string; expectedType?: string },
+    rerun = false,
+  ) {
+    const url = `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns/${colId}${rerun ? '?rerun=true' : ''}`;
+    return this.api.http.patch<TabularReview>(url, payload);
+  }
+
+  addTabularColumn(
+    anaId: string, trId: string,
+    payload: { label: string; question: string; expectedType?: string; afterColumnId?: string },
+  ) {
+    return this.api.http.post<TabularReview>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns`, payload,
+    );
+  }
+
+  deleteTabularColumn(anaId: string, trId: string, colId: string) {
+    return this.api.http.delete<void>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns/${colId}`,
+    );
+  }
+
+  rerunTabularColumn(anaId: string, trId: string, colId: string) {
+    return this.api.http.post<TabularReview>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns/${colId}/rerun`, {},
+    );
+  }
+
   queryTabularReview(anaId: string, trId: string, question: string) {
     return this.api.http.post<{ question: string; generatedSql: string; result: Record<string, unknown>[]; error: string | null }>(
       `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/query`, { question }
@@ -173,6 +203,7 @@ export interface TabularCell {
   value: string | null;
   rawValue: string | null;
   confidence: string;
+  status?: 'fresh' | 'pending' | 'stale';
   citationJson: string | null;
   isUserEdited: boolean;
   lastRunAt: string | null;

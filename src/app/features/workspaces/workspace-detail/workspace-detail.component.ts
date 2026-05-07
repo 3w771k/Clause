@@ -1,5 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AppTabsComponent, TabDef } from '../../shared/app-tabs.component';
 import { WorkspaceService } from '../../../core/services/workspace.service';
 import { DocumentService } from '../../../core/services/document.service';
 import { AnalysisService } from '../../../core/services/analysis.service';
@@ -9,10 +10,10 @@ import type { Analysis } from '../../../core/models/analysis.model';
 
 @Component({
   selector: 'app-workspace-detail',
-  imports: [RouterLink],
+  imports: [AppTabsComponent],
   templateUrl: './workspace-detail.component.html',
 })
-export class WorkspaceDetailComponent implements OnInit {
+export class WorkspaceDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private wsService = inject(WorkspaceService);
@@ -24,12 +25,25 @@ export class WorkspaceDetailComponent implements OnInit {
   documents = signal<Document[]>([]);
   analyses = signal<Analysis[]>([]);
   activeTab = signal<'documents' | 'analyses'>('documents');
+  get tabsDef(): TabDef[] {
+    return [
+      { id: 'documents', label: 'Documents', count: this.documents().length },
+      { id: 'analyses', label: 'Analyses', count: this.analyses().length },
+    ];
+  }
   uploading = signal(false);
   extractingIds = signal<Set<string>>(new Set());
 
   ngOnInit() {
-    this.wsId = this.route.snapshot.paramMap.get('wsId')!;
-    this.load();
+    this.route.paramMap.subscribe(p => {
+      const wsId = p.get('wsId') ?? '';
+      if (wsId === this.wsId) return;
+      this.wsId = wsId;
+      this.workspace.set(null);
+      this.documents.set([]);
+      this.analyses.set([]);
+      this.load();
+    });
   }
 
   load() {
@@ -64,16 +78,25 @@ export class WorkspaceDetailComponent implements OnInit {
     });
   }
 
+  private pollIntervals = new Map<string, ReturnType<typeof setInterval>>();
+
   private pollExtraction(docId: string) {
     const interval = setInterval(() => {
       this.docService.get(this.wsId, docId).subscribe(doc => {
         this.documents.update(list => list.map(d => d.id === docId ? doc : d));
         if (doc.legalExtractionStatus === 'done' || doc.legalExtractionStatus === 'error') {
           clearInterval(interval);
+          this.pollIntervals.delete(docId);
           this.extractingIds.update(s => { const n = new Set(s); n.delete(docId); return n; });
         }
       });
     }, 2000);
+    this.pollIntervals.set(docId, interval);
+  }
+
+  ngOnDestroy() {
+    this.pollIntervals.forEach(i => clearInterval(i));
+    this.pollIntervals.clear();
   }
 
   openDoc(doc: Document) {

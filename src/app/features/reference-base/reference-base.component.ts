@@ -1,3 +1,10 @@
+// Composant orchestrateur de la page Base de référence (>250 lignes assumé).
+// Le split en sous-composants (asset-list / asset-detail / asset-import) est
+// listé dans Brief 5 §1 mais reste à faire dans une itération ultérieure :
+// l'état partagé (filtres, sélection, mode édition, dialog amendement, dialog
+// publication depuis document/livrable) rend l'extraction non triviale et
+// l'écran fonctionne tel quel après les briefs 1-4. À reprendre quand des
+// changements de fond seront nécessaires sur cet écran.
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ReferenceBaseService, type Amendment } from '../../core/services/reference-base.service';
@@ -246,7 +253,7 @@ export class ReferenceBaseComponent implements OnInit {
   deliverableTypeColor(type: string) {
     return {
       review_note: 'bg-blue-100 text-blue-700',
-      clausier: 'bg-violet-100 text-violet-700',
+      clausier: 'bg-gray-100 text-gray-800',
       dd_synthesis: 'bg-green-100 text-green-700',
       comparative_note: 'bg-orange-100 text-orange-700',
     }[type] ?? 'bg-gray-100 text-gray-600';
@@ -265,7 +272,7 @@ export class ReferenceBaseComponent implements OnInit {
     return {
       playbook: 'bg-orange-100 text-orange-700',
       nda_standard: 'bg-blue-100 text-blue-700',
-      clausier: 'bg-violet-100 text-violet-700',
+      clausier: 'bg-gray-100 text-gray-800',
       dd_grid: 'bg-green-100 text-green-700',
     }[type] ?? 'bg-gray-100 text-gray-600';
   }
@@ -337,7 +344,17 @@ export class ReferenceBaseComponent implements OnInit {
   enterEditMode() {
     const asset = this.selected();
     if (!asset) return;
-    const sections: EditableSection[] = ((asset.content?.['sections'] as any[]) ?? []).map((s: any) => ({
+    interface RawSection {
+      clauseType?: string;
+      stakes?: string;
+      positions?: {
+        ideal?: { description: string };
+        fallback?: { description: string };
+        redFlag?: { description: string };
+      };
+      sourceClauseIds?: string[];
+    }
+    const sections: EditableSection[] = ((asset.content?.['sections'] as RawSection[]) ?? []).map((s) => ({
       clauseType: s.clauseType ?? '',
       stakes: s.stakes ?? '',
       positions: {

@@ -103,11 +103,11 @@
 
   <!-- Recommendations -->
   @if (content().pointByPointRecommendations?.length) {
-    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-      <h3 class="text-sm font-semibold text-indigo-800 mb-2">Points à négocier</h3>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+      <h3 class="text-sm font-semibold text-gray-900 mb-2">Points à négocier</h3>
       <ol class="space-y-1.5 list-decimal list-inside">
         @for (rec of content().pointByPointRecommendations; track rec) {
-          <li class="text-sm text-indigo-900">{{ rec }}</li>
+          <li class="text-sm text-gray-800">{{ rec }}</li>
         }
       </ol>
     </div>

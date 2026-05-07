@@ -41,7 +41,7 @@
           <button (click)="toggleClause(entry.clauseType)"
             class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors">
             <div class="flex items-center gap-3 min-w-0">
-              <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shrink-0">{{ entry.clauseType }}</span>
+              <span class="text-xs font-semibold text-gray-700 bg-gray-50 px-2 py-0.5 rounded shrink-0">{{ entry.clauseType }}</span>
               <span class="font-medium text-sm text-gray-800 truncate">{{ entry.clauseLabel }}</span>
               <!-- Divergence badge -->
               @if (divergenceCount(entry) > 1) {
@@ -100,8 +100,8 @@
             class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors">
             <div class="flex items-center gap-3">
               <!-- Doc icon -->
-              <div class="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
-                <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                 </svg>
               </div>
@@ -126,7 +126,7 @@
                 <div class="px-4 py-3 border-b border-gray-50 last:border-b-0">
                   <div class="flex items-start gap-3">
                     <div class="flex items-center gap-2 shrink-0 pt-0.5">
-                      <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{{ clause.clauseType }}</span>
+                      <span class="text-xs font-semibold text-gray-700 bg-gray-50 px-2 py-0.5 rounded">{{ clause.clauseType }}</span>
                       @if (clause.isBestVersion) {
                         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700">Retenue</span>
                       } @else {
@@ -153,7 +153,7 @@
 
     @if (loadingTcd()) {
       <div class="flex flex-col items-center justify-center py-16 gap-3">
-        <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div class="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
         <p class="text-sm text-gray-500">Chargement...</p>
       </div>
     }
@@ -172,15 +172,15 @@
           <div class="flex items-center gap-3">
             <span class="text-xs text-gray-400">{{ flatView()!.rows.length }} ligne(s)</span>
             @if (addingColumn()) {
-              <div class="flex items-center gap-1.5 text-xs text-indigo-600 font-medium">
-                <div class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0"></div>
+              <div class="flex items-center gap-1.5 text-xs text-gray-700 font-medium">
+                <div class="w-3.5 h-3.5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
                 Extraction en cours...
               </div>
             }
           </div>
           <div class="flex items-center gap-2">
             <button (click)="openAddColumn()" [disabled]="addingColumn()"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors">
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-800 bg-gray-50 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
               </svg>
@@ -277,7 +277,7 @@
 
                   <!-- Type -->
                   <td class="px-4 py-3 border-r border-gray-100 align-top">
-                    <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-medium whitespace-nowrap">{{ item.row.clauseType }}</span>
+                    <span class="text-xs text-gray-700 bg-gray-50 px-2 py-0.5 rounded font-medium whitespace-nowrap">{{ item.row.clauseType }}</span>
                   </td>
 
                   <!-- Texte -->
@@ -344,13 +344,13 @@
       <div class="flex border-b border-gray-100 px-5 pt-3 gap-4">
         @if (availableStructuredKeys().length) {
           <button (click)="addColumnMode.set('pick')"
-            [class]="addColumnMode() === 'pick' ? 'text-indigo-600 border-b-2 border-indigo-600 font-medium' : 'text-gray-400 hover:text-gray-600'"
+            [class]="addColumnMode() === 'pick' ? 'text-gray-700 border-b-2 border-gray-900 font-medium' : 'text-gray-400 hover:text-gray-600'"
             class="text-xs pb-2 transition-colors">
             Champs détectés ({{ availableStructuredKeys().length }})
           </button>
         }
         <button (click)="addColumnMode.set('custom')"
-          [class]="addColumnMode() === 'custom' ? 'text-indigo-600 border-b-2 border-indigo-600 font-medium' : 'text-gray-400 hover:text-gray-600'"
+          [class]="addColumnMode() === 'custom' ? 'text-gray-700 border-b-2 border-gray-900 font-medium' : 'text-gray-400 hover:text-gray-600'"
           class="text-xs pb-2 transition-colors">
           Colonne personnalisée
         </button>
@@ -390,7 +390,7 @@
               (input)="newColName.set($any($event.target).value)"
               type="text"
               placeholder="Ex: Durée du contrat"
-              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400" />
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-900" />
           </div>
 
           <div>
@@ -398,7 +398,7 @@
             <select
               [value]="newColType()"
               (change)="newColType.set($any($event.target).value)"
-              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400">
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-900">
               <option value="text">Texte</option>
               <option value="amount">Montant</option>
               <option value="date">Date</option>
@@ -414,7 +414,7 @@
               (input)="newColInstruction.set($any($event.target).value)"
               rows="3"
               placeholder="Ex: Montant engagé par l'investisseur"
-              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-none">
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-900 resize-none">
             </textarea>
           </div>
         </div>
@@ -424,7 +424,7 @@
             Annuler
           </button>
           <button (click)="submitAddColumn()" [disabled]="!newColName().trim()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors">
+            class="px-4 py-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors">
             Extraire
           </button>
         </div>

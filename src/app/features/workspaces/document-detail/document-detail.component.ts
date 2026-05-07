@@ -79,9 +79,14 @@ export class DocumentDetailComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.wsId = this.route.snapshot.paramMap.get('wsId')!;
-    this.docId = this.route.snapshot.paramMap.get('docId')!;
-    this.load();
+    this.route.paramMap.subscribe(p => {
+      const wsId = p.get('wsId') ?? '';
+      const docId = p.get('docId') ?? '';
+      if (wsId === this.wsId && docId === this.docId) return;
+      this.wsId = wsId;
+      this.docId = docId;
+      this.load();
+    });
   }
 
   load() {
@@ -198,7 +203,8 @@ export class DocumentDetailComponent implements OnInit {
   }
 
   metaParties(): Array<{ name: string; role: string; citation?: { page?: number; extract?: string } }> {
-    return (this.legalObject()?.metadata?.['parties'] as any[]) ?? [];
+    type Party = { name: string; role: string; citation?: { page?: number; extract?: string } };
+    return (this.legalObject()?.metadata?.['parties'] as Party[]) ?? [];
   }
 
   metaField(key: string): Record<string, unknown> | null {

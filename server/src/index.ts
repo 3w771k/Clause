@@ -15,6 +15,7 @@ import { intentRouter } from './routes/intent.js';
 import { workflowsRouter } from './routes/workflows.js';
 import { amendmentsRouter } from './routes/amendments.js';
 import { tabularReviewsRouter } from './routes/tabular-reviews.js';
+import { tabularColumnsRouter } from './routes/tabular-columns.js';
 import { preloadEmbeddings } from './embeddings/embedding.service.js';
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api', tcdRouter);
 app.use('/api/workflows', workflowsRouter);
 app.use('/api/reference-base/:assetId/amendments', amendmentsRouter);
 app.use('/api/analyses/:analysisId/tabular-reviews', tabularReviewsRouter);
+app.use('/api/analyses/:analysisId/tabular-reviews', tabularColumnsRouter);
 
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

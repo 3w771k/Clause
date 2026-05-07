@@ -2,7 +2,7 @@
 
   @if (loading()) {
     <div class="flex-1 flex items-center justify-center">
-      <svg class="w-6 h-6 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+      <svg class="w-6 h-6 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
       </svg>
@@ -28,7 +28,7 @@
         <div class="flex items-center gap-2 shrink-0">
           @if (doc.legalExtractionStatus === 'none' || doc.legalExtractionStatus === 'error') {
             <button (click)="extract()" [disabled]="extracting()"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50">
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-800 bg-gray-50 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
               @if (extracting()) {
                 <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -44,7 +44,7 @@
             </button>
           }
           <button (click)="addToAnalysis()"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
@@ -82,15 +82,15 @@
         @if (doc.legalExtractionStatus === 'none') {
           <!-- État vide -->
           <div class="flex flex-col items-center justify-center h-full text-center px-6">
-            <div class="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
-              <svg class="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <div class="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+              <svg class="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
               </svg>
             </div>
             <p class="text-sm font-medium text-gray-700">Objet juridique non extrait</p>
             <p class="text-xs text-gray-400 mt-1 mb-5">Lancez l'indexation pour voir les clauses, métadonnées et termes définis structurés.</p>
             <button (click)="extract()" [disabled]="extracting()"
-              class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 text-white text-sm font-medium rounded-lg transition-colors">
+              class="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 text-white text-sm font-medium rounded-lg transition-colors">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3"/>
               </svg>
@@ -100,7 +100,7 @@
 
         } @else if (doc.legalExtractionStatus === 'processing' || extracting()) {
           <div class="flex flex-col items-center justify-center h-full text-center px-6">
-            <svg class="w-8 h-8 text-indigo-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-gray-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
@@ -117,7 +117,7 @@
 
         } @else if (loadingLegal()) {
           <div class="flex items-center justify-center h-full">
-            <svg class="w-5 h-5 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
             </svg>
@@ -131,7 +131,7 @@
               <button (click)="toggleSection('metadata')"
                 class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                 <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
                   </svg>
                   <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Métadonnées</span>
@@ -146,7 +146,7 @@
                 <div class="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3">
                   <!-- Type / confiance -->
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">{{ lo.documentType }}</span>
+                    <span class="text-xs font-semibold text-gray-800 bg-gray-50 px-2.5 py-0.5 rounded-full">{{ lo.documentType }}</span>
                     @if (lo.documentSubtype) {
                       <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{{ lo.documentSubtype }}</span>
                     }
@@ -177,7 +177,7 @@
                               }
                             </div>
                             @if (party.citation?.page) {
-                              <span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded shrink-0">p.{{ party.citation?.page }}</span>
+                              <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded shrink-0">p.{{ party.citation?.page }}</span>
                             }
                           </div>
                         }
@@ -192,7 +192,7 @@
                       <div class="flex items-center gap-1.5">
                         <span class="text-xs font-medium text-gray-800">{{ ct['value'] }} {{ ct['unit'] }}</span>
                         @if ($any(ct)['citation']?.page) {
-                          <span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">p.{{ $any(ct)['citation'].page }}</span>
+                          <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">p.{{ $any(ct)['citation'].page }}</span>
                         }
                       </div>
                     </div>
@@ -205,7 +205,7 @@
                       <div class="flex items-center gap-1.5">
                         <span class="text-xs text-gray-800">{{ $any(gl)['jurisdiction'] ?? gl['value'] }}</span>
                         @if ($any(gl)['citation']?.page) {
-                          <span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">p.{{ $any(gl)['citation'].page }}</span>
+                          <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">p.{{ $any(gl)['citation'].page }}</span>
                         }
                       </div>
                     </div>
@@ -218,7 +218,7 @@
                       <div class="flex items-center gap-1.5">
                         <span class="text-xs text-gray-800">{{ $any(cj)['jurisdiction'] ?? cj['value'] }}</span>
                         @if ($any(cj)['citation']?.page) {
-                          <span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">p.{{ $any(cj)['citation'].page }}</span>
+                          <span class="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">p.{{ $any(cj)['citation'].page }}</span>
                         }
                       </div>
                     </div>
@@ -232,7 +232,7 @@
               <button (click)="toggleSection('clauses')"
                 class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                 <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
                   </svg>
                   <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Clauses</span>
@@ -253,7 +253,7 @@
                   @if (lowConfidenceClauses().length) {
                     <div class="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
                       <button (click)="filterLow.set(false)"
-                        [class]="!filterLow() ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'"
+                        [class]="!filterLow() ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'"
                         class="text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors">Toutes</button>
                       <button (click)="filterLow.set(true)"
                         [class]="filterLow() ? 'bg-red-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'"
@@ -271,7 +271,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"/>
                               </svg>
                             }
-                            <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded shrink-0">{{ clause.type }}</span>
+                            <span class="text-[10px] font-semibold text-gray-700 bg-gray-50 px-2 py-0.5 rounded shrink-0">{{ clause.type }}</span>
                             <span class="text-xs text-gray-700 truncate">{{ clause.heading ?? clauseTypeLabel(clause.type) }}</span>
                           </div>
                           <div class="flex items-center gap-1.5 shrink-0 ml-2">
@@ -298,28 +298,28 @@
                                   <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Type</label>
                                   <input type="text" [value]="form.type"
                                     (input)="updateClauseFormField('type', $any($event.target).value)"
-                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900" />
                                 </div>
                                 <!-- Intitulé -->
                                 <div>
                                   <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Intitulé</label>
                                   <input type="text" [value]="form.heading" placeholder="Optionnel"
                                     (input)="updateClauseFormField('heading', $any($event.target).value)"
-                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900" />
                                 </div>
                                 <!-- Texte -->
                                 <div>
                                   <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Texte</label>
                                   <textarea rows="5" [value]="form.text"
                                     (input)="updateClauseFormField('text', $any($event.target).value)"
-                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none leading-relaxed"></textarea>
+                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none leading-relaxed"></textarea>
                                 </div>
                                 <!-- Notes -->
                                 <div>
                                   <label class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Notes</label>
                                   <textarea rows="2" [value]="form.notes" placeholder="Annotation personnelle..."
                                     (input)="updateClauseFormField('notes', $any($event.target).value)"
-                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none"></textarea>
+                                    class="mt-1 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"></textarea>
                                 </div>
                                 <!-- Actions -->
                                 <div class="flex items-center justify-end gap-2 pt-1">
@@ -328,7 +328,7 @@
                                     Annuler
                                   </button>
                                   <button (click)="saveClauseEdit()" [disabled]="savingClause()"
-                                    class="flex items-center gap-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors">
+                                    class="flex items-center gap-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 px-3 py-1.5 rounded-lg transition-colors">
                                     @if (savingClause()) {
                                       <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -346,7 +346,7 @@
                                 <!-- Action buttons -->
                                 <div class="flex flex-wrap items-center justify-end gap-2 pt-2">
                                   <button (click)="loadSimilarClauses(clause.id); $event.stopPropagation()"
-                                    class="flex items-center gap-1 text-[10px] font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">
+                                    class="flex items-center gap-1 text-[10px] font-medium text-gray-800 bg-gray-50 hover:bg-gray-200 px-2 py-1 rounded-lg transition-colors">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                     </svg>
@@ -360,7 +360,7 @@
                                     Demander
                                   </button>
                                   <button (click)="startEditClause(clause)"
-                                    class="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors">
+                                    class="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-lg transition-colors">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
                                     </svg>
@@ -420,11 +420,11 @@
                                 <!-- Citation -->
                                 @if (clause.citation?.page) {
                                   <button (click)="navigateToPage(clause.citation.page)"
-                                    class="flex items-center gap-1.5 hover:bg-indigo-50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors group">
-                                    <svg class="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    class="flex items-center gap-1.5 hover:bg-gray-100 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors group">
+                                    <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                                     </svg>
-                                    <span class="text-[10px] text-indigo-600 font-medium group-hover:underline">Page {{ clause.citation.page }}</span>
+                                    <span class="text-[10px] text-gray-700 font-medium group-hover:underline">Page {{ clause.citation.page }}</span>
                                     @if (clause.citation.extract) {
                                       <span class="text-[10px] text-gray-400 italic truncate max-w-[180px]" title="{{ clause.citation.extract }}">« {{ clause.citation.extract | slice:0:80 }}... »</span>
                                     }
@@ -433,7 +433,7 @@
 
                                 <!-- Notes utilisateur -->
                                 @if (clause.notes) {
-                                  <p class="text-xs text-indigo-600 italic border-l-2 border-indigo-200 pl-2">{{ clause.notes }}</p>
+                                  <p class="text-xs text-gray-700 italic border-l-2 border-gray-300 pl-2">{{ clause.notes }}</p>
                                 }
                               </div>
                             }
@@ -453,7 +453,7 @@
                 <button (click)="toggleSection('terms')"
                   class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                   <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <svg class="w-4 h-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                     </svg>
                     <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Termes définis</span>
@@ -472,7 +472,7 @@
                         <button (click)="toggleTerm(term.id)"
                           class="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 transition-colors">
                           <div class="flex items-center gap-2">
-                            <span class="text-xs font-medium text-violet-700">« {{ term.term }} »</span>
+                            <span class="text-xs font-medium text-gray-800">« {{ term.term }} »</span>
                             <span [class]="confidenceBadge(term.confidence)" class="text-[9px] px-1.5 py-0.5 rounded-full">{{ term.confidence }}</span>
                           </div>
                           <svg class="w-3 h-3 text-gray-400 transition-transform"
@@ -486,11 +486,11 @@
                             <p class="text-xs text-gray-700 leading-relaxed pt-1">{{ term.definition }}</p>
                             @if (term.citation?.page) {
                               <button (click)="navigateToPage(term.citation.page)"
-                                class="flex items-center gap-1.5 hover:bg-violet-50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors group">
-                                <svg class="w-3 h-3 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                class="flex items-center gap-1.5 hover:bg-gray-100 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors group">
+                                <svg class="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                                 </svg>
-                                <span class="text-[10px] text-violet-600 font-medium group-hover:underline">Page {{ term.citation.page }}</span>
+                                <span class="text-[10px] text-gray-700 font-medium group-hover:underline">Page {{ term.citation.page }}</span>
                               </button>
                             }
                           </div>
@@ -583,9 +583,9 @@
         <div class="text-sm text-gray-500">Aucune clause similaire trouvée dans les autres documents du workspace.</div>
       } @else {
         @for (sim of similarClauses() ?? []; track sim.id) {
-          <div class="border border-gray-200 rounded-xl p-3 hover:border-indigo-300 transition-colors">
+          <div class="border border-gray-200 rounded-xl p-3 hover:border-gray-300 transition-colors">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{{ sim.type }}</span>
+              <span class="text-xs font-medium text-gray-800 bg-gray-50 px-2 py-0.5 rounded">{{ sim.type }}</span>
               <span class="text-xs text-gray-500 tabular-nums">{{ (sim.similarity * 100).toFixed(0) }}% similaire</span>
             </div>
             <div class="text-xs text-gray-500 mb-1 truncate">📄 {{ sim.documentName }}</div>

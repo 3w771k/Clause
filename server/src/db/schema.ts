@@ -248,6 +248,7 @@ export const tabularCells = sqliteTable('tabular_cells', {
   rawValue: text('raw_value'),
   citationJson: text('citation_json'),
   confidence: text('confidence').notNull().default('absent'),
+  status: text('status').notNull().default('fresh'),
   isUserEdited: integer('is_user_edited', { mode: 'boolean' }).notNull().default(false),
   lastRunAt: text('last_run_at'),
 });

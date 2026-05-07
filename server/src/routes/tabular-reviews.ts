@@ -7,67 +7,13 @@ import {
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
+import {
+  TabularColumn, parseColumns, cellId, extractCellValue,
+} from './tabular-shared.js';
 
 export const tabularReviewsRouter = Router({ mergeParams: true });
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-interface TabularColumn {
-  id: string;
-  label: string;
-  question: string;
-  expectedType: string;
-}
-
-function parseColumns(raw: string): TabularColumn[] {
-  try { return JSON.parse(raw); } catch { return []; }
-}
-
-function cellId() { return `tc_${uuidv4().replace(/-/g, '').substring(0, 12)}`; }
-
-async function extractCellValue(
-  docText: string,
-  column: TabularColumn,
-): Promise<{ value: string | null; rawValue: string | null; confidence: string; citationJson: string }> {
-  const prompt = `You are a legal analyst. Answer the following question based solely on the document text below.
-
-Question: ${column.question}
-
-Document:
-<document>
-${docText.substring(0, 10000)}
-</document>
-
-Return a JSON object with:
-- "value": concise answer (1-3 sentences max), or null if absent
-- "rawValue": verbatim excerpt from the document that supports your answer, or null
-- "confidence": "high" | "medium" | "low" | "absent"
-- "page": page number if identifiable, or null
-
-Return only valid JSON.`;
-
-  try {
-    const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const text = msg.content.find(b => b.type === 'text')?.text ?? '{}';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no json');
-    const parsed = JSON.parse(jsonMatch[0]);
-    return {
-      value: parsed.value ?? null,
-      rawValue: parsed.rawValue ?? null,
-      confidence: parsed.confidence ?? 'absent',
-      citationJson: JSON.stringify({ page: parsed.page ?? null, excerpt: parsed.rawValue ?? null }),
-    };
-  } catch {
-    return { value: null, rawValue: null, confidence: 'absent', citationJson: '{}' };
-  }
-}
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
@@ -152,7 +98,6 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
   const columns = parseColumns(review.columnsJson);
   if (!columns.length) return res.status(400).json({ error: 'No columns defined' });
 
-  // Get all documents in the analysis
   const adRows = await db.select({
     legalObjectId: analysisDocuments.legalObjectId,
     documentId: legalObjects.documentId,
@@ -170,7 +115,6 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
   const results = [];
 
   for (const doc of adRows) {
-    // Upsert row
     let [existingRow] = await db.select().from(tabularRows)
       .where(and(eq(tabularRows.tabularReviewId, trId), eq(tabularRows.documentId, doc.documentId)));
 
@@ -191,7 +135,6 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
     for (const col of columns) {
       const extracted = await extractCellValue(docText, col);
 
-      // Upsert cell
       const [existingCell] = await db.select().from(tabularCells)
         .where(and(
           eq(tabularCells.tabularReviewId, trId),
@@ -205,6 +148,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
           rawValue: extracted.rawValue,
           confidence: extracted.confidence,
           citationJson: extracted.citationJson,
+          status: 'fresh',
           lastRunAt: now,
           isUserEdited: false,
         }).where(eq(tabularCells.id, existingCell.id)).returning();
@@ -220,6 +164,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
           rawValue: extracted.rawValue,
           confidence: extracted.confidence,
           citationJson: extracted.citationJson,
+          status: 'fresh',
           lastRunAt: now,
         }).returning();
         cellResults.push(inserted);
@@ -234,7 +179,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
   res.json({ trId, runAt: now, rowsProcessed: results.length, results });
 });
 
-// POST /api/analyses/:analysisId/tabular-reviews/:trId/rows/:rowId/cells/:colId/rerun
+// POST /:trId/rows/:rowId/cells/:colId/rerun — single cell re-run
 tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, res) => {
   const { analysisId, trId, rowId, colId } = req.params;
 
@@ -269,6 +214,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
       rawValue: extracted.rawValue,
       confidence: extracted.confidence,
       citationJson: extracted.citationJson,
+      status: 'fresh',
       lastRunAt: now,
       isUserEdited: false,
     }).where(eq(tabularCells.id, existingCell.id)).returning();
@@ -283,6 +229,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
       rawValue: extracted.rawValue,
       confidence: extracted.confidence,
       citationJson: extracted.citationJson,
+      status: 'fresh',
       lastRunAt: now,
     }).returning();
   }
@@ -290,7 +237,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
   res.json(cell);
 });
 
-// PATCH /api/analyses/:analysisId/tabular-reviews/:trId/rows/:rowId/cells/:colId — manual edit
+// PATCH /:trId/rows/:rowId/cells/:colId — manual edit
 tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) => {
   const { trId, rowId, colId } = req.params;
   const { value, rawValue } = req.body as { value: string; rawValue?: string };
@@ -313,7 +260,7 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
   res.json(updated);
 });
 
-// POST /api/analyses/:analysisId/tabular-reviews/:trId/query — NL→SQL chat
+// POST /:trId/query — NL→SQL chat
 tabularReviewsRouter.post('/:trId/query', async (req, res) => {
   const { trId, analysisId } = req.params;
   const { question } = req.body as { question: string };
@@ -357,10 +304,8 @@ Return ONLY the SQL query, nothing else. Always include a JOIN with documents vi
       messages: [{ role: 'user', content: sqlPrompt }],
     });
     generatedSql = (msg.content.find(b => b.type === 'text')?.text ?? '').trim();
-    // Strip markdown code fences if present
     generatedSql = generatedSql.replace(/^```sql?\n?/i, '').replace(/\n?```$/, '').trim();
 
-    // Safety: only allow SELECT
     if (!generatedSql.toUpperCase().startsWith('SELECT')) {
       throw new Error('Only SELECT queries are allowed');
     }

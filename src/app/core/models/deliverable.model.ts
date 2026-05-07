@@ -1,3 +1,8 @@
+// Définitions de modèles partagées par tous les types de livrables (>250 lignes
+// assumé). C'est un fichier de types pur sans logique : la taille reflète la
+// largeur du domaine métier (10 types de livrables avec contenu structuré).
+// Le split par type ferait perdre la vue d'ensemble. Conservé groupé.
+
 export type DeliverableType = 'comparative_note' | 'redline' | 'review_note' | 'clausier' | 'dd_synthesis' | 'dd_table' | 'ma_table' | 'deadlines_table' | 'compliance_note' | 'inconsistencies_report';
 
 // ─── Comparative Note ─────────────────────────────────────────────────────────

@@ -1,61 +1,57 @@
 @import 'tailwindcss';
 
 /* ─── Design tokens Sinequa ─────────────────────────────────────────────── */
+/* Tokens minimaux : la palette est portée par Tailwind (gray-*, indigo-* dans
+   la sidebar uniquement, voir Brief 3). Ces variables sont consommées par les
+   `surface-*` ci-dessous et par le shell. */
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-
-  --font-size-xs:   12px;
-  --font-size-sm:   13px;
-  --font-size-base: 14px;
-  --font-size-md:   15px;
-  --font-size-lg:   16px;
-  --font-size-xl:   18px;
-  --font-size-2xl:  22px;
-  --font-size-3xl:  28px;
-
-  --color-primary-50:  #EEF2FF;
-  --color-primary-100: #E0E7FF;
-  --color-primary-500: #6366F1;
-  --color-primary-600: #4F46E5;
-  --color-primary-700: #4338CA;
-
-  --color-success-100: #D1FAE5;
-  --color-success-500: #10B981;
-  --color-warning-100: #FEF3C7;
-  --color-warning-500: #F59E0B;
-  --color-danger-100:  #FEE2E2;
-  --color-danger-500:  #EF4444;
-  --color-info-100:    #DBEAFE;
-  --color-info-500:    #3B82F6;
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.10), 0 2px 4px -1px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -2px rgba(0,0,0,0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.10), 0 10px 10px -5px rgba(0,0,0,0.04);
 }
 
 :root {
-  --bg-app:      #FAFAFA;
-  --bg-surface:  #FFFFFF;
-  --bg-rail:     #FFFFFF;
-  --bg-sidebar:  #F8F8F8;
-  --bg-hover:    #F1F1F1;
-  --bg-selected: #EEF2FF;
+  --bg-app:        #FAFAFA;
+  --bg-surface:    #FFFFFF;
+  --bg-sidebar:    #F8F8F8;
+  --border-subtle: #E5E7EB;
+}
 
-  --border-subtle:  #E5E7EB;
-  --border-default: #D1D5DB;
-  --border-strong:  #9CA3AF;
+/* ─── Composants utilitaires (Brief 3) ───────────────────────────────────── */
+@layer components {
+  /* Surfaces */
+  .surface-app    { background: var(--bg-app); }
+  .surface-card   { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; }
+  .surface-rail   { background: var(--bg-sidebar); border-right: 1px solid var(--border-subtle); }
 
-  --text-primary:    #111827;
-  --text-secondary:  #4B5563;
-  --text-tertiary:   #9CA3AF;
-  --text-on-primary: #FFFFFF;
+  /* Boutons primaires (action principale, sobre noir) */
+  .btn-primary {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md
+           bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50;
+  }
+
+  /* Boutons secondaires (actions courantes) */
+  .btn-secondary {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md
+           text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50;
+  }
+
+  /* Boutons icône seule */
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-md
+           text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors;
+  }
+
+  /* Badges de confiance */
+  .badge-confidence-high   { @apply inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium; }
+  .badge-confidence-medium { @apply inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium; }
+  .badge-confidence-low    { @apply inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 font-medium; }
+  .badge-confidence-absent { @apply inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-400 border border-gray-200 font-medium; }
+
+  /* Champs de saisie */
+  .input-text {
+    @apply w-full text-sm px-3 py-2 border border-gray-300 rounded-md
+           focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900;
+  }
 }
 
 /* ─── Redline styles ─────────────────────────────────────────────────────── */

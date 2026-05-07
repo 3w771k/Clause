@@ -287,5 +287,6 @@ export function initDb() {
 try { sqlite.exec(`ALTER TABLE documents ADD COLUMN file_blob BLOB`); } catch {}
 try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN operation TEXT NOT NULL DEFAULT 'unclear'`); } catch {}
 try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN reference_asset_id TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE tabular_cells ADD COLUMN status TEXT NOT NULL DEFAULT 'fresh'`); } catch {}
 
 export { sqlite };

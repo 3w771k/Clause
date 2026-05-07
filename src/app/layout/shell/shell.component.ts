@@ -7,7 +7,7 @@ import { ReferenceBaseService } from '../../core/services/reference-base.service
 import type { Workspace } from '../../core/models/workspace.model';
 import type { Analysis } from '../../core/models/analysis.model';
 
-interface BreadcrumbSegment { label: string; route: string | null; }
+const SIDEBAR_KEY = 'sidebarOpen';
 
 @Component({
   selector: 'app-shell',
@@ -24,17 +24,13 @@ export class ShellComponent implements OnInit, OnDestroy {
   currentWorkspace = signal<Workspace | null>(null);
   analyses = signal<Analysis[]>([]);
   refCounts = signal({ playbook: 0, standard: 0, grille_dd: 0, clausier: 0 });
-  sidebarOpen = signal(true);
-  breadcrumbs = signal<BreadcrumbSegment[]>([]);
+  sidebarOpen = signal(this.readSidebarPref());
 
   private currentWsId = '';
   private subs = new Subscription();
 
   ngOnInit() {
-    this.wsService.list().subscribe(ws => {
-      this.workspaces.set(ws);
-      this.buildBreadcrumb(this.router.url);
-    });
+    this.wsService.list().subscribe(ws => this.workspaces.set(ws));
     this.loadRefCounts();
     this.subs.add(
       this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
@@ -56,32 +52,15 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.wsService.list().subscribe(ws => {
         this.workspaces.set(ws);
         this.currentWorkspace.set(ws.find(w => w.id === wsId) ?? null);
-        this.buildBreadcrumb(url);
       });
       this.anaService.list(wsId).subscribe(a =>
         this.analyses.set([...a].sort((x, y) => y.lastActivityAt.localeCompare(x.lastActivityAt)))
       );
-    } else {
-      this.buildBreadcrumb(url);
+    } else if (!wsId) {
+      this.currentWsId = '';
+      this.currentWorkspace.set(null);
+      this.analyses.set([]);
     }
-  }
-
-  private buildBreadcrumb(url: string) {
-    const segs: BreadcrumbSegment[] = [{ label: 'Espaces de travail', route: '/workspaces' }];
-    const wsMatch = url.match(/\/workspaces\/([^/?]+)/);
-    if (wsMatch) {
-      const ws = this.workspaces().find(w => w.id === wsMatch[1]);
-      segs.push({ label: ws?.name ?? wsMatch[1], route: `/workspaces/${wsMatch[1]}` });
-      const anaMatch = url.match(/\/analyses\/([^/?]+)/);
-      if (anaMatch) {
-        segs.push({ label: 'Legal Extraction', route: null });
-        const ana = this.analyses().find(a => a.id === anaMatch[1]);
-        if (ana) segs.push({ label: ana.name, route: null });
-      } else if (url.includes('/reference-base')) {
-        segs.push({ label: 'Base de référence', route: null });
-      }
-    }
-    this.breadcrumbs.set(segs);
   }
 
   private loadRefCounts() {
@@ -99,5 +78,19 @@ export class ShellComponent implements OnInit, OnDestroy {
     return this.router.url.match(/\/workspaces\/([^/?]+)/)?.[1] ?? '';
   }
 
-  toggleSidebar() { this.sidebarOpen.update(v => !v); }
+  private readSidebarPref(): boolean {
+    try {
+      const v = localStorage.getItem(SIDEBAR_KEY);
+      if (v === 'false') return false;
+      return true;
+    } catch { return true; }
+  }
+
+  toggleSidebar() {
+    this.sidebarOpen.update(v => {
+      const next = !v;
+      try { localStorage.setItem(SIDEBAR_KEY, String(next)); } catch {}
+      return next;
+    });
+  }
 }

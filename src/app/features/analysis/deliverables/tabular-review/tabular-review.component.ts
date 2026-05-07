@@ -1,11 +1,13 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AnalysisService, TabularReview, TabularColumn, TabularRow, TabularCell, Workflow } from '../../../../core/services/analysis.service';
+import { ColumnEditMenuComponent } from './column-edit-menu.component';
 
 @Component({
   selector: 'app-tabular-review',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ColumnEditMenuComponent],
+  host: { class: 'flex-1 flex flex-col overflow-hidden min-h-0 min-w-0' },
   templateUrl: './tabular-review.component.html',
 })
 export class TabularReviewComponent implements OnInit {
@@ -46,6 +48,16 @@ export class TabularReviewComponent implements OnInit {
 
   // Citation popover
   activeCitation = signal<{ excerpt: string; page: number | null } | null>(null);
+
+  // Column edit menu
+  openColumnMenu = signal<string | null>(null);
+  columnMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
+  columnRerunning = signal<Set<string>>(new Set());
+  toastError = signal('');
+  showAddColumnForm = signal(false);
+  newColumnLabel = signal('');
+  newColumnQuestion = signal('');
+  newColumnType = signal('text');
 
   confidenceClass = computed(() => (conf: string) => {
     switch (conf) {
@@ -238,5 +250,136 @@ export class TabularReviewComponent implements OnInit {
 
   get selectedWorkflow(): Workflow | undefined {
     return this.workflows().find(w => w.id === this.selectedWorkflowId());
+  }
+
+  // ─── Column edition ────────────────────────────────────────────────────────
+
+  isColumnRerunning(colId: string): boolean {
+    return this.columnRerunning().has(colId);
+  }
+
+  openMenuColumn(): TabularColumn | null {
+    const id = this.openColumnMenu();
+    if (!id) return null;
+    return this.activeReview()?.columns.find(c => c.id === id) ?? null;
+  }
+
+  toggleColumnMenu(colId: string, event: Event) {
+    event.stopPropagation();
+    if (this.openColumnMenu() === colId) {
+      this.openColumnMenu.set(null);
+      return;
+    }
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    this.columnMenuPos.set({ top: rect.bottom + 4, left: Math.max(8, rect.right - 288) });
+    this.openColumnMenu.set(colId);
+  }
+
+  private flashError(msg: string) {
+    this.toastError.set(msg);
+    setTimeout(() => this.toastError.set(''), 3000);
+  }
+
+  onColumnSave(col: TabularColumn, payload: { label: string; question: string; expectedType: string; rerun: boolean }) {
+    const r = this.activeReview();
+    if (!r) return;
+    const patch: { label?: string; question?: string; expectedType?: string } = {};
+    if (payload.label !== col.label) patch.label = payload.label;
+    if (payload.question !== col.question) patch.question = payload.question;
+    if (payload.expectedType !== (col.expectedType ?? 'text')) patch.expectedType = payload.expectedType;
+    if (!Object.keys(patch).length) { this.openColumnMenu.set(null); return; }
+
+    if (payload.rerun) this.markColumnRerunning(col.id, true);
+    this.svc.updateTabularColumn(this.anaId, r.id, col.id, patch, payload.rerun).subscribe({
+      next: full => {
+        this.activeReview.set(full);
+        this.openColumnMenu.set(null);
+        this.markColumnRerunning(col.id, false);
+      },
+      error: err => {
+        this.flashError(err?.error?.error ?? 'Erreur lors de la modification');
+        this.markColumnRerunning(col.id, false);
+      },
+    });
+  }
+
+  onColumnDelete(col: TabularColumn) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.deleteTabularColumn(this.anaId, r.id, col.id).subscribe({
+      next: () => {
+        this.activeReview.update(rev => rev ? {
+          ...rev,
+          columns: rev.columns.filter(c => c.id !== col.id),
+          rows: rev.rows?.map(ro => ({ ...ro, cells: ro.cells.filter(c => c.columnId !== col.id) })),
+        } : rev);
+        this.openColumnMenu.set(null);
+      },
+      error: err => this.flashError(err?.error?.error ?? 'Suppression impossible'),
+    });
+  }
+
+  onColumnAddAfter(col: TabularColumn) {
+    this.openColumnMenu.set(null);
+    this.startAddColumn(col.id);
+  }
+
+  onColumnRerun(col: TabularColumn) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.markColumnRerunning(col.id, true);
+    this.svc.rerunTabularColumn(this.anaId, r.id, col.id).subscribe({
+      next: full => {
+        this.activeReview.set(full);
+        this.markColumnRerunning(col.id, false);
+        this.openColumnMenu.set(null);
+      },
+      error: err => {
+        this.flashError(err?.error?.error ?? 'Erreur lors du recalcul');
+        this.markColumnRerunning(col.id, false);
+      },
+    });
+  }
+
+  private markColumnRerunning(colId: string, on: boolean) {
+    this.columnRerunning.update(s => {
+      const next = new Set(s);
+      if (on) next.add(colId); else next.delete(colId);
+      return next;
+    });
+  }
+
+  private addAfterColumnId: string | null = null;
+  startAddColumn(afterColId: string | null = null) {
+    this.addAfterColumnId = afterColId;
+    this.newColumnLabel.set('');
+    this.newColumnQuestion.set('');
+    this.newColumnType.set('text');
+    this.showAddColumnForm.set(true);
+  }
+
+  cancelAddColumn() {
+    this.showAddColumnForm.set(false);
+    this.addAfterColumnId = null;
+  }
+
+  submitAddColumn() {
+    const r = this.activeReview();
+    if (!r) return;
+    const label = this.newColumnLabel().trim();
+    const question = this.newColumnQuestion().trim();
+    if (!label || !question) return;
+    const payload: { label: string; question: string; expectedType?: string; afterColumnId?: string } = {
+      label, question, expectedType: this.newColumnType(),
+    };
+    if (this.addAfterColumnId) payload.afterColumnId = this.addAfterColumnId;
+    this.svc.addTabularColumn(this.anaId, r.id, payload).subscribe({
+      next: full => {
+        this.activeReview.set(full);
+        this.cancelAddColumn();
+      },
+      error: err => this.flashError(err?.error?.error ?? 'Ajout impossible'),
+    });
   }
 }
