@@ -14,19 +14,24 @@ import { MaTableComponent } from '../deliverables/ma-table/ma-table.component';
 import { DeadlinesTableComponent } from '../deliverables/deadlines-table/deadlines-table.component';
 import { ComplianceNoteComponent } from '../deliverables/compliance-note/compliance-note.component';
 import { InconsistenciesReportComponent } from '../deliverables/inconsistencies-report/inconsistencies-report.component';
+import { AmendmentDialogComponent } from '../../reference-base/amendment-dialog.component';
+import { TabularReviewComponent } from '../deliverables/tabular-review/tabular-review.component';
+import { ReferenceBaseService } from '../../../core/services/reference-base.service';
+import type { ReferenceAsset } from '../../../core/models/reference-asset.model';
 import type { Analysis } from '../../../core/models/analysis.model';
 import type { Deliverable } from '../../../core/models/deliverable.model';
 import type { ComparativeNoteContent, RedlineContent, ReviewNoteContent, ClausierContent, DDSynthesisContent, DDTableContent, MaTableContent, DeadlinesTableContent, ComplianceNoteContent, InconsistenciesReportContent } from '../../../core/models/deliverable.model';
 
 @Component({
   selector: 'app-analysis-page',
-  imports: [RouterLink, FormsModule, JsonPipe, ComparativeNoteComponent, RedlineComponent, ReviewNoteComponent, ClausierComponent, DDSynthesisComponent, DDTableComponent, MaTableComponent, DeadlinesTableComponent, ComplianceNoteComponent, InconsistenciesReportComponent],
+  imports: [RouterLink, FormsModule, JsonPipe, ComparativeNoteComponent, RedlineComponent, ReviewNoteComponent, ClausierComponent, DDSynthesisComponent, DDTableComponent, MaTableComponent, DeadlinesTableComponent, ComplianceNoteComponent, InconsistenciesReportComponent, AmendmentDialogComponent, TabularReviewComponent],
   templateUrl: './analysis-page.component.html',
 })
 export class AnalysisPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private anaService = inject(AnalysisService);
   private docService = inject(DocumentService);
+  private refService = inject(ReferenceBaseService);
 
   wsId = '';
   anaId = '';
@@ -34,6 +39,10 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
   analysis = signal<Analysis | null>(null);
   deliverables = signal<Deliverable[]>([]);
   activeDeliverable = signal<Deliverable | null>(null);
+
+  // Amendment
+  showAmendDialog = signal(false);
+  referenceAsset = signal<ReferenceAsset | null>(null);
 
   // Onglets pour les analyses alignment
   alignmentTab = signal<'note' | 'redline' | 'document'>('note');
@@ -63,8 +72,21 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
     'Ajoute un point sur la durée du contrat',
   ];
 
-  // Polling state
+  // Polling state (deliverables)
   private pollHandle: ReturnType<typeof setTimeout> | null = null;
+
+  // ─── Conversation ────────────────────────────────────────────────────────────
+  showChat = signal(false);
+  messages = signal<Array<{ id: string; role: string; content: string; timestamp: string; deliverableReferences: string[]; pending?: boolean }>>([]);
+  chatInput = signal('');
+  sending = signal(false);
+  private chatPollHandle: ReturnType<typeof setTimeout> | null = null;
+  readonly chatExamples = [
+    'Quels sont les risques principaux ?',
+    'Compare la durée des deux contrats',
+    'Y a-t-il des clauses d\'exclusivité ?',
+    'Résume les obligations financières',
+  ];
 
   // Computed helpers pour alignment
   comparativeNoteDeliverable = computed(() =>
@@ -94,11 +116,60 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.pollHandle) clearTimeout(this.pollHandle);
+    if (this.chatPollHandle) clearTimeout(this.chatPollHandle);
+  }
+
+  toggleChat() {
+    const open = !this.showChat();
+    this.showChat.set(open);
+    if (open && this.messages().length === 0) this.loadMessages();
+  }
+
+  loadMessages() {
+    this.anaService.getMessages(this.wsId, this.anaId).subscribe(msgs => {
+      this.messages.set(msgs);
+      if (msgs.some(m => m.content === '⏳ Traitement en cours...')) this.scheduleChatPoll();
+    });
+  }
+
+  sendChatMessage() {
+    const content = this.chatInput().trim();
+    if (!content || this.sending()) return;
+    this.sending.set(true);
+    this.chatInput.set('');
+    this.anaService.sendMessage(this.wsId, this.anaId, content).subscribe({
+      next: (res) => {
+        this.messages.update(list => [
+          ...list,
+          { id: res.userMessageId, role: 'user', content, timestamp: new Date().toISOString(), deliverableReferences: [] },
+          { ...res.assistantMessage, pending: true },
+        ]);
+        this.sending.set(false);
+        this.scheduleChatPoll();
+        if (res.deliverableIds?.length) {
+          this.loadDeliverables(res.deliverableIds);
+        }
+      },
+      error: () => this.sending.set(false),
+    });
+  }
+
+  private scheduleChatPoll() {
+    if (this.chatPollHandle) clearTimeout(this.chatPollHandle);
+    this.chatPollHandle = setTimeout(() => {
+      this.anaService.getMessages(this.wsId, this.anaId).subscribe(msgs => {
+        this.messages.set(msgs.map(m => ({ ...m, pending: m.content === '⏳ Traitement en cours...' })));
+        if (msgs.some(m => m.content === '⏳ Traitement en cours...')) this.scheduleChatPoll();
+      });
+    }, 2000);
   }
 
   load() {
     this.anaService.get(this.wsId, this.anaId).subscribe(ana => {
       this.analysis.set(ana);
+      if (ana.referenceAssetId) {
+        this.refService.get(ana.referenceAssetId).subscribe(a => this.referenceAsset.set(a));
+      }
       const delIds = (ana.deliverables ?? []).map(d => d.id);
       if (delIds.length) this.loadDeliverables(delIds);
       if (ana.status === 'generating') this.scheduleRefresh();

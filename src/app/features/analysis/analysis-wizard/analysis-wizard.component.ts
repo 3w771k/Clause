@@ -7,7 +7,7 @@ import { ReferenceBaseService } from '../../../core/services/reference-base.serv
 import type { Document } from '../../../core/models/document.model';
 import type { ReferenceAsset } from '../../../core/models/reference-asset.model';
 
-type Operation = 'confrontation' | 'alignment' | 'aggregation' | 'dd' | 'unclear' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies';
+type Operation = 'confrontation' | 'alignment' | 'aggregation' | 'tabular' | 'dd' | 'unclear' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies';
 
 @Component({
   selector: 'app-analysis-wizard',
@@ -81,6 +81,7 @@ export class AnalysisWizardComponent implements OnInit {
     if (op === 'confrontation') return targets.size === 1;
     if (op === 'alignment') return targets.size === 1 && this.selectedRefDocId() !== null;
     if (op === 'aggregation') return targets.size >= 1;
+    if (op === 'tabular') return targets.size >= 1;
     if (op === 'dd') return targets.size >= 1;
     if (op === 'ma_mapping') return targets.size >= 1;
     if (op === 'deadlines') return targets.size >= 1;
@@ -113,6 +114,11 @@ export class AnalysisWizardComponent implements OnInit {
     if (op === 'aggregation') {
       const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       return `Clausier ${month}`;
+    }
+    if (op === 'tabular') {
+      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      const count = this.selectedTargetDocIds().size;
+      return `Tableau d'analyse — ${count} doc${count > 1 ? 's' : ''} — ${month}`;
     }
     if (op === 'dd') {
       return 'Due Diligence ' + new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -244,6 +250,7 @@ export class AnalysisWizardComponent implements OnInit {
       confrontation: 'Audit contractuel',
       alignment: 'Comparaison',
       aggregation: 'Clausier',
+      tabular: 'Tableau d\'analyse',
       dd: 'Due Diligence',
       ma_mapping: 'Cartographie M&A',
       deadlines: 'Échéances contractuelles',

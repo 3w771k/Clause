@@ -118,14 +118,22 @@ tabularReviewsRouter.get('/:trId', async (req, res) => {
     .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
   if (!review) return res.status(404).json({ error: 'Tabular review not found' });
 
-  const rows = await db.select().from(tabularRows).where(eq(tabularRows.tabularReviewId, trId));
+  const rowsRaw = await db.select({
+    row: tabularRows,
+    fileName: documents.fileName,
+  })
+  .from(tabularRows)
+  .leftJoin(documents, eq(documents.id, tabularRows.documentId))
+  .where(eq(tabularRows.tabularReviewId, trId));
+
   const cells = await db.select().from(tabularCells).where(eq(tabularCells.tabularReviewId, trId));
 
   res.json({
     ...review,
     columns: parseColumns(review.columnsJson),
-    rows: rows.map(r => ({
+    rows: rowsRaw.map(({ row: r, fileName }) => ({
       ...r,
+      fileName: fileName ?? r.documentId,
       cells: cells
         .filter(c => c.rowId === r.id)
         .map(c => ({ ...c, citation: c.citationJson ? JSON.parse(c.citationJson) : null })),
