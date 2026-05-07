@@ -1,8 +1,11 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ReferenceBaseService } from '../../core/services/reference-base.service';
+import { ReferenceBaseService, type Amendment } from '../../core/services/reference-base.service';
 import { AnalysisService } from '../../core/services/analysis.service';
+import { ClausierComponent } from '../analysis/deliverables/clausier/clausier.component';
+import { AmendmentDialogComponent } from './amendment-dialog.component';
 import type { ReferenceAsset } from '../../core/models/reference-asset.model';
+import type { ClausierContent } from '../../core/models/deliverable.model';
 
 interface DeliverableSummary {
   id: string; analysisId: string; type: string; name: string;
@@ -22,7 +25,7 @@ interface EditableSection {
 
 @Component({
   selector: 'app-reference-base',
-  imports: [FormsModule],
+  imports: [FormsModule, ClausierComponent, AmendmentDialogComponent],
   templateUrl: './reference-base.component.html',
 })
 export class ReferenceBaseComponent implements OnInit {
@@ -218,6 +221,8 @@ export class ReferenceBaseComponent implements OnInit {
 
   select(a: ReferenceAsset) {
     this.selected.set(a);
+    this.amendments.set([]);
+    this.loadAmendments();
   }
 
   filtered() {
@@ -263,6 +268,64 @@ export class ReferenceBaseComponent implements OnInit {
       clausier: 'bg-violet-100 text-violet-700',
       dd_grid: 'bg-green-100 text-green-700',
     }[type] ?? 'bg-gray-100 text-gray-600';
+  }
+
+  // ── Amendments ─────────────────────────────────────────────────────────────
+
+  amendments = signal<Amendment[]>([]);
+  loadingAmendments = signal(false);
+  showAmendmentDialog = signal(false);
+  activeAmendmentTab = signal<'pending' | 'history'>('pending');
+
+  pendingAmendments = computed(() => this.amendments().filter(a => a.status === 'pending' || a.status === 'deferred'));
+  historyAmendments = computed(() => this.amendments().filter(a => a.status === 'accepted' || a.status === 'rejected'));
+
+  loadAmendments() {
+    const asset = this.selected();
+    if (!asset) return;
+    this.loadingAmendments.set(true);
+    this.refService.getAmendments(asset.id).subscribe({
+      next: (amds) => { this.amendments.set(amds); this.loadingAmendments.set(false); },
+      error: () => this.loadingAmendments.set(false),
+    });
+  }
+
+  resolveAmendment(amendmentId: string, action: 'accept' | 'reject' | 'defer') {
+    const asset = this.selected();
+    if (!asset) return;
+    this.refService.resolveAmendment(asset.id, amendmentId, action).subscribe({
+      next: () => {
+        this.loadAmendments();
+        if (action === 'accept') {
+          // Reload asset to reflect content changes
+          this.refService.get(asset.id).subscribe(updated => {
+            this.assets.update(list => list.map(a => a.id === updated.id ? updated : a));
+            this.selected.set(updated);
+          });
+        }
+      },
+    });
+  }
+
+  onAmendmentCreated() {
+    this.loadAmendments();
+  }
+
+  amendmentStatusLabel(s: string) {
+    return { pending: 'En attente', accepted: 'Accepté', rejected: 'Rejeté', deferred: 'Différé' }[s] ?? s;
+  }
+
+  amendmentStatusColor(s: string) {
+    return {
+      pending: 'bg-amber-100 text-amber-700',
+      accepted: 'bg-green-100 text-green-700',
+      rejected: 'bg-red-100 text-red-700',
+      deferred: 'bg-gray-100 text-gray-500',
+    }[s] ?? 'bg-gray-100 text-gray-500';
+  }
+
+  fieldLabel(f: string) {
+    return { ideal: 'Position idéale', fallback: 'Repli', redFlag: 'Red flag', stakes: 'Enjeux' }[f] ?? f;
   }
 
   // ── Edit mode ──────────────────────────────────────────────────────────────
@@ -330,6 +393,10 @@ export class ReferenceBaseComponent implements OnInit {
 
   removeSection(i: number) {
     this.editingSections.update(list => list.filter((_, idx) => idx !== i));
+  }
+
+  asClausierContent(asset: ReferenceAsset): ClausierContent {
+    return asset.content as unknown as ClausierContent;
   }
 
   statusColor(s: string) {

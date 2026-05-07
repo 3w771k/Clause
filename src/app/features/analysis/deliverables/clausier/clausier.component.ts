@@ -32,7 +32,7 @@ interface DocSection {
 })
 export class ClausierComponent {
   content = input.required<ClausierContent>();
-  deliverableId = input.required<string>();
+  deliverableId = input<string | null>(null);
 
   private http = inject(HttpClient);
   private api = inject(ApiService);
@@ -91,15 +91,19 @@ export class ClausierComponent {
   }
 
   addStructuredKey(key: string) {
+    const id = this.deliverableId();
+    if (!id) return;
     this.http.post<ClausierFlatView>(
-      `${this.api.base}/deliverables/${this.deliverableId()}/tcd/columns`,
+      `${this.api.base}/deliverables/${id}/tcd/columns`,
       { fromStructuredField: true, key },
     ).subscribe({ next: (fv) => this.flatView.set(fv) });
   }
 
   deleteStructuredKey(key: string) {
+    const id = this.deliverableId();
+    if (!id) return;
     this.http.delete<ClausierFlatView>(
-      `${this.api.base}/deliverables/${this.deliverableId()}/tcd/structured-keys/${encodeURIComponent(key)}`,
+      `${this.api.base}/deliverables/${id}/tcd/structured-keys/${encodeURIComponent(key)}`,
     ).subscribe({ next: (fv) => this.flatView.set(fv) });
   }
 
@@ -125,6 +129,7 @@ export class ClausierComponent {
   }
 
   switchToTableau() {
+    if (!this.deliverableId()) return;
     this.viewMode.set('tableau');
     if (!this.flatView()) {
       this.loadTcd();
@@ -132,8 +137,10 @@ export class ClausierComponent {
   }
 
   loadTcd() {
+    const id = this.deliverableId();
+    if (!id) return;
     this.loadingTcd.set(true);
-    this.http.get<ClausierFlatView>(`${this.api.base}/deliverables/${this.deliverableId()}/tcd`).subscribe({
+    this.http.get<ClausierFlatView>(`${this.api.base}/deliverables/${id}/tcd`).subscribe({
       next: (fv) => { this.flatView.set(fv); this.loadingTcd.set(false); },
       error: () => this.loadingTcd.set(false),
     });
@@ -162,15 +169,19 @@ export class ClausierComponent {
   }
 
   deleteColumn(colId: string) {
+    const id = this.deliverableId();
+    if (!id) return;
     this.http.delete<ClausierFlatView>(
-      `${this.api.base}/deliverables/${this.deliverableId()}/tcd/columns/${colId}`,
+      `${this.api.base}/deliverables/${id}/tcd/columns/${colId}`,
     ).subscribe({
       next: (fv) => this.flatView.set(fv),
     });
   }
 
   exportExcel() {
-    window.open(`${this.api.base}/deliverables/${this.deliverableId()}/tcd/export/xlsx`, '_blank');
+    const id = this.deliverableId();
+    if (!id) return;
+    window.open(`${this.api.base}/deliverables/${id}/tcd/export/xlsx`, '_blank');
   }
 
   // ─── Par clause / par document ─────────────────────────────────────────────

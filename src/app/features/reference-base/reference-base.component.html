@@ -251,6 +251,9 @@
                   </div>
                 }
               </div>
+            } @else if (asset.content?.['entries']) {
+              <app-clausier [content]="asClausierContent(asset)" [deliverableId]="null" />
+
             } @else if (asset.content?.['clauses']) {
               <div class="space-y-3">
                 @for (clause of $any(asset.content)['clauses']; track clause.type) {
@@ -270,6 +273,89 @@
             }
           </div>
         </div>
+
+        <!-- ─── Amendments queue ─────────────────────────────────────────── -->
+        <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h3 class="font-medium text-gray-900 text-sm">Amendements proposés</h3>
+              @if (pendingAmendments().length > 0) {
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                  {{ pendingAmendments().length }} en attente
+                </span>
+              }
+            </div>
+            <div class="flex items-center gap-2">
+              <button (click)="activeAmendmentTab.set('pending')"
+                [class]="activeAmendmentTab() === 'pending' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:bg-gray-50'"
+                class="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors">En attente</button>
+              <button (click)="activeAmendmentTab.set('history')"
+                [class]="activeAmendmentTab() === 'history' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:bg-gray-50'"
+                class="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors">Historique</button>
+              <button (click)="showAmendmentDialog.set(true)"
+                class="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 hover:bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 transition-colors font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Proposer
+              </button>
+            </div>
+          </div>
+          <div class="divide-y divide-gray-50">
+            @if (activeAmendmentTab() === 'pending') {
+              @if (pendingAmendments().length === 0) {
+                <p class="px-6 py-6 text-sm text-gray-400 text-center">Aucun amendement en attente.</p>
+              }
+              @for (amd of pendingAmendments(); track amd.id) {
+                <div class="px-6 py-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-xs font-semibold text-gray-800">{{ amd.clauseType }}</span>
+                        <span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{{ fieldLabel(amd.field) }}</span>
+                        <span [class]="amendmentStatusColor(amd.status)" class="text-[10px] font-medium px-1.5 py-0.5 rounded-full">{{ amendmentStatusLabel(amd.status) }}</span>
+                      </div>
+                      <p class="text-xs text-gray-700 leading-relaxed mb-1">{{ amd.proposedValue }}</p>
+                      @if (amd.rationale) {
+                        <p class="text-[11px] text-gray-400 italic">{{ amd.rationale }}</p>
+                      }
+                      <p class="text-[10px] text-gray-300 mt-1">{{ formatDate(amd.proposedAt) }}</p>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0">
+                      <button (click)="resolveAmendment(amd.id, 'accept')"
+                        class="text-[10px] px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 font-medium transition-colors">
+                        Accepter
+                      </button>
+                      <button (click)="resolveAmendment(amd.id, 'defer')"
+                        class="text-[10px] px-2.5 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium transition-colors">
+                        Différer
+                      </button>
+                      <button (click)="resolveAmendment(amd.id, 'reject')"
+                        class="text-[10px] px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium transition-colors">
+                        Rejeter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            } @else {
+              @if (historyAmendments().length === 0) {
+                <p class="px-6 py-6 text-sm text-gray-400 text-center">Aucun amendement traité.</p>
+              }
+              @for (amd of historyAmendments(); track amd.id) {
+                <div class="px-6 py-3 flex items-start gap-3">
+                  <span [class]="amendmentStatusColor(amd.status)" class="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 mt-0.5">{{ amendmentStatusLabel(amd.status) }}</span>
+                  <div class="min-w-0">
+                    <span class="text-xs font-medium text-gray-700">{{ amd.clauseType }}</span>
+                    <span class="text-[10px] text-gray-400 ml-1.5">{{ fieldLabel(amd.field) }}</span>
+                    <p class="text-[10px] text-gray-300 mt-0.5">{{ amd.resolvedAt ? formatDate(amd.resolvedAt) : '' }}</p>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
       </div>
     } @else {
       <div class="flex flex-col items-center justify-center h-full text-center">
@@ -527,4 +613,11 @@
 
     </div>
   </div>
+}
+
+@if (showAmendmentDialog() && selected()) {
+  <app-amendment-dialog
+    [asset]="selected()!"
+    (onClose)="showAmendmentDialog.set(false)"
+    (onCreated)="onAmendmentCreated()" />
 }
