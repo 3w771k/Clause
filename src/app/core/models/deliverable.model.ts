@@ -40,7 +40,7 @@ export interface ComparativeNoteContent {
 
 export interface RedlineChange {
   id: string;
-  type: 'replacement' | 'insertion' | 'deletion';
+  type: 'replacement' | 'insertion' | 'deletion' | 'insert' | 'delete' | 'comment';
   originalText: string;
   newText: string;
   location: { startOffset: number; endOffset: number };
@@ -48,6 +48,10 @@ export interface RedlineChange {
   rationale: string;
   referenceSource: string;
   status: 'pending' | 'accepted' | 'rejected';
+  // Brief 8: ancrage capitalisation
+  severity?: 'critical' | 'major' | 'minor' | 'info';
+  deviatesFromAssetId?: string;
+  deviatesFromElementId?: string;
 }
 
 export interface RedlineContent {

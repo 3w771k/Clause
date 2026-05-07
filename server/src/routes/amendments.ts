@@ -16,10 +16,14 @@ amendmentsRouter.get('/', async (req, res) => {
 
 amendmentsRouter.post('/', async (req, res) => {
   const { assetId } = req.params;
-  const { scope, targetPath, currentValue, proposedValue, rationale, proposedFromAnalysisId, triggerSource, triggerRedlineId } =
+  const { scope, targetPath, currentValue, proposedValue, rationale,
+    proposedFromAnalysisId, triggerSource, triggerRedlineId,
+    targetElementId, targetElementPath } =
     req.body as {
       scope: string; targetPath: string; currentValue: string; proposedValue: string;
-      rationale: string; proposedFromAnalysisId?: string; triggerSource?: string; triggerRedlineId?: string;
+      rationale: string; proposedFromAnalysisId?: string;
+      triggerSource?: string; triggerRedlineId?: string;
+      targetElementId?: string; targetElementPath?: string;
     };
 
   const [asset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, assetId));
@@ -38,6 +42,8 @@ amendmentsRouter.post('/', async (req, res) => {
     status: 'pending',
     triggerSource: triggerSource ?? 'manual',
     triggerRedlineId: triggerRedlineId ?? null,
+    targetElementId: targetElementId ?? null,
+    targetElementPath: targetElementPath ?? null,
   }).returning();
 
   res.status(201).json(parse(row));
@@ -54,6 +60,24 @@ amendmentsRouter.patch('/:amendmentId', async (req, res) => {
   const statusMap = { accept: 'accepted', reject: 'rejected', defer: 'deferred' } as const;
   const now = new Date().toISOString();
 
+  // Brief 6 §5: si accept + targetElementId, appliquer la modif sur l'élément
+  if (action === 'accept' && existing.targetElementId) {
+    const [asset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, assetId));
+    if (asset) {
+      try {
+        const content = JSON.parse(asset.contentJson) as Record<string, unknown>;
+        applyToElement(content, existing.targetElementId, existing.proposedValue, existing.targetElementPath ?? '');
+        await db.update(referenceAssets).set({
+          contentJson: JSON.stringify(content),
+          lastUpdatedAt: now,
+          lastUpdatedBy: 'demo-user',
+        }).where(eq(referenceAssets.id, assetId));
+      } catch (err) {
+        console.warn('[amendments] Failed to apply targeted amendment:', err);
+      }
+    }
+  }
+
   const [updated] = await db.update(amendments).set({
     status: statusMap[action],
     reviewedAt: now,
@@ -63,6 +87,32 @@ amendmentsRouter.patch('/:amendmentId', async (req, res) => {
 
   res.json(parse(updated));
 });
+
+// Recursively find an element by id and update its primary text field with proposedValue.
+// Best-effort: works on PlaybookRequirement.ruleText, StandardClause.text, DDQuestion.text,
+// ClausierVariant.text, TabularWorkflowColumn.question.
+function applyToElement(node: unknown, elementId: string, proposedValue: string, _path: string): boolean {
+  if (!node || typeof node !== 'object') return false;
+  if (Array.isArray(node)) {
+    for (const item of node) if (applyToElement(item, elementId, proposedValue, _path)) return true;
+    return false;
+  }
+  const obj = node as Record<string, unknown>;
+  if (obj['id'] === elementId) {
+    // Heuristique: champs textuels mutables
+    for (const k of ['ruleText', 'text', 'question', 'description', 'title', 'label']) {
+      if (typeof obj[k] === 'string') {
+        obj[k] = proposedValue;
+        return true;
+      }
+    }
+    return true;
+  }
+  for (const k of Object.keys(obj)) {
+    if (applyToElement(obj[k], elementId, proposedValue, _path)) return true;
+  }
+  return false;
+}
 
 function parse(a: typeof amendments.$inferSelect) {
   return { ...a };

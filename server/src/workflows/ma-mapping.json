@@ -1,0 +1,21 @@
+{
+  "id": "ma-mapping",
+  "name": "Cartographie M&A",
+  "description": "Cartographie d'une opération M&A : mapping des engagements clés (closing, garanties, earn-out, conditions suspensives)",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Type d'opération", "question": "Quel est le type d'opération M&A (cession d'actions, cession d'actifs, fusion, apport partiel) ?", "expectedType": "text" },
+      { "label": "Parties", "question": "Qui sont les parties (vendeur, acquéreur, garants, intermédiaires) ?", "expectedType": "text" },
+      { "label": "Valorisation", "question": "Quel est le prix ou la valorisation retenue ? Le prix est-il fixe ou ajustable ?", "expectedType": "text" },
+      { "label": "Cibles / Périmètre", "question": "Quel est le périmètre de la cible (sociétés, actifs, branches d'activité) ?", "expectedType": "text" },
+      { "label": "Caps de garantie", "question": "Quels sont les plafonds (caps) et planchers (de minimis, threshold) des garanties d'actif et de passif ?", "expectedType": "text" },
+      { "label": "Conditions suspensives", "question": "Quelles conditions suspensives au closing (autorisation réglementaire, financement, autorisation comité d'entreprise) ?", "expectedType": "text" },
+      { "label": "Earn-out", "question": "Y a-t-il un earn-out ou complément de prix ? Sur quels critères et quelle durée ?", "expectedType": "text" },
+      { "label": "Closing", "question": "Quelle est la date prévue de closing ? Quelles obligations de pré-closing ?", "expectedType": "date" },
+      { "label": "Litiges connus", "question": "Quels litiges connus sont mentionnés ou exclus de la garantie ?", "expectedType": "text" }
+    ]
+  }
+}

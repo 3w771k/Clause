@@ -1,0 +1,17 @@
+{
+  "id": "deadlines-tracker",
+  "name": "Suivi des échéances",
+  "description": "Extraction des échéances contractuelles : paiements, notifications, résiliations, révisions",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Échéance", "question": "Quel est l'objet de l'échéance (paiement, notification, renouvellement, résiliation, révision) ?", "expectedType": "text" },
+      { "label": "Date", "question": "Quelle est la date ou la périodicité de l'échéance (date fixe, anniversaire, X jours après événement) ?", "expectedType": "date" },
+      { "label": "Type", "question": "Type d'échéance : paiement / notification / résiliation / révision / autre ?", "expectedType": "enum" },
+      { "label": "Conséquence", "question": "Quelle conséquence en cas de non-respect (pénalité, déchéance, résiliation automatique) ?", "expectedType": "text" },
+      { "label": "Référence clause", "question": "Quelle est la clause source (numéro d'article, intitulé) qui porte cette échéance ?", "expectedType": "text" }
+    ]
+  }
+}

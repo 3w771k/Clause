@@ -23,6 +23,10 @@ export class RedlineComponent {
   processing = signal<string | null>(null);
   localChanges = signal<RedlineChange[]>([]);
 
+  // Brief 8 §6 — capitalisation
+  capitaliseToast = signal<{ change: RedlineChange; assetName: string } | null>(null);
+  showCapitaliseDialog = signal<{ assetId: string; elementId: string; rationale: string } | null>(null);
+
   constructor() {
     effect(() => {
       this.localChanges.set(this.content().changes ?? []);
@@ -63,9 +67,28 @@ export class RedlineComponent {
         );
         this.processing.set(null);
         this.deliverableUpdated.emit();
+        // Brief 8 §6: si la proposal dévie d'un asset, proposer la capitalisation
+        if (change.deviatesFromAssetId && change.deviatesFromElementId) {
+          this.capitaliseToast.set({ change, assetName: change.deviatesFromAssetId });
+          setTimeout(() => this.capitaliseToast.set(null), 8000);
+        }
       },
       error: () => this.processing.set(null),
     });
+  }
+
+  openCapitaliseDialog(change: RedlineChange) {
+    if (!change.deviatesFromAssetId || !change.deviatesFromElementId) return;
+    this.showCapitaliseDialog.set({
+      assetId: change.deviatesFromAssetId,
+      elementId: change.deviatesFromElementId,
+      rationale: change.rationale,
+    });
+    this.capitaliseToast.set(null);
+  }
+
+  closeCapitaliseDialog() {
+    this.showCapitaliseDialog.set(null);
   }
 
   reject(change: RedlineChange) {

@@ -1,0 +1,19 @@
+{
+  "id": "inconsistencies-check",
+  "name": "Détection d'incohérences",
+  "description": "Workflow tabulaire dont la dernière colonne compare au reste du workspace (court terme : extraction par doc, comparaison croisée par le LLM)",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Type de document", "question": "Quel est le type de document (NDA, MSA, prestation, distribution) ?", "expectedType": "text" },
+      { "label": "Parties", "question": "Qui sont les parties au contrat ?", "expectedType": "text" },
+      { "label": "Durée", "question": "Quelle est la durée du contrat (terme fixe, indéterminé, tacite reconduction) ?", "expectedType": "text" },
+      { "label": "Loi applicable", "question": "Quelle est la loi applicable au contrat ?", "expectedType": "text" },
+      { "label": "Juridiction", "question": "Quelle est la juridiction compétente ou la clause d'arbitrage ?", "expectedType": "text" },
+      { "label": "Plafond responsabilité", "question": "Y a-t-il un plafond (cap) de responsabilité ? Quel montant ?", "expectedType": "text" },
+      { "label": "Incohérences avec autres documents du workspace", "question": "Cette ligne présente-t-elle des incohérences (loi, juridiction, plafond, durée) avec les autres lignes du tableau ? Préciser lesquelles.", "expectedType": "text" }
+    ]
+  }
+}

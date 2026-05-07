@@ -1,3 +1,23 @@
+export type ViewType = 'tabular' | 'audit' | 'comparison' | 'contract_draft' | 'multi_doc_redline';
+
+// Mapping legacy operation → viewType (Brief 7).
+export function operationToViewType(op: string | null | undefined): ViewType {
+  switch (op) {
+    case 'alignment': return 'comparison';
+    case 'confrontation': return 'audit';
+    case 'tabular': return 'tabular';
+    case 'dd':
+    case 'ma_mapping':
+    case 'deadlines':
+    case 'compliance':
+    case 'inconsistencies':
+    case 'aggregation':
+    case 'unclear':
+    default:
+      return 'tabular';
+  }
+}
+
 export interface Analysis {
   id: string;
   workspaceId: string;
@@ -5,6 +25,9 @@ export interface Analysis {
   createdAt: string;
   lastActivityAt: string;
   status: string;
+  viewType?: ViewType;
+  legacyOperation?: string | null;
+  /** @deprecated utiliser viewType. Conservé pour compat des anciens écrans. */
   operation?: string;
   referenceAssetId?: string | null;
   documents?: AnalysisDocument[];

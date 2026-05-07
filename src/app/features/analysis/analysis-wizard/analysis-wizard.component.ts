@@ -7,7 +7,13 @@ import { ReferenceBaseService } from '../../../core/services/reference-base.serv
 import type { Document } from '../../../core/models/document.model';
 import type { ReferenceAsset } from '../../../core/models/reference-asset.model';
 
-type Operation = 'confrontation' | 'alignment' | 'aggregation' | 'tabular' | 'dd' | 'unclear' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies';
+// Brief 7: 5 viewTypes au lieu de 9 operations. Quelques anciennes opérations
+// (aggregation, dd, etc.) restent acceptées comme alias pour ne pas casser le
+// parseIntent NLU côté backend ; elles seront résolues vers tabular en sortie.
+type Operation =
+  | 'tabular' | 'confrontation' | 'alignment'
+  | 'contract_draft' | 'multi_doc_redline'
+  | 'aggregation' | 'dd' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies' | 'unclear';
 
 @Component({
   selector: 'app-analysis-wizard',
@@ -78,8 +84,10 @@ export class AnalysisWizardComponent implements OnInit {
     const op = this.operation();
     const targets = this.selectedTargetDocIds();
     if (!op) return false;
-    if (op === 'confrontation') return targets.size === 1;
+    if (op === 'confrontation') return targets.size === 1 && this.selectedRefAssetId() !== null;
     if (op === 'alignment') return targets.size === 1 && this.selectedRefDocId() !== null;
+    if (op === 'contract_draft') return this.selectedRefAssetId() !== null;
+    if (op === 'multi_doc_redline') return targets.size >= 1;
     if (op === 'aggregation') return targets.size >= 1;
     if (op === 'tabular') return targets.size >= 1;
     if (op === 'dd') return targets.size >= 1;
@@ -87,7 +95,7 @@ export class AnalysisWizardComponent implements OnInit {
     if (op === 'deadlines') return targets.size >= 1;
     if (op === 'compliance') return targets.size >= 1;
     if (op === 'inconsistencies') return targets.size >= 2;
-    return true; // unclear
+    return true;
   });
 
   goToStep3() {
@@ -247,10 +255,12 @@ export class AnalysisWizardComponent implements OnInit {
 
   operationLabel(op: Operation) {
     return {
-      confrontation: 'Audit contractuel',
+      tabular: 'Analyse structurée',
+      confrontation: 'Audit de conformité',
       alignment: 'Comparaison',
+      contract_draft: 'Création de contrat',
+      multi_doc_redline: 'Redline multi-documents',
       aggregation: 'Clausier',
-      tabular: 'Tableau d\'analyse',
       dd: 'Due Diligence',
       ma_mapping: 'Cartographie M&A',
       deadlines: 'Échéances contractuelles',

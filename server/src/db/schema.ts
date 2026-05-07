@@ -121,6 +121,7 @@ export const analyses = sqliteTable('analyses', {
   lastActivityAt: text('last_activity_at').notNull().default(sql`(datetime('now'))`),
   status: text('status').notNull().default('active'),
   operation: text('operation').notNull().default('unclear'),
+  viewType: text('view_type'),
   referenceAssetId: text('reference_asset_id'),
 });
 
@@ -213,6 +214,8 @@ export const amendments = sqliteTable('amendments', {
   // v2 capitalisation fields
   triggerSource: text('trigger_source').notNull().default('manual'),
   triggerRedlineId: text('trigger_redline_id'),
+  targetElementId: text('target_element_id'),
+  targetElementPath: text('target_element_path'),
 });
 
 // ─── Tabular Review (v2) ──────────────────────────────────────────────────────

@@ -1,20 +1,32 @@
+// RedlineEngine mutualisé (Brief 8) — un seul moteur pour les 4 cas :
+// audit, comparison, contract_draft, multi_doc.
+// Chaque cas a son prompt dédié dans redline-prompts/.
+
 import Anthropic from '@anthropic-ai/sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import { redlines } from '../db/schema.js';
+import { buildAuditPrompt } from './redline-prompts/audit.js';
+import { buildComparisonPrompt } from './redline-prompts/comparison.js';
+import { buildContractDraftPrompt } from './redline-prompts/contract_draft.js';
+import { buildMultiDocPrompt } from './redline-prompts/multi_doc.js';
+import type { PlaybookContent, StandardContent } from '../schemas/asset-content.schema.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export interface RedlineProposal {
   id: string;
   clauseId?: string;
-  clauseType?: string;
+  clauseTypeOntologyId?: string;
   action: 'insert' | 'delete' | 'replace' | 'comment';
   originalText: string;
   proposedText: string;
   rationale: string;
   severity: 'critical' | 'major' | 'minor' | 'info';
+  deviatesFromAssetId?: string;
+  deviatesFromElementId?: string;
   accepted?: boolean;
+  rejectedReason?: string;
 }
 
 export interface RedlineResult {
@@ -22,13 +34,15 @@ export interface RedlineResult {
   analysisId: string;
   sourceDocumentId: string;
   sourceLegalObjectId?: string;
-  producedBy: string;
+  producedBy: 'audit' | 'comparison' | 'contract_draft' | 'multi_doc';
   producedFromId: string;
   baseTextSnapshot: string;
   proposals: RedlineProposal[];
   comments: string[];
   ckEditorHtml: string;
-  status: string;
+  status: 'draft' | 'reviewing' | 'accepted' | 'rejected';
+  createdAt?: string;
+  lastUpdatedAt?: string;
 }
 
 export interface RedlineEngineInput {
@@ -38,64 +52,32 @@ export interface RedlineEngineInput {
   producedBy: 'audit' | 'comparison' | 'contract_draft' | 'multi_doc';
   producedFromId: string;
   documentText: string;
-  referenceText?: string;
-  instruction?: string;
-  context?: string;
+  // audit
+  playbookContent?: PlaybookContent;
+  playbookAssetId?: string;
+  // comparison
+  referenceDocumentText?: string;
+  referenceLegalObjectId?: string;
+  // contract_draft
+  standardContent?: StandardContent;
+  standardAssetId?: string;
+  contextNotes?: string;
+  // multi_doc
+  sourceRedline?: RedlineResult | null;
 }
 
-const AUDIT_PROMPT = (docText: string, context?: string) => `
-You are a senior legal counsel reviewing a contract. Your task is to produce precise redline proposals (tracked changes) for the following document.
-
-${context ? `Context: ${context}\n` : ''}
-
-Document to review:
-<document>
-${docText.substring(0, 12000)}
-</document>
-
-Produce a JSON array of redline proposals. Each proposal must have:
-- id: unique string (format "rdl_XXXX")
-- action: "insert" | "delete" | "replace" | "comment"
-- originalText: the exact text from the document to change (empty string for insertions)
-- proposedText: the replacement or addition (empty string for deletions)
-- rationale: concise legal justification in French (max 2 sentences)
-- severity: "critical" | "major" | "minor" | "info"
-
-Focus on: liability caps, unfavorable termination conditions, IP ownership, payment terms anomalies, missing standard clauses.
-Return only the JSON array, no wrapper object.
-`;
-
-const COMPARISON_PROMPT = (docText: string, refText: string) => `
-You are a senior legal counsel comparing a contract against a reference standard.
-
-Reference standard (firm's approved template):
-<reference>
-${refText.substring(0, 6000)}
-</reference>
-
-Document under review:
-<document>
-${docText.substring(0, 6000)}
-</document>
-
-Identify deviations from the reference standard and produce redline proposals to bring the document closer to the standard where beneficial. Return a JSON array of proposals with:
-- id: unique string (format "rdl_XXXX")
-- action: "insert" | "delete" | "replace" | "comment"
-- originalText: exact text from the reviewed document (empty string for insertions)
-- proposedText: text from the reference standard or improved version (empty string for deletions)
-- rationale: explain the deviation and why the change is recommended (French, max 2 sentences)
-- severity: "critical" | "major" | "minor" | "info"
-
-Return only the JSON array.
-`;
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function buildCkEditorHtml(baseText: string, proposals: RedlineProposal[]): string {
   let html = `<div class="ck-content redline-document">`;
-
-  // Simple approach: render base text as paragraphs, then append tracked changes summary
   const paragraphs = baseText.split('\n\n').filter(p => p.trim());
   html += paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('\n');
-
   if (proposals.length > 0) {
     html += `\n<div class="redline-proposals">`;
     for (const p of proposals) {
@@ -112,17 +94,8 @@ function buildCkEditorHtml(baseText: string, proposals: RedlineProposal[]): stri
     }
     html += `\n</div>`;
   }
-
   html += `</div>`;
   return html;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 async function callLlmForProposals(prompt: string): Promise<RedlineProposal[]> {
@@ -136,63 +109,99 @@ async function callLlmForProposals(prompt: string): Promise<RedlineProposal[]> {
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return [];
 
-  const raw = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
-  return raw.map((r, i) => ({
-    id: (r.id as string) || `rdl_${uuidv4().substring(0, 8)}`,
-    clauseId: r.clauseId as string | undefined,
-    clauseType: r.clauseType as string | undefined,
-    action: (r.action as RedlineProposal['action']) || 'comment',
-    originalText: (r.originalText as string) || '',
-    proposedText: (r.proposedText as string) || '',
-    rationale: (r.rationale as string) || '',
-    severity: (r.severity as RedlineProposal['severity']) || 'minor',
-  }));
+  try {
+    const raw = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
+    return raw.map((r) => ({
+      id: (r.id as string) || `rdl_${uuidv4().substring(0, 8)}`,
+      clauseId: r.clauseId as string | undefined,
+      clauseTypeOntologyId: r.clauseTypeOntologyId as string | undefined,
+      action: (r.action as RedlineProposal['action']) || 'comment',
+      originalText: (r.originalText as string) || '',
+      proposedText: (r.proposedText as string) || '',
+      rationale: (r.rationale as string) || '',
+      severity: (r.severity as RedlineProposal['severity']) || 'minor',
+      deviatesFromAssetId: r.deviatesFromAssetId as string | undefined,
+      deviatesFromElementId: r.deviatesFromElementId as string | undefined,
+    }));
+  } catch (e) {
+    console.warn('[RedlineEngine] JSON parse failed', e);
+    return [];
+  }
 }
 
-export async function runRedlineEngine(input: RedlineEngineInput): Promise<RedlineResult> {
-  const { analysisId, sourceDocumentId, sourceLegalObjectId, producedBy, producedFromId, documentText, referenceText, instruction, context } = input;
-
-  let prompt: string;
-  if (producedBy === 'comparison' && referenceText) {
-    prompt = COMPARISON_PROMPT(documentText, referenceText);
-  } else {
-    prompt = AUDIT_PROMPT(documentText, context ?? instruction);
+function pickPrompt(input: RedlineEngineInput): string {
+  switch (input.producedBy) {
+    case 'audit':
+      return buildAuditPrompt(input.documentText, input.playbookContent);
+    case 'comparison':
+      return buildComparisonPrompt(input.documentText, input.referenceDocumentText ?? '');
+    case 'contract_draft':
+      if (!input.standardContent) return buildAuditPrompt(input.documentText);
+      return buildContractDraftPrompt(input.standardContent, input.contextNotes ?? '');
+    case 'multi_doc':
+      return buildMultiDocPrompt(input.documentText, input.sourceRedline ?? null);
   }
+}
+
+function attachAssetAncrage(proposals: RedlineProposal[], assetId: string | undefined): RedlineProposal[] {
+  if (!assetId) return proposals;
+  return proposals.map(p => p.deviatesFromElementId
+    ? { ...p, deviatesFromAssetId: assetId }
+    : p);
+}
+
+export async function generateRedline(input: RedlineEngineInput): Promise<RedlineResult> {
+  const prompt = pickPrompt(input);
 
   let proposals: RedlineProposal[] = [];
   try {
     proposals = await callLlmForProposals(prompt);
   } catch (err) {
-    console.error('[RedlineEngine] LLM call failed, returning empty proposals', err);
+    console.error('[RedlineEngine] LLM call failed', err);
   }
 
-  const ckEditorHtml = buildCkEditorHtml(documentText, proposals);
-  const id = `rdl_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
+  // Anchor proposals to playbook/standard asset for capitalisation flow (Brief 8 §6)
+  if (input.producedBy === 'audit') {
+    proposals = attachAssetAncrage(proposals, input.playbookAssetId);
+  } else if (input.producedBy === 'contract_draft') {
+    proposals = attachAssetAncrage(proposals, input.standardAssetId);
+  }
 
-  const [row] = await db.insert(redlines).values({
-    id,
-    analysisId,
-    sourceDocumentId,
-    sourceLegalObjectId: sourceLegalObjectId ?? null,
-    producedBy,
-    producedFromId,
-    baseTextSnapshot: documentText.substring(0, 50000),
-    proposalsJson: JSON.stringify(proposals),
-    commentsJson: '[]',
-    status: 'draft',
-  }).returning();
-
-  return {
-    id: row.id,
-    analysisId: row.analysisId,
-    sourceDocumentId: row.sourceDocumentId,
-    sourceLegalObjectId: row.sourceLegalObjectId ?? undefined,
-    producedBy: row.producedBy,
-    producedFromId: row.producedFromId,
-    baseTextSnapshot: row.baseTextSnapshot,
+  const ckEditorHtml = buildCkEditorHtml(input.documentText, proposals);
+  return persistRedline({
+    id: `rdl_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
+    analysisId: input.analysisId,
+    sourceDocumentId: input.sourceDocumentId,
+    sourceLegalObjectId: input.sourceLegalObjectId,
+    producedBy: input.producedBy,
+    producedFromId: input.producedFromId,
+    baseTextSnapshot: input.documentText.substring(0, 50000),
     proposals,
     comments: [],
     ckEditorHtml,
-    status: row.status,
+    status: 'draft',
+  });
+}
+
+export async function persistRedline(result: RedlineResult): Promise<RedlineResult> {
+  const [row] = await db.insert(redlines).values({
+    id: result.id,
+    analysisId: result.analysisId,
+    sourceDocumentId: result.sourceDocumentId,
+    sourceLegalObjectId: result.sourceLegalObjectId ?? null,
+    producedBy: result.producedBy,
+    producedFromId: result.producedFromId,
+    baseTextSnapshot: result.baseTextSnapshot,
+    proposalsJson: JSON.stringify(result.proposals),
+    commentsJson: JSON.stringify(result.comments),
+    status: result.status,
+  }).returning();
+  return {
+    ...result,
+    id: row.id,
+    createdAt: row.createdAt,
   };
 }
+
+// Alias rétro-compat
+export const runRedlineEngine = generateRedline;

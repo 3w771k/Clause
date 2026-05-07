@@ -127,7 +127,7 @@
             <h3 class="font-medium text-gray-900 text-sm">Contenu</h3>
           </div>
           <div class="p-6">
-            @if (asset.content?.['sections']) {
+            @if ($any(asset.content)['sections']) {
 
               <!-- Edit mode -->
               @if (editMode()) {
@@ -235,7 +235,7 @@
                   }
                 </div>
               }
-            } @else if (asset.content?.['questions']) {
+            } @else if ($any(asset.content)['questions']) {
               <div class="space-y-3">
                 @for (q of $any(asset.content)['questions']; track q.id) {
                   <div class="border border-gray-100 rounded-xl p-4">
@@ -251,10 +251,10 @@
                   </div>
                 }
               </div>
-            } @else if (asset.content?.['entries']) {
+            } @else if ($any(asset.content)['entries']) {
               <app-clausier [content]="asClausierContent(asset)" [deliverableId]="null" />
 
-            } @else if (asset.content?.['clauses']) {
+            } @else if ($any(asset.content)['clauses']) {
               <div class="space-y-3">
                 @for (clause of $any(asset.content)['clauses']; track clause.type) {
                   <div class="border border-gray-100 rounded-xl p-4">

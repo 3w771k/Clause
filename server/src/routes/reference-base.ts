@@ -3,8 +3,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import { referenceAssets, referenceAssetVersions, legalObjects, clauses, documents } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { validateContent, schemaForType, ASSET_TYPES } from '../schemas/asset-content.schema.js';
 
 export const referenceBaseRouter = Router();
+
+// GET /api/reference-base/schemas/:type — JSON-Schema-like description for UI form gen
+referenceBaseRouter.get('/schemas/:type', (req, res) => {
+  const schema = schemaForType(req.params.type);
+  if (!schema) return res.status(404).json({ error: `Unknown asset type: ${req.params.type}` });
+  return res.json({ type: req.params.type, schema: schema._def });
+});
+
+referenceBaseRouter.get('/schemas', (_req, res) => {
+  res.json({ types: ASSET_TYPES });
+});
 
 referenceBaseRouter.get('/', async (req, res) => {
   const { type } = req.query as { type?: string };
@@ -26,6 +38,11 @@ referenceBaseRouter.post('/', async (req, res) => {
       jurisdiction?: string; language?: string; tags?: string[];
     };
   if (!type || !name) return res.status(400).json({ error: 'type and name are required' });
+
+  const validation = validateContent(type, content ?? {});
+  if (!validation.ok) {
+    return res.status(400).json({ error: 'Invalid content for type', details: validation.errors });
+  }
 
   const now = new Date().toISOString();
   const id = `ra_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
@@ -183,6 +200,13 @@ referenceBaseRouter.put('/:id', async (req, res) => {
 
   const { name, description, content, governanceStatus, tags } =
     req.body as { name?: string; description?: string; content?: unknown; governanceStatus?: string; tags?: string[] };
+
+  if (content !== undefined) {
+    const validation = validateContent(existing.type, content);
+    if (!validation.ok) {
+      return res.status(400).json({ error: 'Invalid content for type', details: validation.errors });
+    }
+  }
 
   const now = new Date().toISOString();
   const newVersion = existing.currentVersion + 1;

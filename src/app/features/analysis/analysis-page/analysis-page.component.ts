@@ -7,6 +7,10 @@ import { DocumentService } from '../../../core/services/document.service';
 import { ReferenceBaseService } from '../../../core/services/reference-base.service';
 import { AmendmentDialogComponent } from '../../reference-base/amendment-dialog.component';
 import { AlignmentViewComponent } from './operations/alignment-view.component';
+import { ComparisonViewComponent } from './operations/comparison-view.component';
+import { AuditViewComponent } from './operations/audit-view.component';
+import { ContractDraftViewComponent } from './operations/contract-draft-view.component';
+import { MultiDocRedlineViewComponent } from './operations/multi-doc-redline-view.component';
 import { DdViewComponent } from './operations/dd-view.component';
 import { TabularViewComponent } from './operations/tabular-view.component';
 import { DefaultDeliverableViewComponent } from './operations/default-deliverable-view.component';
@@ -16,16 +20,20 @@ import type { ReferenceAsset } from '../../../core/models/reference-asset.model'
 import type { Analysis } from '../../../core/models/analysis.model';
 import type { Deliverable } from '../../../core/models/deliverable.model';
 
-const OPERATION_LABELS: Record<string, string> = {
-  alignment: 'Comparaison', confrontation: 'Audit', dd: 'Audit DD',
-  aggregation: 'Clausier', tabular: 'Tabular Review', ma_mapping: 'Cartographie M&A',
-  deadlines: 'Échéances', compliance: 'Audit conformité', inconsistencies: 'Incohérences',
+const VIEW_TYPE_LABELS: Record<string, string> = {
+  tabular: 'Tabular Review',
+  audit: 'Audit',
+  comparison: 'Comparaison',
+  contract_draft: 'Création de contrat',
+  multi_doc_redline: 'Redline multi-doc',
 };
 
 @Component({
   selector: 'app-analysis-page',
   imports: [FormsModule, AmendmentDialogComponent, ChatPanelComponent, AnalysisModalsComponent,
-    AlignmentViewComponent, DdViewComponent, TabularViewComponent, DefaultDeliverableViewComponent],
+    AlignmentViewComponent, ComparisonViewComponent, AuditViewComponent,
+    ContractDraftViewComponent, MultiDocRedlineViewComponent,
+    DdViewComponent, TabularViewComponent, DefaultDeliverableViewComponent],
   templateUrl: './analysis-page.component.html',
 })
 export class AnalysisPageComponent implements OnInit, OnDestroy {
@@ -51,7 +59,11 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
   publishName = signal(''); publishDescription = signal(''); publishDone = signal(false);
 
   isGenerating = computed(() => this.analysis()?.status === 'generating');
-  operationLabel = computed(() => OPERATION_LABELS[this.analysis()?.operation ?? ''] ?? '');
+  operationLabel = computed(() => {
+    const a = this.analysis();
+    if (!a) return '';
+    return VIEW_TYPE_LABELS[a.viewType ?? ''] ?? VIEW_TYPE_LABELS[a.operation ?? ''] ?? '';
+  });
 
   private pollHandle: ReturnType<typeof setTimeout> | null = null;
   private routeSub?: Subscription;

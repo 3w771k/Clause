@@ -16,17 +16,18 @@ analysesRouter.get('/', async (req, res) => {
   const rows = await db.select().from(analyses)
     .where(eq(analyses.workspaceId, wsId))
     .orderBy(analyses.lastActivityAt);
-  res.json(rows);
+  res.json(rows.map(withViewType));
 });
 
 analysesRouter.post('/', async (req, res) => {
   const { wsId } = req.params;
-  const { name, operation, referenceAssetId } = req.body as {
-    name: string; operation?: string; referenceAssetId?: string;
+  const { name, operation, viewType, referenceAssetId } = req.body as {
+    name: string; operation?: string; viewType?: string; referenceAssetId?: string;
   };
   if (!name) return res.status(400).json({ error: 'name is required' });
 
   const now = new Date().toISOString();
+  const finalViewType = viewType ?? mapOperationToViewType(operation);
   const [row] = await db.insert(analyses).values({
     id: `ana_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
     workspaceId: wsId,
@@ -35,10 +36,30 @@ analysesRouter.post('/', async (req, res) => {
     lastActivityAt: now,
     status: 'active',
     operation: operation ?? 'unclear',
+    viewType: finalViewType,
     referenceAssetId: referenceAssetId ?? null,
   }).returning();
-  res.status(201).json(row);
+  res.status(201).json(withViewType(row));
 });
+
+function mapOperationToViewType(op: string | null | undefined): string {
+  switch (op) {
+    case 'alignment': return 'comparison';
+    case 'confrontation': return 'audit';
+    case 'tabular': return 'tabular';
+    case 'contract_draft': return 'contract_draft';
+    case 'multi_doc_redline': return 'multi_doc_redline';
+    default: return 'tabular';
+  }
+}
+
+function withViewType<T extends { operation: string; viewType: string | null }>(row: T) {
+  return {
+    ...row,
+    viewType: row.viewType ?? mapOperationToViewType(row.operation),
+    legacyOperation: row.operation,
+  };
+}
 
 // ─── Single analysis ──────────────────────────────────────────────────────────
 
@@ -76,7 +97,7 @@ analysesRouter.get('/:anaId', async (req, res) => {
     sourceOperation: deliverables.sourceOperation,
   }).from(deliverables).where(eq(deliverables.analysisId, anaId));
 
-  res.json({ ...ana, documents: docDetails, deliverables: delivRows });
+  res.json({ ...withViewType(ana), documents: docDetails, deliverables: delivRows });
 });
 
 analysesRouter.delete('/:anaId', async (req, res) => {
@@ -170,4 +191,95 @@ analysesRouter.post('/:anaId/start-generation', async (req, res) => {
 
     console.log(`[start-generation][${anaId}] Done. deliverables: ${deliverableIds}`);
   });
+});
+
+// ─── Brief 8 §5 — Endpoints des nouvelles vues (audit/draft-contract/multi-doc) ───
+
+analysesRouter.post('/:anaId/audit', async (req, res) => {
+  const { anaId } = req.params;
+  try {
+    const { runConfrontation } = await import('../services/analysis.service.js');
+    const ids = await runConfrontation(anaId);
+    res.json({ deliverableIds: ids });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Audit failed' });
+  }
+});
+
+analysesRouter.post('/:anaId/draft-contract', async (req, res) => {
+  const { anaId } = req.params;
+  const { standardId, contextNotes } = req.body as { standardId?: string; contextNotes?: string };
+  if (!standardId) return res.status(400).json({ error: 'standardId requis' });
+
+  try {
+    const { generateRedline } = await import('../services/redline-engine.service.js');
+    const { referenceAssets } = await import('../db/schema.js');
+    const [standardAsset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, standardId));
+    if (!standardAsset || standardAsset.type !== 'standard') {
+      return res.status(404).json({ error: 'Standard non trouvé' });
+    }
+    const standardContent = JSON.parse(standardAsset.contentJson);
+    const result = await generateRedline({
+      analysisId: anaId,
+      sourceDocumentId: anaId,  // pas de doc source en mode draft
+      producedBy: 'contract_draft',
+      producedFromId: standardId,
+      documentText: '',
+      standardContent,
+      standardAssetId: standardId,
+      contextNotes: contextNotes ?? '',
+    });
+    res.json({ redlineId: result.id, proposalsCount: result.proposals.length });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Draft generation failed' });
+  }
+});
+
+analysesRouter.post('/:anaId/multi-doc-redline', async (req, res) => {
+  const { anaId } = req.params;
+  const { sourceRedlineId, targetDocumentIds } = req.body as {
+    sourceRedlineId?: string | null; targetDocumentIds?: string[];
+  };
+  if (!Array.isArray(targetDocumentIds) || targetDocumentIds.length === 0) {
+    return res.status(400).json({ error: 'targetDocumentIds requis' });
+  }
+  if (targetDocumentIds.length > 20) {
+    return res.status(400).json({ error: 'Maximum 20 documents par run (cap LLM)' });
+  }
+  try {
+    const { generateRedline } = await import('../services/redline-engine.service.js');
+    const { redlines, documents } = await import('../db/schema.js');
+    let sourceRedline = null;
+    if (sourceRedlineId) {
+      const [r] = await db.select().from(redlines).where(eq(redlines.id, sourceRedlineId));
+      if (r) {
+        sourceRedline = {
+          id: r.id, analysisId: r.analysisId, sourceDocumentId: r.sourceDocumentId,
+          producedBy: r.producedBy as 'audit' | 'comparison' | 'contract_draft' | 'multi_doc',
+          producedFromId: r.producedFromId,
+          baseTextSnapshot: r.baseTextSnapshot,
+          proposals: JSON.parse(r.proposalsJson),
+          comments: JSON.parse(r.commentsJson),
+          ckEditorHtml: '', status: r.status as 'draft' | 'reviewing' | 'accepted' | 'rejected',
+        };
+      }
+    }
+    const generatedIds: string[] = [];
+    for (const docId of targetDocumentIds) {
+      const [doc] = await db.select().from(documents).where(eq(documents.id, docId));
+      if (!doc) continue;
+      const result = await generateRedline({
+        analysisId: anaId,
+        sourceDocumentId: doc.id,
+        producedBy: 'multi_doc',
+        producedFromId: sourceRedlineId ?? '',
+        documentText: doc.extractedText ?? '',
+        sourceRedline,
+      });
+      generatedIds.push(result.id);
+    }
+    res.json({ redlineIds: generatedIds });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Multi-doc redline failed' });
+  }
 });

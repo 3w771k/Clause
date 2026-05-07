@@ -1,54 +1,67 @@
+// Brief 6: les workflows OOTB sont devenus des ReferenceAssets de type
+// 'tabular_workflow'. Cet endpoint reste pour compatibilité descendante mais
+// re-projette le format historique attendu par le frontend.
+// À retirer quand le frontend aura migré vers /api/reference-base?type=tabular_workflow.
+
 import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { db } from '../db/index.js';
+import { referenceAssets } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export const workflowsRouter = Router();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WORKFLOWS_DIR = path.join(__dirname, '../workflows');
-
-interface WorkflowColumn {
-  label: string;
-  question: string;
-  expectedType: string;
-}
-
-interface Workflow {
+interface LegacyWorkflow {
   id: string;
   name: string;
   description: string;
   kind: string;
   applicableDocumentTypes: string[];
   language: string;
-  definition: {
-    columns: WorkflowColumn[];
+  definition: { columns: Array<{ label: string; question: string; expectedType: string }> };
+}
+
+interface TabularWorkflowContent {
+  schemaVersion: number;
+  applicableDocumentTypes: string[];
+  columns: Array<{ id?: string; label: string; question: string; expectedType: string; order?: number }>;
+}
+
+function assetToLegacy(asset: typeof referenceAssets.$inferSelect): LegacyWorkflow {
+  let content: TabularWorkflowContent;
+  try {
+    content = JSON.parse(asset.contentJson) as TabularWorkflowContent;
+  } catch {
+    content = { schemaVersion: 1, applicableDocumentTypes: [], columns: [] };
+  }
+  return {
+    id: asset.id.replace(/^wf_/, ''),
+    name: asset.name,
+    description: asset.description,
+    kind: 'tabular_review_preset',
+    applicableDocumentTypes: content.applicableDocumentTypes ?? [],
+    language: asset.language,
+    definition: {
+      columns: (content.columns ?? []).map(c => ({
+        label: c.label,
+        question: c.question,
+        expectedType: c.expectedType,
+      })),
+    },
   };
 }
 
-function loadWorkflows(): Workflow[] {
-  if (!fs.existsSync(WORKFLOWS_DIR)) return [];
-  return fs.readdirSync(WORKFLOWS_DIR)
-    .filter(f => f.endsWith('.json'))
-    .map(f => {
-      try {
-        return JSON.parse(fs.readFileSync(path.join(WORKFLOWS_DIR, f), 'utf-8')) as Workflow;
-      } catch {
-        return null;
-      }
-    })
-    .filter((w): w is Workflow => w !== null);
-}
-
-// Cache at boot — workflows are read-only
-const workflows = loadWorkflows();
-
-workflowsRouter.get('/', (_req, res) => {
-  res.json(workflows);
+workflowsRouter.get('/', async (_req, res) => {
+  const assets = await db.select().from(referenceAssets)
+    .where(eq(referenceAssets.type, 'tabular_workflow'))
+    .orderBy(referenceAssets.name);
+  res.json(assets.map(assetToLegacy));
 });
 
-workflowsRouter.get('/:id', (req, res) => {
-  const wf = workflows.find(w => w.id === req.params.id);
-  if (!wf) return res.status(404).json({ error: 'Workflow not found' });
-  res.json(wf);
+workflowsRouter.get('/:id', async (req, res) => {
+  const assetId = req.params.id.startsWith('wf_') ? req.params.id : `wf_${req.params.id}`;
+  const [asset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, assetId));
+  if (!asset || asset.type !== 'tabular_workflow') {
+    return res.status(404).json({ error: 'Workflow not found' });
+  }
+  res.json(assetToLegacy(asset));
 });

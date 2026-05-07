@@ -617,6 +617,11 @@ insertAsset.run(asset1Id, 'playbook', 'Playbook commercial — Contrats fourniss
 insertAsset.run(asset2Id, 'standard', 'NDA Standard Maison — v2', 'Accord de confidentialité mutuel standard pour les discussions préliminaires', 'Clara Martin', 'maison', 'FR', 'fr', 2, 'validated', JSON.stringify(ndaStandardAssetContent));
 insertAsset.run(asset3Id, 'dd_grid', 'Grille DD — M&A Standard', 'Grille de due diligence pour les opérations M&A : analyse contractuelle pré-closing', 'Clara Martin', 'maison', 'Multi', 'fr', 1, 'validated', JSON.stringify(ddGridContent));
 
+// ─── OOTB Tabular Workflows (Brief 6) ──────────────────────────────────────────
+const { seedTabularWorkflows } = await import('./seed-tabular-workflows.js');
+const seededWorkflows = await seedTabularWorkflows({ force: true });
+console.log(`   OOTB Workflows: ${seededWorkflows.length} seeded`);
+
 console.log('✅ Database seeded successfully');
 console.log(`   Workspace: ${wsId}`);
 console.log(`   Documents: ${doc1Id}, ${doc2Id}, ${doc3Id}`);

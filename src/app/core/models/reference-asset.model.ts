@@ -1,6 +1,11 @@
+import type {
+  AssetType, PlaybookContent, StandardContent, DDGridContent,
+  ClausierAssetContent, TabularWorkflowContent,
+} from './asset-content.model';
+
 export interface ReferenceAsset {
   id: string;
-  type: string;
+  type: AssetType | string;  // string fallback pour les vieux assets non migrés
   name: string;
   description: string;
   createdAt: string;
@@ -11,5 +16,9 @@ export interface ReferenceAsset {
   currentVersion: number;
   governanceStatus: string;
   tags: string[];
-  content: Record<string, unknown>;
+  // Union des contents typés. Au runtime, vérifier le type via les guards
+  // d'asset-content.model avant de cast vers le type concret.
+  content: PlaybookContent | StandardContent | DDGridContent
+         | ClausierAssetContent | TabularWorkflowContent
+         | Record<string, unknown>;
 }

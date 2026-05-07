@@ -108,9 +108,12 @@ async function loadLegalObjectWithClauses(loId: string) {
   const clauseRows = await db.select().from(clauses)
     .where(eq(clauses.legalObjectId, loId))
     .orderBy(clauses.clauseOrder);
-  const [doc] = await db.select({ fileName: documents.fileName })
-    .from(documents).where(eq(documents.id, lo.documentId));
-  return { lo, clauses: clauseRows, fileName: doc?.fileName ?? loId };
+  const [doc] = await db.select({
+    id: documents.id,
+    fileName: documents.fileName,
+    extractedText: documents.extractedText,
+  }).from(documents).where(eq(documents.id, lo.documentId));
+  return { lo, clauses: clauseRows, fileName: doc?.fileName ?? loId, id: doc?.id ?? '', extractedText: doc?.extractedText ?? '' };
 }
 
 // ─── Alignment (comparison) ───────────────────────────────────────────────────
@@ -183,42 +186,41 @@ Génère une note comparative exhaustive en JSON selon ce format EXACT (respecte
     passthrough as unknown as import('zod').ZodSchema<ComparativeNoteContent>,
   );
 
-  const redlinePrompt = `Génère un redline HTML comparant ces deux documents juridiques.
-
-Document cible : ${targetData.fileName}
-${targetClausesSummary || '(aucune clause extraite)'}
-
-Document référence : ${refData.fileName}
-${refClausesSummary || '(aucune clause extraite)'}
-
-Retourne un JSON avec ce format EXACT :
-{
-  "type": "redline",
-  "targetDocumentId": "${target.legalObjectId}",
-  "baseHtml": "<p>HTML avec <span class=\\"del\\">texte supprimé</span> et <span class=\\"ins\\">texte ajouté</span></p>",
-  "changes": [
-    {
-      "id": "ch_1",
-      "type": "replacement",
-      "originalText": "texte original",
-      "newText": "nouveau texte",
-      "location": { "startOffset": 0, "endOffset": 50 },
-      "clauseContext": "Clause concernée",
-      "rationale": "raison de la modification",
-      "referenceSource": "${refData.fileName}",
-      "status": "pending"
-    }
-  ],
-  "comments": []
-}`;
-
-  const redlineContent = await llm.completeStructured<RedlineContent>(
-    [
-      { role: 'system', content: 'Tu es un expert en rédaction de redlines juridiques. Retourne uniquement du JSON valide.' },
-      { role: 'user', content: redlinePrompt },
-    ],
-    passthrough as unknown as import('zod').ZodSchema<RedlineContent>,
-  );
+  // Brief 8 §4 : on passe par le RedlineEngine mutualisé au lieu d'un prompt ad hoc
+  const { generateRedline } = await import('./redline-engine.service.js');
+  const redlineResult = await generateRedline({
+    analysisId,
+    sourceDocumentId: targetData.id,
+    sourceLegalObjectId: target.legalObjectId,
+    producedBy: 'comparison',
+    producedFromId: reference.legalObjectId ?? '',
+    documentText: targetData.extractedText ?? '',
+    referenceDocumentText: refData.extractedText ?? '',
+    referenceLegalObjectId: reference.legalObjectId,
+  });
+  const redlineContent: RedlineContent = {
+    type: 'redline',
+    targetDocumentId: target.legalObjectId ?? '',
+    baseHtml: redlineResult.ckEditorHtml,
+    changes: redlineResult.proposals.map((p, i) => {
+      const change: RedlineContent['changes'][number] = {
+        id: p.id || `ch_${i + 1}`,
+        type: p.action === 'replace' ? 'replacement' : p.action,
+        originalText: p.originalText,
+        newText: p.proposedText,
+        location: { startOffset: 0, endOffset: 0 },
+        clauseContext: p.clauseTypeOntologyId ?? '',
+        rationale: p.rationale,
+        referenceSource: refData.fileName,
+        status: 'pending',
+        severity: p.severity,
+      };
+      if (p.deviatesFromAssetId) change.deviatesFromAssetId = p.deviatesFromAssetId;
+      if (p.deviatesFromElementId) change.deviatesFromElementId = p.deviatesFromElementId;
+      return change;
+    }),
+    comments: [],
+  };
 
   const now = new Date().toISOString();
   const noteId = `del_note_${uuidv4().replace(/-/g, '').substring(0, 8)}`;

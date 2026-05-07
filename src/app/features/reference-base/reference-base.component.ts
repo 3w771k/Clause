@@ -262,9 +262,11 @@ export class ReferenceBaseComponent implements OnInit {
   typeLabel(type: string) {
     return {
       playbook: 'Playbook',
+      standard: 'Standard',
       nda_standard: 'NDA Standard',
       clausier: 'Clausier',
       dd_grid: 'Grille DD',
+      tabular_workflow: 'Workflow tabulaire',
     }[type] ?? type;
   }
 
@@ -354,7 +356,7 @@ export class ReferenceBaseComponent implements OnInit {
       };
       sourceClauseIds?: string[];
     }
-    const sections: EditableSection[] = ((asset.content?.['sections'] as RawSection[]) ?? []).map((s) => ({
+    const sections: EditableSection[] = (((asset.content as Record<string, unknown>)?.['sections'] as RawSection[]) ?? []).map((s) => ({
       clauseType: s.clauseType ?? '',
       stakes: s.stakes ?? '',
       positions: {

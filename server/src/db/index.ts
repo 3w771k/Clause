@@ -288,5 +288,8 @@ try { sqlite.exec(`ALTER TABLE documents ADD COLUMN file_blob BLOB`); } catch {}
 try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN operation TEXT NOT NULL DEFAULT 'unclear'`); } catch {}
 try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN reference_asset_id TEXT`); } catch {}
 try { sqlite.exec(`ALTER TABLE tabular_cells ADD COLUMN status TEXT NOT NULL DEFAULT 'fresh'`); } catch {}
+try { sqlite.exec(`ALTER TABLE amendments ADD COLUMN target_element_id TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE amendments ADD COLUMN target_element_path TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN view_type TEXT`); } catch {}
 
 export { sqlite };
