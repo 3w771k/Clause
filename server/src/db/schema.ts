@@ -192,3 +192,102 @@ export const referenceAssetVersions = sqliteTable('reference_asset_versions', {
   summary: text('summary').notNull().default(''),
   contentJson: text('content_json').notNull().default('{}'),
 });
+
+// ─── Amendments ───────────────────────────────────────────────────────────────
+
+export const amendments = sqliteTable('amendments', {
+  id: text('id').primaryKey(),
+  assetId: text('asset_id').notNull().references(() => referenceAssets.id, { onDelete: 'cascade' }),
+  proposedAt: text('proposed_at').notNull().default(sql`(datetime('now'))`),
+  proposedBy: text('proposed_by').notNull().default('demo-user'),
+  proposedFromAnalysisId: text('proposed_from_analysis_id').references(() => analyses.id),
+  scope: text('scope').notNull().default('other'),
+  targetPath: text('target_path').notNull().default(''),
+  currentValue: text('current_value').notNull().default(''),
+  proposedValue: text('proposed_value').notNull().default(''),
+  rationale: text('rationale').notNull().default(''),
+  status: text('status').notNull().default('pending'),
+  reviewedAt: text('reviewed_at'),
+  reviewedBy: text('reviewed_by'),
+  reviewerComment: text('reviewer_comment'),
+  // v2 capitalisation fields
+  triggerSource: text('trigger_source').notNull().default('manual'),
+  triggerRedlineId: text('trigger_redline_id'),
+});
+
+// ─── Tabular Review (v2) ──────────────────────────────────────────────────────
+
+export const tabularReviews = sqliteTable('tabular_reviews', {
+  id: text('id').primaryKey(),
+  analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  workflowId: text('workflow_id'),
+  isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
+  columnsJson: text('columns_json').notNull().default('[]'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  createdBy: text('created_by').notNull().default('demo-user'),
+  lastRunAt: text('last_run_at'),
+});
+
+export const tabularRows = sqliteTable('tabular_rows', {
+  id: text('id').primaryKey(),
+  tabularReviewId: text('tabular_review_id').notNull().references(() => tabularReviews.id, { onDelete: 'cascade' }),
+  documentId: text('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  legalObjectId: text('legal_object_id').references(() => legalObjects.id),
+  orderInReview: integer('order_in_review').notNull().default(0),
+});
+
+export const tabularCells = sqliteTable('tabular_cells', {
+  id: text('id').primaryKey(),
+  tabularReviewId: text('tabular_review_id').notNull().references(() => tabularReviews.id, { onDelete: 'cascade' }),
+  rowId: text('row_id').notNull().references(() => tabularRows.id, { onDelete: 'cascade' }),
+  columnId: text('column_id').notNull(),
+  columnLabel: text('column_label').notNull().default(''),
+  value: text('value'),
+  valueType: text('value_type').default('text'),
+  rawValue: text('raw_value'),
+  citationJson: text('citation_json'),
+  confidence: text('confidence').notNull().default('absent'),
+  isUserEdited: integer('is_user_edited', { mode: 'boolean' }).notNull().default(false),
+  lastRunAt: text('last_run_at'),
+});
+
+// ─── Redline (v2 — entité de premier rang) ────────────────────────────────────
+
+export const redlines = sqliteTable('redlines', {
+  id: text('id').primaryKey(),
+  analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
+  sourceDocumentId: text('source_document_id').notNull().references(() => documents.id),
+  sourceLegalObjectId: text('source_legal_object_id').references(() => legalObjects.id),
+  producedBy: text('produced_by').notNull().default('audit'),
+  producedFromId: text('produced_from_id').notNull(),
+  baseTextSnapshot: text('base_text_snapshot').notNull().default(''),
+  proposalsJson: text('proposals_json').notNull().default('[]'),
+  commentsJson: text('comments_json').notNull().default('[]'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  createdBy: text('created_by').notNull().default('ai'),
+  status: text('status').notNull().default('draft'),
+});
+
+// ─── Contract Draft (v2) ──────────────────────────────────────────────────────
+
+export const contractDrafts = sqliteTable('contract_drafts', {
+  id: text('id').primaryKey(),
+  analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
+  templateStandardId: text('template_standard_id').notNull().references(() => referenceAssets.id),
+  variablesJson: text('variables_json').notNull().default('{}'),
+  outputRedlineId: text('output_redline_id').references(() => redlines.id),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
+// ─── Multi-doc Redline (v2) ───────────────────────────────────────────────────
+
+export const multiDocRedlines = sqliteTable('multi_doc_redlines', {
+  id: text('id').primaryKey(),
+  analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
+  targetDocumentIds: text('target_document_ids').notNull().default('[]'),
+  decision: text('decision').notNull(),
+  decisionStructuredJson: text('decision_structured_json'),
+  perDocumentRedlinesJson: text('per_document_redlines_json').notNull().default('[]'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});

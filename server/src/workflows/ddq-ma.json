@@ -1,0 +1,22 @@
+{
+  "id": "ddq-ma",
+  "name": "Due Diligence M&A",
+  "description": "Grille d'analyse pour due diligence juridique dans le cadre d'une opération de M&A",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "NDA", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Type de document", "question": "Quel est le type de document (contrat commercial, bail, NDA, accord de prêt, etc.) ?", "expectedType": "text" },
+      { "label": "Parties", "question": "Qui sont les parties au contrat ? Préciser les qualités (vendeur, acquéreur, prestataire, etc.).", "expectedType": "text" },
+      { "label": "Date et durée", "question": "Quelle est la date de signature du contrat et sa durée (terme fixe, durée indéterminée) ?", "expectedType": "text" },
+      { "label": "Valeur / Enjeu financier", "question": "Quelle est la valeur financière du contrat ou de l'engagement (montant, chiffre d'affaires annuel) ?", "expectedType": "text" },
+      { "label": "Clause de changement de contrôle", "question": "Y a-t-il une clause de changement de contrôle (change of control) ? Quelles sont ses conséquences (résiliation, cession, consentement requis) ?", "expectedType": "text" },
+      { "label": "Cession / Sous-traitance", "question": "Le contrat est-il cessible ? La sous-traitance est-elle autorisée ? Un consentement est-il requis ?", "expectedType": "text" },
+      { "label": "Résiliation anticipée", "question": "Quelles sont les conditions de résiliation anticipée (faute, insolvabilité, convenance) ? Quel est le préavis ?", "expectedType": "text" },
+      { "label": "Indemnités de résiliation", "question": "Y a-t-il des indemnités ou pénalités en cas de résiliation anticipée ?", "expectedType": "text" },
+      { "label": "Exclusivité / Non-concurrence", "question": "Y a-t-il des clauses d'exclusivité ou de non-concurrence ? Quelle est leur portée et durée ?", "expectedType": "text" },
+      { "label": "Risques identifiés", "question": "Y a-t-il des clauses inhabituelles, des litiges en cours mentionnés, ou des risques spécifiques à signaler ?", "expectedType": "text" }
+    ]
+  }
+}

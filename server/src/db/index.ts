@@ -192,10 +192,100 @@ export function initDb() {
       summary TEXT NOT NULL DEFAULT '',
       content_json TEXT NOT NULL DEFAULT '{}'
     );
+
+    CREATE TABLE IF NOT EXISTS amendments (
+      id TEXT PRIMARY KEY,
+      asset_id TEXT NOT NULL REFERENCES reference_assets(id) ON DELETE CASCADE,
+      proposed_at TEXT NOT NULL DEFAULT (datetime('now')),
+      proposed_by TEXT NOT NULL DEFAULT 'demo-user',
+      proposed_from_analysis_id TEXT REFERENCES analyses(id),
+      scope TEXT NOT NULL DEFAULT 'other',
+      target_path TEXT NOT NULL DEFAULT '',
+      current_value TEXT NOT NULL DEFAULT '',
+      proposed_value TEXT NOT NULL DEFAULT '',
+      rationale TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      reviewed_at TEXT,
+      reviewed_by TEXT,
+      reviewer_comment TEXT,
+      trigger_source TEXT NOT NULL DEFAULT 'manual',
+      trigger_redline_id TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS tabular_reviews (
+      id TEXT PRIMARY KEY,
+      analysis_id TEXT NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      workflow_id TEXT,
+      is_custom INTEGER NOT NULL DEFAULT 0,
+      columns_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_by TEXT NOT NULL DEFAULT 'demo-user',
+      last_run_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS tabular_rows (
+      id TEXT PRIMARY KEY,
+      tabular_review_id TEXT NOT NULL REFERENCES tabular_reviews(id) ON DELETE CASCADE,
+      document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+      legal_object_id TEXT REFERENCES legal_objects(id),
+      order_in_review INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS tabular_cells (
+      id TEXT PRIMARY KEY,
+      tabular_review_id TEXT NOT NULL REFERENCES tabular_reviews(id) ON DELETE CASCADE,
+      row_id TEXT NOT NULL REFERENCES tabular_rows(id) ON DELETE CASCADE,
+      column_id TEXT NOT NULL,
+      column_label TEXT NOT NULL DEFAULT '',
+      value TEXT,
+      value_type TEXT DEFAULT 'text',
+      raw_value TEXT,
+      citation_json TEXT,
+      confidence TEXT NOT NULL DEFAULT 'absent',
+      is_user_edited INTEGER NOT NULL DEFAULT 0,
+      last_run_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS redlines (
+      id TEXT PRIMARY KEY,
+      analysis_id TEXT NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
+      source_document_id TEXT NOT NULL REFERENCES documents(id),
+      source_legal_object_id TEXT REFERENCES legal_objects(id),
+      produced_by TEXT NOT NULL DEFAULT 'audit',
+      produced_from_id TEXT NOT NULL,
+      base_text_snapshot TEXT NOT NULL DEFAULT '',
+      proposals_json TEXT NOT NULL DEFAULT '[]',
+      comments_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_by TEXT NOT NULL DEFAULT 'ai',
+      status TEXT NOT NULL DEFAULT 'draft'
+    );
+
+    CREATE TABLE IF NOT EXISTS contract_drafts (
+      id TEXT PRIMARY KEY,
+      analysis_id TEXT NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
+      template_standard_id TEXT NOT NULL REFERENCES reference_assets(id),
+      variables_json TEXT NOT NULL DEFAULT '{}',
+      output_redline_id TEXT REFERENCES redlines(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS multi_doc_redlines (
+      id TEXT PRIMARY KEY,
+      analysis_id TEXT NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
+      target_document_ids TEXT NOT NULL DEFAULT '[]',
+      decision TEXT NOT NULL,
+      decision_structured_json TEXT,
+      per_document_redlines_json TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 
-// Add file_blob column if it doesn't exist yet (safe on existing DBs)
+// Safe column additions for existing databases
 try { sqlite.exec(`ALTER TABLE documents ADD COLUMN file_blob BLOB`); } catch {}
+try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN operation TEXT NOT NULL DEFAULT 'unclear'`); } catch {}
+try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN reference_asset_id TEXT`); } catch {}
 
 export { sqlite };

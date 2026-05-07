@@ -1,0 +1,22 @@
+{
+  "id": "clausier-msa-fr",
+  "name": "Clausier MSA (Français)",
+  "description": "Extraction des clauses clés d'un Master Service Agreement en droit français",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Objet du contrat", "question": "Quel est l'objet principal du contrat (services fournis) ?", "expectedType": "text" },
+      { "label": "Durée", "question": "Quelle est la durée initiale du contrat ? Préciser si reconduction automatique.", "expectedType": "text" },
+      { "label": "Prix / Rémunération", "question": "Quelles sont les conditions tarifaires (forfait, régie, prix unitaires) ?", "expectedType": "text" },
+      { "label": "Modalités de paiement", "question": "Quels sont les délais de paiement et les conditions de facturation ?", "expectedType": "text" },
+      { "label": "Limitation de responsabilité", "question": "Quel est le plafond de responsabilité ? Y a-t-il des exclusions (dommages indirects) ?", "expectedType": "text" },
+      { "label": "Garanties", "question": "Quelles garanties sont accordées sur les services (SLA, niveaux de service) ?", "expectedType": "text" },
+      { "label": "Propriété intellectuelle", "question": "Qui est propriétaire des livrables et des développements spécifiques ?", "expectedType": "text" },
+      { "label": "Confidentialité", "question": "Quelle est la durée de l'obligation de confidentialité après fin du contrat ?", "expectedType": "text" },
+      { "label": "Résiliation", "question": "Quelles sont les conditions et le préavis de résiliation ?", "expectedType": "text" },
+      { "label": "Loi applicable", "question": "Quelle est la loi applicable et la juridiction compétente ?", "expectedType": "text" }
+    ]
+  }
+}

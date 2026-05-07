@@ -1,0 +1,22 @@
+{
+  "id": "clausier-msa-en",
+  "name": "MSA Clausier (English)",
+  "description": "Key clause extraction from a Master Service Agreement under English/common law",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT"],
+  "language": "en",
+  "definition": {
+    "columns": [
+      { "label": "Scope of Services", "question": "What is the main scope of services described in the agreement?", "expectedType": "text" },
+      { "label": "Term & Renewal", "question": "What is the initial term of the agreement? Is there automatic renewal? What are the notice requirements?", "expectedType": "text" },
+      { "label": "Fees & Pricing", "question": "What are the pricing arrangements (fixed fee, time & materials, unit pricing)? Are there rate adjustment provisions?", "expectedType": "text" },
+      { "label": "Payment Terms", "question": "What are the payment terms, invoicing schedule, and late payment consequences?", "expectedType": "text" },
+      { "label": "Limitation of Liability", "question": "What is the liability cap? Are indirect/consequential damages excluded? Are there any carve-outs?", "expectedType": "text" },
+      { "label": "Warranties", "question": "What warranties are given regarding the services (SLAs, fitness for purpose, compliance)?", "expectedType": "text" },
+      { "label": "Intellectual Property", "question": "Who owns deliverables and work product? What background IP rights are granted?", "expectedType": "text" },
+      { "label": "Confidentiality", "question": "What is the duration of the confidentiality obligation? Are there carve-outs for compelled disclosure?", "expectedType": "text" },
+      { "label": "Termination", "question": "What are the grounds and notice periods for termination? What are the consequences upon termination?", "expectedType": "text" },
+      { "label": "Governing Law", "question": "What is the governing law and jurisdiction or arbitration clause?", "expectedType": "text" }
+    ]
+  }
+}

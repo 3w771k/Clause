@@ -1,0 +1,22 @@
+{
+  "id": "ddq-real-estate",
+  "name": "Due Diligence Immobilier",
+  "description": "Grille d'analyse pour due diligence de baux commerciaux et actifs immobiliers",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "BAIL", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Nature du bail", "question": "Quel est le type de bail (bail commercial 3/6/9, bail dérogatoire, bail civil, contrat de location) ?", "expectedType": "text" },
+      { "label": "Parties", "question": "Qui sont le bailleur et le preneur ? Y a-t-il des garants ?", "expectedType": "text" },
+      { "label": "Bien loué", "question": "Quelle est la description du bien loué (adresse, surface, destination contractuelle) ?", "expectedType": "text" },
+      { "label": "Durée et date d'effet", "question": "Quelle est la date de prise d'effet et la durée du bail ? Quelles sont les dates de renouvellement ou de résiliation possibles ?", "expectedType": "text" },
+      { "label": "Loyer et charges", "question": "Quel est le loyer annuel ? Comment les charges et taxes sont-elles réparties entre bailleur et preneur ?", "expectedType": "text" },
+      { "label": "Indexation", "question": "Quelle est l'indexation du loyer (ILC, ILAT, ICC) ? Quelle est la périodicité de révision ?", "expectedType": "text" },
+      { "label": "Dépôt de garantie", "question": "Y a-t-il un dépôt de garantie ? Quel est son montant ? Quelles sont les conditions de restitution ?", "expectedType": "text" },
+      { "label": "Travaux et aménagements", "question": "Qui est responsable des travaux d'entretien, de réparation et d'aménagement ? Y a-t-il des obligations de remise en état ?", "expectedType": "text" },
+      { "label": "Cession et sous-location", "question": "Le preneur peut-il céder le bail ou sous-louer ? Quelles sont les conditions requises (accord bailleur, conditions) ?", "expectedType": "text" },
+      { "label": "Clause de résiliation", "question": "Quelles sont les conditions de résiliation anticipée du bail (congé triennal, faute, force majeure) ?", "expectedType": "text" }
+    ]
+  }
+}

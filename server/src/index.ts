@@ -12,6 +12,9 @@ import { exportRouter } from './routes/export.js';
 import { tcdRouter } from './routes/tcd.js';
 import { clausesRouter } from './routes/clauses.js';
 import { intentRouter } from './routes/intent.js';
+import { workflowsRouter } from './routes/workflows.js';
+import { amendmentsRouter } from './routes/amendments.js';
+import { tabularReviewsRouter } from './routes/tabular-reviews.js';
 import { preloadEmbeddings } from './embeddings/embedding.service.js';
 
 const app = express();
@@ -37,6 +40,9 @@ app.use('/api/deliverables', exportRouter);
 app.use('/api/clauses', clausesRouter);
 app.use('/api/intent', intentRouter);
 app.use('/api', tcdRouter);
+app.use('/api/workflows', workflowsRouter);
+app.use('/api/reference-base/:assetId/amendments', amendmentsRouter);
+app.use('/api/analyses/:analysisId/tabular-reviews', tabularReviewsRouter);
 
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

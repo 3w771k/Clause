@@ -1,0 +1,22 @@
+{
+  "id": "conformite-rgpd",
+  "name": "Conformité RGPD",
+  "description": "Grille d'analyse de la conformité RGPD des contrats de traitement et de sous-traitance de données",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "DPA", "AUTRE"],
+  "language": "fr",
+  "definition": {
+    "columns": [
+      { "label": "Qualité des parties", "question": "Quelle est la qualité respective des parties au regard du RGPD (responsable de traitement, sous-traitant, co-responsable) ?", "expectedType": "text" },
+      { "label": "Données traitées", "question": "Quelles catégories de données personnelles sont traitées ? Y a-t-il des données sensibles (art. 9 RGPD) ?", "expectedType": "text" },
+      { "label": "Finalités du traitement", "question": "Quelles sont les finalités du traitement de données personnelles ?", "expectedType": "text" },
+      { "label": "Base légale", "question": "Quelle est la base légale du traitement (consentement, exécution du contrat, intérêt légitime, obligation légale) ?", "expectedType": "text" },
+      { "label": "Durée de conservation", "question": "Quelle est la durée de conservation des données personnelles ? Des mécanismes de suppression sont-ils prévus ?", "expectedType": "text" },
+      { "label": "Clause DPA / Sous-traitance", "question": "Y a-t-il un accord de traitement de données (DPA) conforme à l'art. 28 RGPD ? Quelles sont les obligations du sous-traitant ?", "expectedType": "text" },
+      { "label": "Transferts hors UE", "question": "Y a-t-il des transferts de données hors UE/EEE ? Quelles garanties appropriées sont prévues (clauses contractuelles types, adéquation) ?", "expectedType": "text" },
+      { "label": "Droits des personnes", "question": "Le contrat prévoit-il des mécanismes permettant d'exercer les droits des personnes concernées (accès, rectification, suppression) ?", "expectedType": "text" },
+      { "label": "Sécurité des données", "question": "Quelles mesures de sécurité techniques et organisationnelles sont prévues ? La notification de violation est-elle encadrée ?", "expectedType": "text" },
+      { "label": "Non-conformités identifiées", "question": "Y a-t-il des clauses manquantes, insuffisantes ou contraires au RGPD ? Préciser les risques de non-conformité.", "expectedType": "text" }
+    ]
+  }
+}
