@@ -88,6 +88,82 @@ tabularReviewsRouter.get('/:trId', async (req, res) => {
   });
 });
 
+// POST /:trId/rows — ajoute UN doc à la review (auto-add à l'analyse si manquant) + extraction immédiate
+tabularReviewsRouter.post('/:trId/rows', async (req, res) => {
+  const { analysisId, trId } = req.params;
+  const { legalObjectId } = req.body as { legalObjectId: string };
+  if (!legalObjectId) return res.status(400).json({ error: 'legalObjectId requis' });
+
+  const [review] = await db.select().from(tabularReviews)
+    .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
+  if (!review) return res.status(404).json({ error: 'Tabular review not found' });
+
+  const [lo] = await db.select().from(legalObjects).where(eq(legalObjects.id, legalObjectId));
+  if (!lo) return res.status(404).json({ error: 'Legal object not found' });
+
+  // Lien analysis_documents : ajout si manquant
+  const adRows = await db.select().from(analysisDocuments)
+    .where(and(eq(analysisDocuments.analysisId, analysisId), eq(analysisDocuments.legalObjectId, legalObjectId)));
+  if (!adRows.length) {
+    await db.insert(analysisDocuments).values({
+      id: `ad_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
+      analysisId,
+      legalObjectId,
+      role: 'target',
+      addedAt: new Date().toISOString(),
+      orderInAnalysis: 0,
+    });
+  }
+
+  // Évite doublon de row dans la review
+  const existingRow = await db.select().from(tabularRows)
+    .where(and(eq(tabularRows.tabularReviewId, trId), eq(tabularRows.documentId, lo.documentId)));
+  if (existingRow.length) {
+    return res.status(409).json({ error: 'Document déjà présent dans le tableau' });
+  }
+
+  const [doc] = await db.select().from(documents).where(eq(documents.id, lo.documentId));
+  if (!doc) return res.status(404).json({ error: 'Document introuvable' });
+
+  // Compte des rows actuels pour orderInReview
+  const rowCount = await db.select().from(tabularRows).where(eq(tabularRows.tabularReviewId, trId));
+  const rowId = `trow_${uuidv4().replace(/-/g, '').substring(0, 10)}`;
+  const [newRow] = await db.insert(tabularRows).values({
+    id: rowId,
+    tabularReviewId: trId,
+    documentId: doc.id,
+    legalObjectId: lo.id,
+    orderInReview: rowCount.length,
+  }).returning();
+
+  // Extraction de toutes les colonnes pour cette ligne uniquement
+  const columns = parseColumns(review.columnsJson);
+  const docText = doc.extractedText ?? '';
+  const now = new Date().toISOString();
+  const cells = [];
+  for (const col of columns) {
+    const extracted = await extractCellValue(docText, col);
+    const [inserted] = await db.insert(tabularCells).values({
+      id: cellId(),
+      tabularReviewId: trId,
+      rowId,
+      columnId: col.id,
+      columnLabel: col.label,
+      value: extracted.value,
+      rawValue: extracted.rawValue,
+      confidence: extracted.confidence,
+      citationJson: extracted.citationJson,
+      status: 'fresh',
+      lastRunAt: now,
+    }).returning();
+    cells.push(inserted);
+  }
+
+  res.status(201).json({
+    row: { ...newRow, fileName: doc.fileName, cells },
+  });
+});
+
 // POST /api/analyses/:analysisId/tabular-reviews/:trId/run — run all cells
 tabularReviewsRouter.post('/:trId/run', async (req, res) => {
   const { analysisId, trId } = req.params;
@@ -263,7 +339,10 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
 
 // ─── Tabular Analysis (Brief A) ───────────────────────────────────────────────
 
-import { runTabularAnalysis, getTabularAnalysis, setReviewPlaybook } from '../services/tabular-analysis.service.js';
+import {
+  runTabularAnalysis, getTabularAnalysis, setReviewPlaybook,
+  listCustomChecks, addCustomCheck, deleteCustomCheck,
+} from '../services/tabular-analysis.service.js';
 
 // POST /:trId/analyze — exécute l'analyse cohérence (cross-row + verdicts + synthèse)
 tabularReviewsRouter.post('/:trId/analyze', async (req, res) => {
@@ -290,6 +369,28 @@ tabularReviewsRouter.get('/:trId/analysis', async (req, res) => {
   if (!review) return res.status(404).json({ error: 'Tabular review not found' });
   const analysis = await getTabularAnalysis(trId);
   res.json(analysis ?? null);
+});
+
+// GET /:trId/custom-checks — liste les règles custom de cohérence
+tabularReviewsRouter.get('/:trId/custom-checks', async (req, res) => {
+  const { trId } = req.params;
+  res.json(await listCustomChecks(trId));
+});
+
+// POST /:trId/custom-checks — ajoute une règle custom
+tabularReviewsRouter.post('/:trId/custom-checks', async (req, res) => {
+  const { trId } = req.params;
+  const { prompt } = req.body as { prompt: string };
+  if (!prompt?.trim()) return res.status(400).json({ error: 'prompt requis' });
+  const check = await addCustomCheck(trId, prompt);
+  res.status(201).json(check);
+});
+
+// DELETE /:trId/custom-checks/:checkId
+tabularReviewsRouter.delete('/:trId/custom-checks/:checkId', async (req, res) => {
+  const { trId, checkId } = req.params;
+  await deleteCustomCheck(trId, checkId);
+  res.status(204).send();
 });
 
 // PATCH /:trId/playbook — attache/détache un playbook à la review

@@ -189,6 +189,34 @@ export class AnalysisService {
     );
   }
 
+  // Brief B1 — règles custom de cohérence
+  listCustomChecks(anaId: string, trId: string) {
+    return this.api.http.get<CustomCheck[]>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/custom-checks`,
+    );
+  }
+
+  addCustomCheck(anaId: string, trId: string, prompt: string) {
+    return this.api.http.post<CustomCheck>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/custom-checks`,
+      { prompt },
+    );
+  }
+
+  deleteCustomCheck(anaId: string, trId: string, checkId: string) {
+    return this.api.http.delete<void>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/custom-checks/${checkId}`,
+    );
+  }
+
+  // Brief B2 — ajouter un doc/row à une review
+  addTabularRow(anaId: string, trId: string, legalObjectId: string) {
+    return this.api.http.post<{ row: TabularRow }>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/rows`,
+      { legalObjectId },
+    );
+  }
+
   setTabularReviewPlaybook(anaId: string, trId: string, playbookAssetId: string | null) {
     return this.api.http.patch<{ playbookAssetId: string | null }>(
       `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/playbook`,
@@ -283,6 +311,19 @@ export interface ConsistencyRuleResult {
   scope: 'cross_row' | 'cross_column';
   findings: string[];
 }
+
+export interface CustomCheck {
+  id: string;
+  prompt: string;
+  createdAt: string;
+}
+
+export interface CustomCheckResult {
+  checkId: string;
+  prompt: string;
+  findings: Array<{ rowId?: string; documentName?: string; finding: string }>;
+  summary: string;
+}
 export interface TabularAnalysis {
   schemaVersion: 1;
   generatedAt: string;
@@ -292,6 +333,7 @@ export interface TabularAnalysis {
   globalSynthesis: string;
   playbookAssetId?: string | null;
   declaredRulesResults?: ConsistencyRuleResult[];
+  customCheckResults?: CustomCheckResult[];
 }
 
 export interface Workflow {

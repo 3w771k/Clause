@@ -235,6 +235,8 @@ export const tabularReviews = sqliteTable('tabular_reviews', {
   lastAnalysisAt: text('last_analysis_at'),
   // Optionnel : playbook lié pour verdicts par ligne
   playbookAssetId: text('playbook_asset_id'),
+  // Brief B1 — règles de cohérence custom (user-defined)
+  customChecksJson: text('custom_checks_json'),
 });
 
 export const tabularRows = sqliteTable('tabular_rows', {

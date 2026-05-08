@@ -44,6 +44,19 @@ export interface ConsistencyRuleResult {
   findings: string[];
 }
 
+export interface CustomCheck {
+  id: string;
+  prompt: string;
+  createdAt: string;
+}
+
+export interface CustomCheckResult {
+  checkId: string;
+  prompt: string;
+  findings: Array<{ rowId?: string; documentName?: string; finding: string }>;
+  summary: string;
+}
+
 export interface TabularAnalysis {
   schemaVersion: 1;
   generatedAt: string;
@@ -53,6 +66,7 @@ export interface TabularAnalysis {
   globalSynthesis: string;
   playbookAssetId?: string | null;
   declaredRulesResults?: ConsistencyRuleResult[];
+  customCheckResults?: CustomCheckResult[];
 }
 
 interface ReviewRow {
@@ -67,6 +81,7 @@ interface ReviewSnapshot {
   rows: ReviewRow[];
   playbookAssetId: string | null;
   consistencyRules?: ConsistencyRule[];
+  customChecks: CustomCheck[];
 }
 
 interface ConsistencyRule {
@@ -112,13 +127,70 @@ async function loadSnapshot(trId: string): Promise<ReviewSnapshot | null> {
     }
   }
 
+  let customChecks: CustomCheck[] = [];
+  if (review.customChecksJson) {
+    try { customChecks = JSON.parse(review.customChecksJson); } catch { /* ignore */ }
+  }
+
   return {
     trId,
     columns: cols,
     rows,
     playbookAssetId: review.playbookAssetId,
     consistencyRules,
+    customChecks,
   };
+}
+
+async function executeCustomChecks(snap: ReviewSnapshot): Promise<CustomCheckResult[]> {
+  if (!snap.customChecks.length || !snap.rows.length) return [];
+
+  const tableBlock = snap.rows.map(r => {
+    const cells = snap.columns.map(c =>
+      `  ${c.label}: ${r.cells[c.id]?.value ?? '(vide)'}`,
+    ).join('\n');
+    return `[rowId=${r.rowId}] ${r.documentName}\n${cells}`;
+  }).join('\n\n');
+
+  const results: CustomCheckResult[] = [];
+  for (const check of snap.customChecks) {
+    const prompt = `Tu vérifies une règle de cohérence sur un tableau d'extraction juridique.
+
+RÈGLE À VÉRIFIER (formulée par l'utilisateur) :
+${check.prompt}
+
+TABLEAU (${snap.rows.length} document${snap.rows.length > 1 ? 's' : ''}, ${snap.columns.length} colonne${snap.columns.length > 1 ? 's' : ''}) :
+${tableBlock}
+
+INSTRUCTIONS :
+- Applique strictement la règle décrite par l'user.
+- Liste chaque finding (anomalie, écart, ce que la règle pointe) avec le rowId concerné si applicable.
+- Si la règle est vague, fais ton mieux pour la matérialiser.
+- Si tout est conforme, retourne findings vide et un summary qui le confirme.
+
+FORMAT — JSON UNIQUEMENT, pas de wrapper, pas de markdown :
+{
+  "findings": [
+    { "rowId": "trow_xxx", "finding": "ce que tu as trouvé sur cette ligne" }
+  ],
+  "summary": "Synthèse 1 phrase de la vérification."
+}`;
+
+    const r = await llmJson<{ findings: Array<{ rowId?: string; finding: string }>; summary: string }>(
+      prompt,
+      { findings: [], summary: 'Vérification non disponible.' },
+    );
+    results.push({
+      checkId: check.id,
+      prompt: check.prompt,
+      findings: (r.findings ?? []).map(f => {
+        const row = f.rowId ? snap.rows.find(rr => rr.rowId === f.rowId) : null;
+        return { rowId: f.rowId, documentName: row?.documentName, finding: f.finding };
+      }),
+      summary: r.summary ?? '',
+    });
+  }
+  return results;
 }
 
 async function llmJson<T>(prompt: string, fallback: T): Promise<T> {
@@ -346,6 +418,10 @@ export async function runTabularAnalysis(trId: string): Promise<TabularAnalysis 
     ? await executeDeclaredRules(snap)
     : undefined;
 
+  const customCheckResults = snap.customChecks.length
+    ? await executeCustomChecks(snap)
+    : undefined;
+
   const synthesis = await globalSynthesis(snap, columnAnalyses);
 
   const result: TabularAnalysis = {
@@ -357,6 +433,7 @@ export async function runTabularAnalysis(trId: string): Promise<TabularAnalysis 
     globalSynthesis: synthesis,
     playbookAssetId: snap.playbookAssetId,
     declaredRulesResults,
+    customCheckResults,
   };
 
   // Persiste
@@ -381,5 +458,32 @@ export async function getTabularAnalysis(trId: string): Promise<TabularAnalysis 
 export async function setReviewPlaybook(trId: string, playbookAssetId: string | null) {
   await db.update(tabularReviews)
     .set({ playbookAssetId })
+    .where(eq(tabularReviews.id, trId));
+}
+
+export async function listCustomChecks(trId: string): Promise<CustomCheck[]> {
+  const [r] = await db.select().from(tabularReviews).where(eq(tabularReviews.id, trId));
+  if (!r?.customChecksJson) return [];
+  try { return JSON.parse(r.customChecksJson); } catch { return []; }
+}
+
+export async function addCustomCheck(trId: string, prompt: string): Promise<CustomCheck> {
+  const list = await listCustomChecks(trId);
+  const check: CustomCheck = {
+    id: 'chk_' + Math.random().toString(36).substring(2, 10),
+    prompt: prompt.trim().slice(0, 1000),
+    createdAt: new Date().toISOString(),
+  };
+  list.push(check);
+  await db.update(tabularReviews)
+    .set({ customChecksJson: JSON.stringify(list) })
+    .where(eq(tabularReviews.id, trId));
+  return check;
+}
+
+export async function deleteCustomCheck(trId: string, checkId: string): Promise<void> {
+  const list = (await listCustomChecks(trId)).filter(c => c.id !== checkId);
+  await db.update(tabularReviews)
+    .set({ customChecksJson: JSON.stringify(list) })
     .where(eq(tabularReviews.id, trId));
 }

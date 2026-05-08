@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AnalysisService, TabularReview, TabularColumn, TabularRow, TabularCell, Workflow, TabularAnalysis } from '../../../../core/services/analysis.service';
+import { AnalysisService, TabularReview, TabularColumn, TabularRow, TabularCell, Workflow, TabularAnalysis, CustomCheck } from '../../../../core/services/analysis.service';
 import { ReferenceBaseService } from '../../../../core/services/reference-base.service';
 import type { ReferenceAsset } from '../../../../core/models/reference-asset.model';
 import { ColumnEditMenuComponent } from './column-edit-menu.component';
@@ -59,6 +59,11 @@ export class TabularReviewComponent implements OnInit {
   outlierKeys = signal<Set<string>>(new Set()); // "rowId:colId" pour badge cellule
   showPlaybookPicker = signal(false);
   availablePlaybooks = signal<ReferenceAsset[]>([]);
+  customChecks = signal<CustomCheck[]>([]);
+  // Brief B2 — add row modal
+  showAddRowModal = signal(false);
+  availableLegalObjects = signal<Array<{ legalObjectId: string; documentId: string; fileName: string }>>([]);
+  addingRow = signal(false);
 
   // Column edit menu
   openColumnMenu = signal<string | null>(null);
@@ -109,6 +114,7 @@ export class TabularReviewComponent implements OnInit {
           if (r.fileName) this.docLabels.set(r.documentId, r.fileName);
         });
         this.refreshOutlierKeys(full.analysis ?? null);
+        this.loadCustomChecks();
       },
       error: () => this.activeReview.set(review),
     });
@@ -173,6 +179,70 @@ export class TabularReviewComponent implements OnInit {
     const id = this.activeReview()?.playbookAssetId;
     if (!id) return null;
     return this.availablePlaybooks().find(p => p.id === id)?.name ?? id;
+  }
+
+  // Brief B1 — custom checks
+  loadCustomChecks() {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.listCustomChecks(this.anaId, r.id).subscribe({
+      next: list => this.customChecks.set(list),
+      error: () => {},
+    });
+  }
+
+  addCustomCheck(prompt: string) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.addCustomCheck(this.anaId, r.id, prompt).subscribe({
+      next: chk => this.customChecks.update(list => [...list, chk]),
+      error: () => this.flashError('Erreur lors de l\'ajout de la règle'),
+    });
+  }
+
+  removeCustomCheck(checkId: string) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.deleteCustomCheck(this.anaId, r.id, checkId).subscribe({
+      next: () => this.customChecks.update(list => list.filter(c => c.id !== checkId)),
+      error: () => this.flashError('Erreur lors de la suppression'),
+    });
+  }
+
+  // Brief B2 — ajouter une ligne (document) au tableau
+  openAddRowModal() {
+    this.refSvc.availableDocuments().subscribe(list => {
+      const existingDocIds = new Set(this.activeReview()?.rows?.map(r => r.documentId) ?? []);
+      this.availableLegalObjects.set(
+        list.filter(d => !existingDocIds.has(d.documentId)).map(d => ({
+          legalObjectId: d.legalObjectId,
+          documentId: d.documentId,
+          fileName: d.fileName,
+        })),
+      );
+      this.showAddRowModal.set(true);
+    });
+  }
+
+  addRow(legalObjectId: string) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.addingRow.set(true);
+    this.svc.addTabularRow(this.anaId, r.id, legalObjectId).subscribe({
+      next: ({ row }) => {
+        this.activeReview.update(rev => rev ? {
+          ...rev,
+          rows: [...(rev.rows ?? []), row],
+        } : rev);
+        if (row.fileName) this.docLabels.set(row.documentId, row.fileName);
+        this.addingRow.set(false);
+        this.showAddRowModal.set(false);
+      },
+      error: err => {
+        this.addingRow.set(false);
+        this.flashError(err?.error?.error ?? 'Erreur lors de l\'ajout de la ligne');
+      },
+    });
   }
 
   getDocLabel(documentId: string): string {
