@@ -116,6 +116,8 @@ export class TabularReviewComponent implements OnInit {
   ngOnInit() {
     this.loadReviews();
     this.svc.listWorkflows().subscribe({ next: wf => this.workflows.set(wf), error: () => {} });
+    // Précharge les types de clauses de l'analyse — utilisé partout (Auto/Libre/Add column/menu colonne)
+    this.loadClauseTypes();
   }
 
   loadReviews() {
@@ -143,11 +145,16 @@ export class TabularReviewComponent implements OnInit {
     });
   }
 
+  // Charge les types de clauses depuis l'analyse (pas besoin d'une review active —
+  // utilisé par le mode Libre, le menu d'édition colonne, et le formulaire d'ajout).
   private loadClauseTypes() {
-    const r = this.activeReview();
-    if (!r) return;
-    this.svc.listClauseTypes(this.anaId, r.id).subscribe({
-      next: (res) => this.clauseTypes.set(res.types),
+    this.svc.previewAnalysisClauseTypes(this.anaId).subscribe({
+      next: (res) => this.clauseTypes.set(res.types.map(t => ({
+        type: t.type,
+        occurrences: t.count,
+        attributeKeys: t.attributeKeys ?? [],
+        sampleText: t.sample,
+      }))),
       error: () => {},
     });
   }

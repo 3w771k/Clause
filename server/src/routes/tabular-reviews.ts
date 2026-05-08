@@ -57,6 +57,69 @@ tabularReviewsRouter.post('/', async (req, res) => {
   res.status(201).json({ ...row, columns: cols });
 });
 
+// ─── Routes statiques (DOIVENT être avant /:trId sinon Express les avale) ────
+
+// GET /clause-types-preview — agrégation des types de clauses dans l'analyse + diagnostic
+tabularReviewsRouter.get('/clause-types-preview', async (req, res) => {
+  const { analysisId } = req.params;
+  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
+    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
+  if (!ads.length) {
+    return res.json({ types: [], diagnostic: { hint: 'Aucun document dans cette analyse.' } });
+  }
+
+  const map = new Map<string, { count: number; sample: string; attributeKeys: Set<string> }>();
+  const docDiagnostics: Array<{ documentId: string; fileName: string; extractionStatus: string; clausesCount: number; typedClausesCount: number }> = [];
+
+  for (const ad of ads) {
+    const [lo] = await db.select().from(legalObjects).where(eq(legalObjects.id, ad.legalObjectId));
+    if (!lo) continue;
+    const [doc] = await db.select({ id: documents.id, fileName: documents.fileName, status: documents.legalExtractionStatus })
+      .from(documents).where(eq(documents.id, lo.documentId));
+    const cls = await db.select({ type: clauses.type, heading: clauses.heading, text: clauses.text, attrs: clauses.attributesJson })
+      .from(clauses).where(eq(clauses.legalObjectId, ad.legalObjectId));
+    let typed = 0;
+    for (const c of cls) {
+      if (!c.type || c.type.trim() === '') continue;
+      typed++;
+      const e = map.get(c.type) ?? { count: 0, sample: c.heading ?? c.text.substring(0, 80), attributeKeys: new Set<string>() };
+      e.count++;
+      try {
+        const a = JSON.parse(c.attrs) as Record<string, unknown>;
+        for (const k of Object.keys(a)) e.attributeKeys.add(k);
+      } catch { /* skip */ }
+      map.set(c.type, e);
+    }
+    docDiagnostics.push({
+      documentId: doc?.id ?? lo.documentId,
+      fileName: doc?.fileName ?? lo.documentId,
+      extractionStatus: doc?.status ?? 'unknown',
+      clausesCount: cls.length,
+      typedClausesCount: typed,
+    });
+  }
+
+  const types = Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count)
+    .map(([type, info]) => ({
+      type, count: info.count, sample: info.sample,
+      attributeKeys: Array.from(info.attributeKeys),
+    }));
+
+  let hint: string | undefined;
+  if (types.length === 0) {
+    const notExtracted = docDiagnostics.filter(d => d.extractionStatus !== 'done' && d.extractionStatus !== 'completed');
+    if (notExtracted.length === docDiagnostics.length) {
+      hint = `Aucun document n'a encore été extrait. Va sur la page de chaque document et clique "Extraire" (statut actuel : ${notExtracted.map(d => d.extractionStatus).join(', ')}).`;
+    } else if (notExtracted.length > 0) {
+      hint = `${notExtracted.length}/${docDiagnostics.length} documents pas encore extraits. Les autres ont des clauses sans type ontologique.`;
+    } else {
+      hint = `Tous les documents sont extraits mais aucune clause n'a de type ontologique reconnu. L'extraction a peut-être échoué silencieusement — relancer "Extraire".`;
+    }
+  }
+
+  res.json({ types, diagnostic: { hint, docs: docDiagnostics } });
+});
+
 // GET /api/analyses/:analysisId/tabular-reviews/:trId
 tabularReviewsRouter.get('/:trId', async (req, res) => {
   const { analysisId, trId } = req.params;
@@ -362,57 +425,10 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
 
 // GET /clause-types-preview — agrégation des types de clauses dans l'analyse
 // + diagnostic clair quand 0 types détectés (status d'extraction par doc)
-tabularReviewsRouter.get('/clause-types-preview', async (req, res) => {
-  const { analysisId } = req.params;
-  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
-    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
-  if (!ads.length) {
-    return res.json({ types: [], diagnostic: { hint: 'Aucun document dans cette analyse.' } });
-  }
-
-  const map = new Map<string, { count: number; sample: string }>();
-  const docDiagnostics: Array<{ documentId: string; fileName: string; extractionStatus: string; clausesCount: number; typedClausesCount: number }> = [];
-
-  for (const ad of ads) {
-    const [lo] = await db.select().from(legalObjects).where(eq(legalObjects.id, ad.legalObjectId));
-    if (!lo) continue;
-    const [doc] = await db.select({ id: documents.id, fileName: documents.fileName, status: documents.legalExtractionStatus })
-      .from(documents).where(eq(documents.id, lo.documentId));
-    const cls = await db.select({ type: clauses.type, heading: clauses.heading, text: clauses.text })
-      .from(clauses).where(eq(clauses.legalObjectId, ad.legalObjectId));
-    let typed = 0;
-    for (const c of cls) {
-      if (!c.type || c.type.trim() === '') continue;
-      typed++;
-      const e = map.get(c.type) ?? { count: 0, sample: c.heading ?? c.text.substring(0, 80) };
-      e.count++;
-      map.set(c.type, e);
-    }
-    docDiagnostics.push({
-      documentId: doc?.id ?? lo.documentId,
-      fileName: doc?.fileName ?? lo.documentId,
-      extractionStatus: doc?.status ?? 'unknown',
-      clausesCount: cls.length,
-      typedClausesCount: typed,
-    });
-  }
-
-  const types = Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count)
-    .map(([type, info]) => ({ type, count: info.count, sample: info.sample }));
-
-  let hint: string | undefined;
-  if (types.length === 0) {
-    const notExtracted = docDiagnostics.filter(d => d.extractionStatus !== 'done' && d.extractionStatus !== 'completed');
-    if (notExtracted.length === docDiagnostics.length) {
-      hint = `Aucun document n'a encore été extrait. Va sur la page de chaque document et clique "Extraire" (statut actuel : ${notExtracted.map(d => d.extractionStatus).join(', ')}).`;
-    } else if (notExtracted.length > 0) {
-      hint = `${notExtracted.length}/${docDiagnostics.length} documents pas encore extraits. Les autres ont des clauses sans type ontologique.`;
-    } else {
-      hint = `Tous les documents sont extraits mais aucune clause n'a de type ontologique reconnu. L'extraction a peut-être échoué silencieusement — relancer "Extraire".`;
-    }
-  }
-
-  res.json({ types, diagnostic: { hint, docs: docDiagnostics } });
+// Note : ce handler reste ici comme alias mais il EST dupliqué plus haut
+// avant /:trId — voir bloc "Routes statiques (avant /:trId pour Express order)"
+tabularReviewsRouter.get('/clause-types-preview-legacy', async (_req, res) => {
+  res.status(410).json({ error: 'Use /clause-types-preview' });
 });
 
 // ─── Brief I2 — Template preview : voir le match colonne-par-colonne avant créer ─
