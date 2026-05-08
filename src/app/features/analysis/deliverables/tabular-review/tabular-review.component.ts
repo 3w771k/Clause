@@ -33,7 +33,10 @@ export class TabularReviewComponent implements OnInit {
   newName = signal('');
   selectedWorkflowId = signal('');
   customColumns = signal<Array<{ label: string; question: string }>>([]);
-  mode = signal<'workflow' | 'custom'>('workflow');
+  mode = signal<'workflow' | 'custom' | 'auto'>('workflow');
+  // Brief G — preview des types de clauses pour mode "Auto"
+  autoTypesPreview = signal<Array<{ type: string; count: number; sample: string; selected: boolean }>>([]);
+  autoLoading = signal(false);
 
   // Run state
   running = signal(false);
@@ -274,6 +277,48 @@ export class TabularReviewComponent implements OnInit {
 
   getDocLabel(documentId: string): string {
     return this.docLabels.get(documentId) ?? documentId.substring(0, 10) + '…';
+  }
+
+  // Brief G — charger preview des clause types quand on passe en mode auto
+  switchToAutoMode() {
+    this.mode.set('auto');
+    if (this.autoTypesPreview().length === 0) {
+      this.autoLoading.set(true);
+      this.svc.previewAnalysisClauseTypes(this.anaId).subscribe({
+        next: (res) => {
+          this.autoTypesPreview.set(res.types.map(t => ({ ...t, selected: true })));
+          this.autoLoading.set(false);
+        },
+        error: () => this.autoLoading.set(false),
+      });
+    }
+  }
+
+  toggleAutoType(type: string) {
+    this.autoTypesPreview.update(list =>
+      list.map(t => t.type === type ? { ...t, selected: !t.selected } : t),
+    );
+  }
+
+  autoSelectAll(value: boolean) {
+    this.autoTypesPreview.update(list => list.map(t => ({ ...t, selected: value })));
+  }
+
+  buildAutoReview() {
+    const name = this.newName().trim();
+    if (!name) return;
+    const includedTypes = this.autoTypesPreview().filter(t => t.selected).map(t => t.type);
+    if (!includedTypes.length) return;
+    this.svc.autoBuildTabularReview(this.anaId, { name, includedTypes }).subscribe({
+      next: created => {
+        this.reviews.update(list => [...list, created]);
+        this.openReview(created);
+        this.showCreate.set(false);
+        this.newName.set('');
+        this.autoTypesPreview.set([]);
+      },
+      error: err => this.flashError(err?.error?.error ?? 'Erreur auto-build'),
+    });
   }
 
   createReview() {

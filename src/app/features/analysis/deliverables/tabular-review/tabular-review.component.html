@@ -500,6 +500,11 @@
           </div>
           <!-- Mode tabs -->
           <div class="flex gap-2">
+            <button (click)="switchToAutoMode()"
+              [class]="mode() === 'auto' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="flex-1 text-xs font-medium py-2 rounded-lg border transition-all">
+              ⚡ Auto (depuis clauses)
+            </button>
             <button (click)="mode.set('workflow')"
               [class]="mode() === 'workflow' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
               class="flex-1 text-xs font-medium py-2 rounded-lg border transition-all">
@@ -512,7 +517,43 @@
             </button>
           </div>
 
-          @if (mode() === 'workflow') {
+          @if (mode() === 'auto') {
+            <!-- Auto-build : un type de clause = une colonne, lookup_first par défaut -->
+            <div>
+              <p class="text-xs text-gray-500 mb-2">
+                Un tableau auto-construit depuis les clauses extraites des documents : 1 colonne par type de clause détecté.
+                <span class="text-emerald-700">Aucun appel LLM</span> pour les colonnes dont la clause est déjà extraite.
+              </p>
+              @if (autoLoading()) {
+                <p class="text-xs text-gray-400 text-center py-6">Détection des types de clauses…</p>
+              } @else if (autoTypesPreview().length === 0) {
+                <p class="text-xs text-amber-600 text-center py-6">Aucune clause typée détectée. Vérifiez que les documents ont été extraits.</p>
+              } @else {
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] text-gray-600">{{ autoTypesPreview().length }} type{{ autoTypesPreview().length > 1 ? 's' : '' }} détecté{{ autoTypesPreview().length > 1 ? 's' : '' }}</span>
+                  <div class="flex gap-1">
+                    <button (click)="autoSelectAll(true)" class="text-[10px] text-gray-700 hover:text-gray-900 underline">tout</button>
+                    <span class="text-gray-300">·</span>
+                    <button (click)="autoSelectAll(false)" class="text-[10px] text-gray-700 hover:text-gray-900 underline">aucun</button>
+                  </div>
+                </div>
+                <div class="space-y-1 max-h-64 overflow-y-auto border border-gray-100 rounded-lg p-1">
+                  @for (t of autoTypesPreview(); track t.type) {
+                    <label class="flex items-start gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                      <input type="checkbox" [checked]="t.selected" (change)="toggleAutoType(t.type)" class="mt-0.5 w-3.5 h-3.5" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs font-medium text-gray-900 truncate">{{ t.type }}</span>
+                          <span class="text-[10px] text-gray-400">{{ t.count }} occurrence{{ t.count > 1 ? 's' : '' }}</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 truncate">{{ t.sample }}</p>
+                      </div>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
+          } @else if (mode() === 'workflow') {
             <!-- Workflow selector -->
             <div class="space-y-2">
               @for (wf of workflows(); track wf.id) {
@@ -571,11 +612,19 @@
             class="text-xs px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
             Annuler
           </button>
-          <button (click)="createReview()"
-            [disabled]="!newName().trim() || (mode() === 'workflow' && !selectedWorkflowId()) || (mode() === 'custom' && !customColumns().length)"
-            class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
-            Créer
-          </button>
+          @if (mode() === 'auto') {
+            <button (click)="buildAutoReview()"
+              [disabled]="!newName().trim() || autoLoading() || autoTypesPreview().length === 0"
+              class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
+              ⚡ Construire automatiquement
+            </button>
+          } @else {
+            <button (click)="createReview()"
+              [disabled]="!newName().trim() || (mode() === 'workflow' && !selectedWorkflowId()) || (mode() === 'custom' && !customColumns().length)"
+              class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
+              Créer
+            </button>
+          }
         </div>
       </div>
     </div>

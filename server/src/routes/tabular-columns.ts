@@ -47,7 +47,7 @@ tabularColumnsRouter.patch('/:trId/columns/:colId', async (req, res) => {
     if (expectedType !== prev.expectedType) { next.expectedType = expectedType; typeChanged = true; }
   }
   // Brief E — extraction hybride
-  const ALLOWED_STRATEGIES = new Set(['llm_only', 'attribute_first', 'clause_filtered_llm']);
+  const ALLOWED_STRATEGIES = new Set(['lookup_first', 'llm_only', 'attribute_first', 'clause_filtered_llm']);
   if (extractionStrategy !== undefined) {
     if (!ALLOWED_STRATEGIES.has(extractionStrategy)) return res.status(400).json({ error: 'extractionStrategy invalide' });
     if (extractionStrategy !== prev.extractionStrategy) { next.extractionStrategy = extractionStrategy as TabularColumn['extractionStrategy']; questionChanged = true; }
@@ -92,7 +92,7 @@ tabularColumnsRouter.post('/:trId/columns', async (req, res) => {
   const { analysisId, trId } = req.params;
   const { label, question, expectedType, afterColumnId, extractionStrategy, clauseTypeOntologyId, attributePath } = req.body as {
     label: string; question: string; expectedType?: string; afterColumnId?: string;
-    extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+    extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
     clauseTypeOntologyId?: string; attributePath?: string;
   };
 

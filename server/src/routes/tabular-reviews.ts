@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
   tabularReviews, tabularRows, tabularCells,
-  analyses, analysisDocuments, documents, legalObjects,
+  analyses, analysisDocuments, documents, legalObjects, clauses,
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
@@ -360,20 +360,104 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
   res.json(updated);
 });
 
-// ─── Brief E — Preview des types de clauses + attributs disponibles dans l'analyse ─
-import { clauses as clausesTable, analysisDocuments as adTable } from '../db/schema.js';
+// GET /clause-types-preview — agrégation des types de clauses dans l'analyse
+// (sans review id, utile pour la modale création en mode "Auto")
+tabularReviewsRouter.get('/clause-types-preview', async (req, res) => {
+  const { analysisId } = req.params;
+  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
+    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
+  if (!ads.length) return res.json({ types: [] });
+  const map = new Map<string, { count: number; sample: string }>();
+  for (const ad of ads) {
+    const cls = await db.select({ type: clauses.type, heading: clauses.heading, text: clauses.text })
+      .from(clauses).where(eq(clauses.legalObjectId, ad.legalObjectId));
+    for (const c of cls) {
+      const e = map.get(c.type) ?? { count: 0, sample: c.heading ?? c.text.substring(0, 80) };
+      e.count++;
+      map.set(c.type, e);
+    }
+  }
+  res.json({
+    types: Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count)
+      .map(([type, info]) => ({ type, count: info.count, sample: info.sample })),
+  });
+});
 
+// ─── Brief G — Auto-build : créer une review depuis les clauses extraites ─────
+// POST /api/analyses/:analysisId/tabular-reviews/auto-build
+// Body: { name?: string, includedTypes?: string[] }
+// Crée une review avec 1 colonne par type de clause détecté (lookup_first par défaut).
+// Pas d'appel LLM — les cells seront populated au prochain /run via lookup direct.
+tabularReviewsRouter.post('/auto-build', async (req, res) => {
+  const { analysisId } = req.params;
+  const { name, includedTypes } = req.body as { name?: string; includedTypes?: string[] };
+
+  // Charge les types de clauses présents dans l'analyse
+  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
+    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
+  if (!ads.length) return res.status(400).json({ error: 'Aucun document dans cette analyse' });
+
+  const typeMap = new Map<string, { count: number; sample: string }>();
+  for (const ad of ads) {
+    const cls = await db.select({ type: clauses.type, heading: clauses.heading, text: clauses.text })
+      .from(clauses).where(eq(clauses.legalObjectId, ad.legalObjectId));
+    for (const c of cls) {
+      const e = typeMap.get(c.type) ?? { count: 0, sample: c.heading ?? c.text.substring(0, 80) };
+      e.count++;
+      typeMap.set(c.type, e);
+    }
+  }
+
+  let types = Array.from(typeMap.entries()).sort((a, b) => b[1].count - a[1].count);
+  if (includedTypes?.length) {
+    const wanted = new Set(includedTypes);
+    types = types.filter(([t]) => wanted.has(t));
+  }
+  if (types.length === 0) return res.status(400).json({ error: 'Aucune clause typée dans les documents' });
+
+  // Humanise un type ontologique : "LIMITATION_RESPONSABILITE" → "Limitation responsabilité"
+  const humanize = (type: string) =>
+    type.toLowerCase().split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const cols: TabularColumn[] = types.map(([type, info], i) => ({
+    id: `col_${i}`,
+    label: humanize(type),
+    question: `Que dit la clause "${humanize(type)}" ?`,
+    expectedType: 'text',
+    extractionStrategy: 'lookup_first',
+    clauseTypeOntologyId: type,
+  }));
+
+  const id = `tr_${uuidv4().replace(/-/g, '').substring(0, 12)}`;
+  const reviewName = name?.trim() || `Tableau auto — ${new Date().toLocaleDateString('fr-FR')}`;
+
+  const [row] = await db.insert(tabularReviews).values({
+    id,
+    analysisId,
+    name: reviewName,
+    workflowId: undefined,
+    isCustom: true,
+    columnsJson: JSON.stringify(cols),
+  }).returning();
+
+  res.status(201).json({
+    ...row,
+    columns: cols,
+    detectedTypes: types.map(([type, info]) => ({ type, count: info.count, sample: info.sample })),
+  });
+});
+
+// ─── Brief E — Preview des types de clauses + attributs disponibles dans l'analyse ─
 tabularReviewsRouter.get('/:trId/clause-types', async (req, res) => {
   const { analysisId } = req.params;
-  // Tous les legalObjectIds des docs de l'analyse
-  const ads = await db.select({ legalObjectId: adTable.legalObjectId })
-    .from(adTable).where(eq(adTable.analysisId, analysisId));
+  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
+    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
   if (!ads.length) return res.json({ types: [] });
 
   const summary = new Map<string, { count: number; attributeKeys: Set<string>; sample: string }>();
   for (const ad of ads) {
-    const cl = await db.select({ type: clausesTable.type, text: clausesTable.text, attrs: clausesTable.attributesJson })
-      .from(clausesTable).where(eq(clausesTable.legalObjectId, ad.legalObjectId));
+    const cl = await db.select({ type: clauses.type, text: clauses.text, attrs: clauses.attributesJson })
+      .from(clauses).where(eq(clauses.legalObjectId, ad.legalObjectId));
     for (const c of cl) {
       let entry = summary.get(c.type);
       if (!entry) {

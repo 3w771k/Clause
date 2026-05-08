@@ -146,6 +146,20 @@ export class AnalysisService {
     );
   }
 
+  // Brief G — auto-build : crée une review depuis les clauses extraites
+  autoBuildTabularReview(anaId: string, payload: { name?: string; includedTypes?: string[] }) {
+    return this.api.http.post<TabularReview & { detectedTypes: Array<{ type: string; count: number; sample: string }> }>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/auto-build`, payload,
+    );
+  }
+
+  // Brief G — preview clause types disponibles avant création (no review id requis)
+  previewAnalysisClauseTypes(anaId: string) {
+    return this.api.http.get<{ types: Array<{ type: string; count: number; sample: string }> }>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/clause-types-preview`,
+    );
+  }
+
   // Brief E — preview des types de clauses présents dans les docs de l'analyse
   listClauseTypes(anaId: string, trId: string) {
     return this.api.http.get<{ types: Array<{ type: string; occurrences: number; attributeKeys: string[]; sampleText: string }> }>(

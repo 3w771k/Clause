@@ -6,8 +6,13 @@ import { eq, and } from 'drizzle-orm';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export type ExtractionStrategy = 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
-export type ExtractionMode = 'attribute' | 'clause_llm' | 'doc_llm' | 'absent';
+// Brief G — `lookup_first` est la nouvelle stratégie pivot :
+// 1. attributePath → tente lookup direct
+// 2. clauseTypeOntologyId → tente texte verbatim de la/les clause(s)
+// 3. fallback : LLM sur le doc entier
+// AUCUN appel LLM si une étape directe réussit.
+export type ExtractionStrategy = 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+export type ExtractionMode = 'attribute' | 'clause_direct' | 'clause_llm' | 'doc_llm' | 'absent';
 
 export interface TabularColumn {
   id: string;
@@ -131,45 +136,86 @@ export async function extractCellValue(
   column: TabularColumn,
   ctx?: { legalObjectId?: string },
 ): Promise<{ value: string | null; rawValue: string | null; confidence: string; citationJson: string; extractionMode: ExtractionMode }> {
-  const strategy = column.extractionStrategy ?? 'llm_only';
+  // Brief G — défaut intelligent : si la colonne pointe vers un type de clause,
+  // on présume `lookup_first` (cascade attribut → texte direct → LLM doc).
+  // L'user peut toujours forcer 'llm_only' explicitement pour le legacy.
+  const strategy: ExtractionStrategy =
+    column.extractionStrategy
+    ?? (column.clauseTypeOntologyId ? 'lookup_first' : 'llm_only');
 
-  // Stratégie attribute_first : lookup déterministe sans LLM
-  if (strategy === 'attribute_first' && ctx?.legalObjectId && column.clauseTypeOntologyId && column.attributePath) {
-    const clauseList = await loadClausesForLegalObject(ctx.legalObjectId);
-    const matching = clauseList.filter(c => c.type === column.clauseTypeOntologyId);
+  // Helpers internes
+  const tryAttribute = async (matching: ClauseLite[]): Promise<ReturnType<typeof extractCellValue> | null> => {
+    if (!column.attributePath) return null;
     for (const c of matching) {
       const attr = readAttribute(c.attributes, column.attributePath);
       if (attr !== undefined && attr !== null && attr !== '') {
         const value = formatValue(attr);
-        return {
+        return Promise.resolve({
           value,
           rawValue: c.text.substring(0, 500),
           confidence: 'high',
           citationJson: JSON.stringify({ page: c.citation?.page ?? null, excerpt: c.text.substring(0, 500), clauseId: c.id }),
-          extractionMode: 'attribute',
-        };
+          extractionMode: 'attribute' as ExtractionMode,
+        });
       }
     }
-    // Fallback : pas d'attribut trouvé, on passe en clause_filtered_llm si on a au moins le type
-    if (matching.length > 0) {
-      return await extractViaLlm(matching.map(c => c.text).join('\n\n'), column, 'clause_llm');
+    return null;
+  };
+
+  const tryClauseDirect = (matching: ClauseLite[]): ReturnType<typeof extractCellValue> | null => {
+    if (matching.length === 0) return null;
+    // Concatène les textes verbatim si plusieurs clauses du même type
+    const joined = matching.map(c => c.text).join('\n\n---\n\n');
+    const first = matching[0];
+    return Promise.resolve({
+      value: joined.length > 800 ? joined.substring(0, 800) + '…' : joined,
+      rawValue: joined,
+      confidence: 'high',
+      citationJson: JSON.stringify({
+        page: first.citation?.page ?? null,
+        excerpt: joined.substring(0, 500),
+        clauseIds: matching.map(c => c.id),
+      }),
+      extractionMode: 'clause_direct' as ExtractionMode,
+    });
+  };
+
+  const matchingClauses = (ctx?.legalObjectId && column.clauseTypeOntologyId)
+    ? (await loadClausesForLegalObject(ctx.legalObjectId)).filter(c => c.type === column.clauseTypeOntologyId)
+    : [];
+
+  // Stratégie : lookup_first → cascade attr → clause_direct → LLM doc
+  if (strategy === 'lookup_first') {
+    if (matchingClauses.length > 0) {
+      const a = await tryAttribute(matchingClauses);
+      if (a) return a;
+      const d = tryClauseDirect(matchingClauses);
+      if (d) return d;
     }
-    // Sinon fallback total LLM sur le doc
-    return await extractViaLlm(docText, column, 'doc_llm');
+    return extractViaLlm(docText, column, 'doc_llm');
   }
 
-  // Stratégie clause_filtered_llm : LLM uniquement sur les clauses du bon type
-  if (strategy === 'clause_filtered_llm' && ctx?.legalObjectId && column.clauseTypeOntologyId) {
-    const clauseList = await loadClausesForLegalObject(ctx.legalObjectId);
-    const matching = clauseList.filter(c => c.type === column.clauseTypeOntologyId);
-    if (matching.length > 0) {
-      return await extractViaLlm(matching.map(c => c.text).join('\n\n'), column, 'clause_llm');
+  // Stratégie : attribute_first (lookup attr seul, fallback LLM doc)
+  if (strategy === 'attribute_first') {
+    if (matchingClauses.length > 0) {
+      const a = await tryAttribute(matchingClauses);
+      if (a) return a;
+      // Pas d'attribut → on garde au moins le LLM filtré sur les clauses
+      return extractViaLlm(matchingClauses.map(c => c.text).join('\n\n'), column, 'clause_llm');
     }
-    return await extractViaLlm(docText, column, 'doc_llm');
+    return extractViaLlm(docText, column, 'doc_llm');
   }
 
-  // Défaut : LLM sur le doc entier (comportement legacy)
-  return await extractViaLlm(docText, column, 'doc_llm');
+  // Stratégie : clause_filtered_llm (LLM toujours, mais sur clauses ciblées)
+  if (strategy === 'clause_filtered_llm') {
+    if (matchingClauses.length > 0) {
+      return extractViaLlm(matchingClauses.map(c => c.text).join('\n\n'), column, 'clause_llm');
+    }
+    return extractViaLlm(docText, column, 'doc_llm');
+  }
+
+  // Stratégie : llm_only (legacy explicite)
+  return extractViaLlm(docText, column, 'doc_llm');
 }
 
 async function extractViaLlm(
