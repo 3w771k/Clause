@@ -154,9 +154,11 @@ export class ContractDraftViewComponent implements OnInit {
       },
       error: (err) => {
         this.generating.set(false);
-        const msg = err?.error?.error ?? 'Erreur côté moteur.';
+        const detail = err?.error?.error ?? err?.error?.message ?? err?.message ?? `HTTP ${err?.status ?? '?'}`;
+        const msg = `Backend a renvoyé : ${detail}`;
         this.lastError.set(msg);
         this.turns.update(list => [...list, { role: 'system', content: `❌ ${msg}`, ts: new Date().toISOString() }]);
+        console.error('[contract-draft] backend error:', err);
       },
     });
   }

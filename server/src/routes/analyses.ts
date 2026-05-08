@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
-  analyses, analysisDocuments, deliverables, legalObjects, documents,
+  analyses, analysisDocuments, deliverables, legalObjects, documents, referenceAssets,
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { runAlignment, runConfrontation, runAggregation, runDD, runMaMapping, runDeadlines, runCompliance, runInconsistencies } from '../services/analysis.service.js';
