@@ -58,6 +58,15 @@
           </button>
         </div>
       }
+      <!-- Référentiel (asset) lié à l'analyse — audit (playbook), contract_draft (standard) -->
+      @if (referenceAsset(); as ref) {
+        <div class="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
+          <span>Référentiel</span>
+          <span class="text-gray-300">·</span>
+          <span class="text-gray-700 max-w-48 truncate" [title]="ref.name">{{ ref.name }}</span>
+          <span class="text-[10px] text-gray-400 uppercase tracking-wide">{{ ref.type }}</span>
+        </div>
+      }
       <button (click)="loadAvailableDocs()"
         class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-gray-700 hover:bg-gray-200 transition-colors shrink-0">
         + Ajouter
