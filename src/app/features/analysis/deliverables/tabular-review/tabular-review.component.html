@@ -27,6 +27,15 @@
 
     <!-- Actions -->
     @if (activeReview()) {
+      <button disabled
+        class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md text-gray-400 border border-gray-200 cursor-not-allowed shrink-0"
+        title="Bientôt : capitaliser ce tableau comme workflow réutilisable">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+        </svg>
+        Sauvegarder comme workflow
+        <span class="text-[9px] uppercase tracking-wide bg-gray-100 text-gray-400 px-1 py-0.5 rounded">bientôt</span>
+      </button>
       <button (click)="runReview()" [disabled]="running()"
         class="btn-primary shrink-0">
         @if (running()) {
@@ -236,8 +245,12 @@
                           }
                           @if (cell.extractionMode === 'attribute') {
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium" title="Extrait directement de l'attribut structuré (pas d'appel LLM)">⚡ direct</span>
+                          } @else if (cell.extractionMode === 'clause_direct') {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium" title="Texte verbatim de la clause (pas d'appel LLM)">⚡ verbatim</span>
                           } @else if (cell.extractionMode === 'clause_llm') {
-                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-medium" title="LLM filtré sur la clause ciblée">clause</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium" title="LLM filtré sur la clause ciblée">LLM clause</span>
+                          } @else if (cell.extractionMode === 'doc_llm') {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 font-medium" title="Fallback LLM sur le document entier — la clause cible n'a pas été trouvée dans l'extraction">LLM fallback</span>
                           }
                           @if (isOutlier(row.id, col.id)) {
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 font-medium" title="Outlier détecté par l'analyse de cohérence">outlier</span>
@@ -443,21 +456,64 @@
   <!-- Add column form -->
   @if (showAddColumnForm()) {
     <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" (click)="cancelAddColumn()">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
-        <div class="px-5 py-4 border-b border-gray-100">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[80vh]" (click)="$event.stopPropagation()">
+        <div class="px-5 py-4 border-b border-gray-100 shrink-0">
           <h2 class="text-sm font-semibold text-gray-900">Ajouter une colonne</h2>
         </div>
-        <div class="px-5 py-4 space-y-3">
+        <div class="px-5 py-4 space-y-3 overflow-y-auto flex-1 min-h-0">
           <div>
             <label class="text-xs text-gray-600 mb-1 block">Nom</label>
             <input [ngModel]="newColumnLabel()" (ngModelChange)="newColumnLabel.set($event)" type="text" maxlength="200"
+              placeholder="Ex : Plafond responsabilité"
               class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-900" />
           </div>
-          <div>
-            <label class="text-xs text-gray-600 mb-1 block">Question / prompt</label>
-            <textarea [ngModel]="newColumnQuestion()" (ngModelChange)="newColumnQuestion.set($event)" rows="4" maxlength="2000"
-              class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-y"></textarea>
+
+          <!-- Sub-tabs -->
+          <div class="flex gap-2">
+            <button (click)="newColumnSubMode.set('extraction')"
+              [class]="newColumnSubMode() === 'extraction' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="flex-1 text-xs font-medium py-1.5 rounded-md border transition-all">
+              ⚡ Depuis l'extraction
+            </button>
+            <button (click)="newColumnSubMode.set('question')"
+              [class]="newColumnSubMode() === 'question' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="flex-1 text-xs font-medium py-1.5 rounded-md border transition-all">
+              Question libre (LLM)
+            </button>
           </div>
+
+          @if (newColumnSubMode() === 'extraction') {
+            <div>
+              <label class="text-xs text-gray-600 mb-1 block">Type de clause à cibler</label>
+              <select [ngModel]="newColumnClauseType()" (ngModelChange)="newColumnClauseType.set($event); newColumnAttributePath.set('')"
+                class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900">
+                <option [ngValue]="''">— Sélectionner —</option>
+                @for (ct of clauseTypes(); track ct.type) {
+                  <option [ngValue]="ct.type">{{ ct.type }} ({{ ct.occurrences }}×)</option>
+                }
+              </select>
+            </div>
+            @if (newColumnClauseType()) {
+              <div>
+                <label class="text-xs text-gray-600 mb-1 block">Attribut (optionnel — sinon texte verbatim de la clause)</label>
+                <select [ngModel]="newColumnAttributePath()" (ngModelChange)="newColumnAttributePath.set($event)"
+                  class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900">
+                  <option [ngValue]="''">— Texte de la clause (verbatim) —</option>
+                  @for (a of attributesForClauseType(newColumnClauseType()); track a) {
+                    <option [ngValue]="a">{{ a }}</option>
+                  }
+                </select>
+              </div>
+            }
+          } @else {
+            <div>
+              <label class="text-xs text-gray-600 mb-1 block">Question / prompt LLM</label>
+              <textarea [ngModel]="newColumnQuestion()" (ngModelChange)="newColumnQuestion.set($event)" rows="4" maxlength="2000"
+                placeholder="Ex : Y a-t-il une clause d'arbitrage international ?"
+                class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-y"></textarea>
+            </div>
+          }
+
           <div>
             <label class="text-xs text-gray-600 mb-1 block">Type attendu</label>
             <select [ngModel]="newColumnType()" (ngModelChange)="newColumnType.set($event)"
@@ -470,11 +526,11 @@
             </select>
           </div>
         </div>
-        <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
           <button (click)="cancelAddColumn()"
             class="text-xs px-4 py-2 text-gray-600 hover:text-gray-800">Annuler</button>
           <button (click)="submitAddColumn()"
-            [disabled]="!newColumnLabel().trim() || !newColumnQuestion().trim()"
+            [disabled]="!newColumnLabel().trim() || (newColumnSubMode() === 'extraction' ? !newColumnClauseType() : !newColumnQuestion().trim())"
             class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50">
             Ajouter
           </button>

@@ -92,6 +92,10 @@ export class TabularReviewComponent implements OnInit {
   newColumnLabel = signal('');
   newColumnQuestion = signal('');
   newColumnType = signal('text');
+  // Brief J2 — sub-mode du form "Ajouter colonne" (extraction vs question libre)
+  newColumnSubMode = signal<'extraction' | 'question'>('extraction');
+  newColumnClauseType = signal<string>('');
+  newColumnAttributePath = signal<string>('');
 
   confidenceClass = computed(() => (conf: string) => {
     switch (conf) {
@@ -737,6 +741,10 @@ export class TabularReviewComponent implements OnInit {
     this.newColumnLabel.set('');
     this.newColumnQuestion.set('');
     this.newColumnType.set('text');
+    this.newColumnSubMode.set('extraction');
+    this.newColumnClauseType.set('');
+    this.newColumnAttributePath.set('');
+    if (this.clauseTypes().length === 0) this.loadClauseTypes();
     this.showAddColumnForm.set(true);
   }
 
@@ -749,11 +757,32 @@ export class TabularReviewComponent implements OnInit {
     const r = this.activeReview();
     if (!r) return;
     const label = this.newColumnLabel().trim();
-    const question = this.newColumnQuestion().trim();
-    if (!label || !question) return;
-    const payload: { label: string; question: string; expectedType?: string; afterColumnId?: string } = {
-      label, question, expectedType: this.newColumnType(),
+    if (!label) return;
+
+    const subMode = this.newColumnSubMode();
+    let payload: {
+      label: string; question: string; expectedType?: string; afterColumnId?: string;
+      extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+      clauseTypeOntologyId?: string; attributePath?: string;
     };
+
+    if (subMode === 'extraction') {
+      const clauseType = this.newColumnClauseType().trim();
+      if (!clauseType) { this.flashError('Type de clause requis'); return; }
+      payload = {
+        label,
+        question: `Que dit la clause "${label}" ?`,  // fallback question pour LLM si lookup échoue
+        expectedType: this.newColumnType(),
+        extractionStrategy: 'lookup_first',
+        clauseTypeOntologyId: clauseType,
+        ...(this.newColumnAttributePath().trim() && { attributePath: this.newColumnAttributePath().trim() }),
+      };
+    } else {
+      const question = this.newColumnQuestion().trim();
+      if (!question) { this.flashError('Question requise'); return; }
+      payload = { label, question, expectedType: this.newColumnType() };
+    }
+
     if (this.addAfterColumnId) payload.afterColumnId = this.addAfterColumnId;
     this.svc.addTabularColumn(this.anaId, r.id, payload).subscribe({
       next: full => {

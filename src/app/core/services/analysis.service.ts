@@ -206,7 +206,11 @@ export class AnalysisService {
 
   addTabularColumn(
     anaId: string, trId: string,
-    payload: { label: string; question: string; expectedType?: string; afterColumnId?: string },
+    payload: {
+      label: string; question: string; expectedType?: string; afterColumnId?: string;
+      extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+      clauseTypeOntologyId?: string; attributePath?: string;
+    },
   ) {
     return this.api.http.post<TabularReview>(
       `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns`, payload,
