@@ -162,7 +162,7 @@
           </p>
 
           <!-- Confrontation / Compliance / Contract draft : reference asset picker -->
-          @if ((operation() === 'confrontation' || operation() === 'compliance' || operation() === 'contract_draft') && referenceAssets().length > 0) {
+          @if ((operation() === 'confrontation' || operation() === 'contract_draft') && referenceAssets().length > 0) {
             <div class="mb-6">
               <h3 class="text-sm font-medium text-gray-700 mb-3">Référentiel à appliquer</h3>
               <div class="space-y-2">
@@ -238,7 +238,7 @@
                     : 'w-full text-left p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300'"
                   class="transition-all">
                   <div class="flex items-center gap-3">
-                    @if (operation() === 'aggregation' || operation() === 'dd' || operation() === 'ma_mapping' || operation() === 'deadlines' || operation() === 'compliance' || operation() === 'inconsistencies') {
+                    @if (operation() === 'tabular' || operation() === 'multi_doc_redline') {
                       <div [class]="selectedTargetDocIds().has(doc.id)
                         ? 'w-5 h-5 rounded border-2 border-gray-900 bg-gray-900 flex items-center justify-center'
                         : 'w-5 h-5 rounded border-2 border-gray-300'">
@@ -296,7 +296,7 @@
             @if (selectedTargetDocIds().size > 0) {
               <div class="flex gap-4">
                 <span class="text-sm text-gray-500 w-32 shrink-0">
-                  @if (operation() === 'aggregation' || operation() === 'dd' || operation() === 'ma_mapping' || operation() === 'deadlines' || operation() === 'compliance' || operation() === 'inconsistencies') { Documents } @else { Document cible }
+                  @if (operation() === 'tabular' || operation() === 'multi_doc_redline') { Documents } @else { Document cible }
                 </span>
                 <div class="space-y-1">
                   @for (id of selectedTargetDocIds(); track id) {
@@ -315,7 +315,7 @@
               </div>
             }
 
-            @if ((operation() === 'confrontation' || operation() === 'compliance') && selectedRefAssetId()) {
+            @if ((operation() === 'confrontation' || operation() === 'contract_draft') && selectedRefAssetId()) {
               <div class="flex gap-4">
                 <span class="text-sm text-gray-500 w-32 shrink-0">Référentiel</span>
                 <span class="text-sm font-medium text-gray-900">{{ referenceAssets().find(a => a.id === selectedRefAssetId())?.name }}</span>

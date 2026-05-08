@@ -168,7 +168,7 @@ export async function generateRedline(input: RedlineEngineInput): Promise<Redlin
   }
 
   const ckEditorHtml = buildCkEditorHtml(input.documentText, proposals);
-  return persistRedline({
+  return {
     id: `rdl_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
     analysisId: input.analysisId,
     sourceDocumentId: input.sourceDocumentId,
@@ -180,9 +180,13 @@ export async function generateRedline(input: RedlineEngineInput): Promise<Redlin
     comments: [],
     ckEditorHtml,
     status: 'draft',
-  });
+  };
 }
 
+// R3 — Drop la persistance dans la table `redlines` : la SSoT est la table
+// `deliverables` (type=redline, contentJson). La table redlines reste dans le
+// schéma pour usage futur (audit log immutable) mais n'est plus écrite ici.
+// Conservé exporté pour rétro-compat appelants externes.
 export async function persistRedline(result: RedlineResult): Promise<RedlineResult> {
   const [row] = await db.insert(redlines).values({
     id: result.id,
@@ -196,11 +200,7 @@ export async function persistRedline(result: RedlineResult): Promise<RedlineResu
     commentsJson: JSON.stringify(result.comments),
     status: result.status,
   }).returning();
-  return {
-    ...result,
-    id: row.id,
-    createdAt: row.createdAt,
-  };
+  return { ...result, id: row.id, createdAt: row.createdAt };
 }
 
 // Alias rétro-compat

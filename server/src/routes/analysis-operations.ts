@@ -1,24 +1,146 @@
-// Brief 8 §5 — Endpoints des nouvelles vues (audit / draft-contract / multi-doc-redline).
-// Monté à plat sous /api/analyses (pas /api/workspaces/:wsId/analyses) pour matcher
-// la convention frontend AnalysisService qui utilise ${api.base}/analyses/:anaId/...
+// Toutes les routes per-analysis (mounted at /api/analyses/:anaId/*) :
+// - GET /:anaId, DELETE /:anaId
+// - POST /:anaId/documents, DELETE /:anaId/documents/:adId
+// - POST /:anaId/start-generation
+// - POST /:anaId/audit, /:anaId/draft-contract, /:anaId/multi-doc-redline (Brief 8)
 //
-// NOTE structurelle : analysesRouter (CRUD analyses) reste sous /api/workspaces/:wsId/analyses.
-// On a deux montages distincts faute d'un refactor du wsId-scoping. Hors-scope court terme.
+// Ne nécessite plus de wsId dans l'URL : le workspaceId est lu depuis la table
+// analyses pour ré-injection dans les helpers qui en ont besoin.
 
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
-  analysisDocuments, deliverables, legalObjects, documents, redlines, referenceAssets,
+  analyses, analysisDocuments, deliverables, legalObjects, documents,
+  redlines, referenceAssets,
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { runConfrontation } from '../services/analysis.service.js';
+import {
+  runAlignment, runConfrontation, runAggregation, runDD, runMaMapping,
+  runDeadlines, runCompliance, runInconsistencies,
+} from '../services/analysis.service.js';
 import { generateRedline, type RedlineResult } from '../services/redline-engine.service.js';
 import type { StandardContent } from '../schemas/asset-content.schema.js';
+import { withViewType } from './_view-type.js';
 
 export const analysisOperationsRouter = Router();
 
-// POST /:anaId/audit — déclenche runConfrontation (qui produit note + redline)
+// ─── GET /:anaId ──────────────────────────────────────────────────────────────
+analysisOperationsRouter.get('/:anaId', async (req, res) => {
+  const { anaId } = req.params;
+  const [ana] = await db.select().from(analyses).where(eq(analyses.id, anaId));
+  if (!ana) return res.status(404).json({ error: 'Analysis not found' });
+
+  const adRows = await db.select().from(analysisDocuments)
+    .where(eq(analysisDocuments.analysisId, anaId))
+    .orderBy(analysisDocuments.orderInAnalysis);
+
+  const docDetails = await Promise.all(
+    adRows.map(async (ad) => {
+      const [lo] = await db.select().from(legalObjects).where(eq(legalObjects.id, ad.legalObjectId));
+      if (!lo) return { ...ad, documentName: null };
+      const [doc] = await db.select({ fileName: documents.fileName })
+        .from(documents).where(eq(documents.id, lo.documentId));
+      return {
+        ...ad,
+        documentName: doc?.fileName ?? lo.id,
+        documentType: lo.documentType,
+        documentSubtype: lo.documentSubtype,
+      };
+    }),
+  );
+
+  const delivRows = await db.select({
+    id: deliverables.id,
+    type: deliverables.type,
+    name: deliverables.name,
+    status: deliverables.status,
+    createdAt: deliverables.createdAt,
+    sourceOperation: deliverables.sourceOperation,
+  }).from(deliverables).where(eq(deliverables.analysisId, anaId));
+
+  res.json({ ...withViewType(ana), documents: docDetails, deliverables: delivRows });
+});
+
+// ─── DELETE /:anaId ───────────────────────────────────────────────────────────
+analysisOperationsRouter.delete('/:anaId', async (req, res) => {
+  await db.delete(analyses).where(eq(analyses.id, req.params.anaId));
+  res.status(204).send();
+});
+
+// ─── POST /:anaId/documents ───────────────────────────────────────────────────
+analysisOperationsRouter.post('/:anaId/documents', async (req, res) => {
+  const { anaId } = req.params;
+  const { legalObjectId, role } = req.body as { legalObjectId: string; role?: string };
+  if (!legalObjectId) return res.status(400).json({ error: 'legalObjectId is required' });
+
+  const [lo] = await db.select().from(legalObjects).where(eq(legalObjects.id, legalObjectId));
+  if (!lo) return res.status(404).json({ error: 'Legal object not found' });
+
+  const existing = await db.select().from(analysisDocuments)
+    .where(and(eq(analysisDocuments.analysisId, anaId), eq(analysisDocuments.legalObjectId, legalObjectId)));
+  if (existing.length) return res.status(409).json({ error: 'Document already in analysis' });
+
+  const count = await db.select().from(analysisDocuments).where(eq(analysisDocuments.analysisId, anaId));
+
+  const [row] = await db.insert(analysisDocuments).values({
+    id: `ad_${uuidv4().replace(/-/g, '').substring(0, 12)}`,
+    analysisId: anaId,
+    legalObjectId,
+    role: role ?? 'target',
+    addedAt: new Date().toISOString(),
+    orderInAnalysis: count.length,
+  }).returning();
+  res.status(201).json(row);
+});
+
+// ─── DELETE /:anaId/documents/:adId ───────────────────────────────────────────
+analysisOperationsRouter.delete('/:anaId/documents/:adId', async (req, res) => {
+  await db.delete(analysisDocuments).where(
+    and(eq(analysisDocuments.id, req.params.adId), eq(analysisDocuments.analysisId, req.params.anaId)),
+  );
+  res.status(204).send();
+});
+
+// ─── POST /:anaId/start-generation ────────────────────────────────────────────
+analysisOperationsRouter.post('/:anaId/start-generation', async (req, res) => {
+  const { anaId } = req.params;
+  const [ana] = await db.select().from(analyses).where(eq(analyses.id, anaId));
+  if (!ana) return res.status(404).json({ error: 'Analysis not found' });
+
+  const operation = ana.operation ?? 'unclear';
+  await db.update(analyses)
+    .set({ status: 'generating', lastActivityAt: new Date().toISOString() })
+    .where(eq(analyses.id, anaId));
+  res.status(202).json({ status: 'generating' });
+
+  setImmediate(async () => {
+    let deliverableIds: string[] = [];
+    let finalStatus: 'active' | 'error' = 'active';
+    try {
+      switch (operation) {
+        case 'alignment': deliverableIds = await runAlignment(anaId); break;
+        case 'confrontation': deliverableIds = await runConfrontation(anaId); break;
+        case 'aggregation': deliverableIds = await runAggregation(anaId); break;
+        case 'dd': deliverableIds = await runDD(anaId); break;
+        case 'ma_mapping': deliverableIds = await runMaMapping(anaId); break;
+        case 'deadlines': deliverableIds = await runDeadlines(anaId); break;
+        case 'compliance': deliverableIds = await runCompliance(anaId); break;
+        case 'inconsistencies': deliverableIds = await runInconsistencies(anaId); break;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[start-generation][${anaId}] Error: ${msg}`);
+      finalStatus = 'error';
+    }
+    await db.update(analyses)
+      .set({ status: finalStatus, lastActivityAt: new Date().toISOString() })
+      .where(eq(analyses.id, anaId));
+    console.log(`[start-generation][${anaId}] Done. deliverables: ${deliverableIds}`);
+  });
+});
+
+// ─── POST /:anaId/audit (Brief 8) ─────────────────────────────────────────────
 analysisOperationsRouter.post('/:anaId/audit', async (req, res) => {
   try {
     const ids = await runConfrontation(req.params.anaId);
@@ -29,7 +151,7 @@ analysisOperationsRouter.post('/:anaId/audit', async (req, res) => {
   }
 });
 
-// POST /:anaId/draft-contract — chat-to-redline cumulatif sur le doc source
+// ─── POST /:anaId/draft-contract (Brief 8 — chat-to-redline cumulatif) ────────
 analysisOperationsRouter.post('/:anaId/draft-contract', async (req, res) => {
   const { anaId } = req.params;
   const { standardId, contextNotes } = req.body as { standardId?: string | null; contextNotes?: string };
@@ -121,7 +243,7 @@ analysisOperationsRouter.post('/:anaId/draft-contract', async (req, res) => {
   }
 });
 
-// POST /:anaId/multi-doc-redline — propage une décision sur N docs cibles
+// ─── POST /:anaId/multi-doc-redline (Brief 8) ─────────────────────────────────
 analysisOperationsRouter.post('/:anaId/multi-doc-redline', async (req, res) => {
   const { anaId } = req.params;
   const { sourceRedlineId, targetLegalObjectIds, targetDocumentIds } = req.body as {

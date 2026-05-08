@@ -46,7 +46,7 @@ app.use('/api/workflows', workflowsRouter);
 app.use('/api/reference-base/:assetId/amendments', amendmentsRouter);
 app.use('/api/analyses/:analysisId/tabular-reviews', tabularReviewsRouter);
 app.use('/api/analyses/:analysisId/tabular-reviews', tabularColumnsRouter);
-app.use('/api/analyses', analysisOperationsRouter);
+app.use('/api/analyses', analysisOperationsRouter);  // R1 — per-analysis routes (CRUD + actions)
 
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

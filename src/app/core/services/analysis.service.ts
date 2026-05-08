@@ -7,12 +7,9 @@ import type { Deliverable } from '../models/deliverable.model';
 export class AnalysisService {
   private api = inject(ApiService);
 
+  // Listing/création scopés workspace : restent sous /api/workspaces/:wsId/analyses
   list(wsId: string) {
     return this.api.http.get<Analysis[]>(`${this.api.base}/workspaces/${wsId}/analyses`);
-  }
-
-  get(wsId: string, anaId: string) {
-    return this.api.http.get<Analysis>(`${this.api.base}/workspaces/${wsId}/analyses/${anaId}`);
   }
 
   create(wsId: string, name: string, operation?: string, referenceAssetId?: string) {
@@ -21,25 +18,30 @@ export class AnalysisService {
     });
   }
 
-  startGeneration(wsId: string, anaId: string) {
+  // Per-analysis : sous /api/analyses/:anaId (wsId arg gardé pour rétrocompat appels existants)
+  get(_wsId: string, anaId: string) {
+    return this.api.http.get<Analysis>(`${this.api.base}/analyses/${anaId}`);
+  }
+
+  startGeneration(_wsId: string, anaId: string) {
     return this.api.http.post<{ status: string }>(
-      `${this.api.base}/workspaces/${wsId}/analyses/${anaId}/start-generation`, {}
+      `${this.api.base}/analyses/${anaId}/start-generation`, {}
     );
   }
 
-  delete(wsId: string, anaId: string) {
-    return this.api.http.delete(`${this.api.base}/workspaces/${wsId}/analyses/${anaId}`);
+  delete(_wsId: string, anaId: string) {
+    return this.api.http.delete(`${this.api.base}/analyses/${anaId}`);
   }
 
-  addDocument(wsId: string, anaId: string, legalObjectId: string, role: 'target' | 'reference' = 'target') {
+  addDocument(_wsId: string, anaId: string, legalObjectId: string, role: 'target' | 'reference' = 'target') {
     return this.api.http.post<AnalysisDocument>(
-      `${this.api.base}/workspaces/${wsId}/analyses/${anaId}/documents`,
+      `${this.api.base}/analyses/${anaId}/documents`,
       { legalObjectId, role }
     );
   }
 
-  removeDocument(wsId: string, anaId: string, adId: string) {
-    return this.api.http.delete(`${this.api.base}/workspaces/${wsId}/analyses/${anaId}/documents/${adId}`);
+  removeDocument(_wsId: string, anaId: string, adId: string) {
+    return this.api.http.delete(`${this.api.base}/analyses/${anaId}/documents/${adId}`);
   }
 
   getDeliverable(id: string) {

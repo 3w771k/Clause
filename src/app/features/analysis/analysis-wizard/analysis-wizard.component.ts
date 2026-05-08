@@ -7,13 +7,13 @@ import { ReferenceBaseService } from '../../../core/services/reference-base.serv
 import type { Document } from '../../../core/models/document.model';
 import type { ReferenceAsset } from '../../../core/models/reference-asset.model';
 
-// Brief 7: 5 viewTypes au lieu de 9 operations. Quelques anciennes opérations
-// (aggregation, dd, etc.) restent acceptées comme alias pour ne pas casser le
-// parseIntent NLU côté backend ; elles seront résolues vers tabular en sortie.
-type Operation =
-  | 'tabular' | 'confrontation' | 'alignment'
-  | 'contract_draft' | 'multi_doc_redline'
-  | 'aggregation' | 'dd' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies' | 'unclear';
+// R4 (refacto post-Brief 7) : Wizard utilise les 5 viewTypes uniquement.
+// Les opérations legacy (aggregation, dd, ma_mapping, deadlines, compliance,
+// inconsistencies, unclear) sont mappées vers tabular au moment de la création.
+// Les valeurs Operation transitoires confrontation/alignment sont conservées
+// car elles déclenchent les pipelines runConfrontation/runAlignment dans
+// start-generation côté backend.
+type Operation = 'tabular' | 'confrontation' | 'alignment' | 'contract_draft' | 'multi_doc_redline';
 
 @Component({
   selector: 'app-analysis-wizard',
@@ -86,15 +86,9 @@ export class AnalysisWizardComponent implements OnInit {
     if (!op) return false;
     if (op === 'confrontation') return targets.size === 1 && this.selectedRefAssetId() !== null;
     if (op === 'alignment') return targets.size === 1 && this.selectedRefDocId() !== null;
-    if (op === 'contract_draft') return targets.size === 1;  // 1 doc source à adapter
+    if (op === 'contract_draft') return targets.size === 1;
     if (op === 'multi_doc_redline') return targets.size >= 1;
-    if (op === 'aggregation') return targets.size >= 1;
     if (op === 'tabular') return targets.size >= 1;
-    if (op === 'dd') return targets.size >= 1;
-    if (op === 'ma_mapping') return targets.size >= 1;
-    if (op === 'deadlines') return targets.size >= 1;
-    if (op === 'compliance') return targets.size >= 1;
-    if (op === 'inconsistencies') return targets.size >= 2;
     return true;
   });
 
@@ -111,6 +105,7 @@ export class AnalysisWizardComponent implements OnInit {
     const targetDoc = docs.find(d => d.id === targetId);
     const targetName = targetDoc ? this.baseName(targetDoc.fileName) : '';
 
+    const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     if (op === 'confrontation') {
       const asset = this.referenceAssets().find(a => a.id === this.selectedRefAssetId());
       return asset ? `Audit ${targetName} / ${this.baseName(asset.name)}` : `Audit ${targetName}`;
@@ -119,36 +114,18 @@ export class AnalysisWizardComponent implements OnInit {
       const refDoc = docs.find(d => d.id === this.selectedRefDocId());
       return refDoc ? `Comparaison ${targetName} / ${this.baseName(refDoc.fileName)}` : `Comparaison ${targetName}`;
     }
-    if (op === 'aggregation') {
-      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return `Clausier ${month}`;
-    }
     if (op === 'tabular') {
-      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
       const count = this.selectedTargetDocIds().size;
       return `Tableau d'analyse — ${count} doc${count > 1 ? 's' : ''} — ${month}`;
     }
-    if (op === 'dd') {
-      return 'Due Diligence ' + new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    if (op === 'contract_draft') {
+      return targetName ? `Contrat — ${targetName}` : `Création de contrat — ${month}`;
     }
-    if (op === 'ma_mapping') {
-      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return `Cartographie M&A — ${month}`;
-    }
-    if (op === 'deadlines') {
-      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return `Échéances contractuelles — ${month}`;
-    }
-    if (op === 'compliance') {
-      const asset = this.referenceAssets().find(a => a.id === this.selectedRefAssetId());
-      const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return asset ? `Conformité ${this.baseName(asset.name)} — ${month}` : `Audit conformité — ${month}`;
-    }
-    if (op === 'inconsistencies') {
+    if (op === 'multi_doc_redline') {
       const count = this.selectedTargetDocIds().size;
-      return `Incohérences — ${count} contrats`;
+      return `Redline propagé — ${count} doc${count > 1 ? 's' : ''}`;
     }
-    return `Analyse ${new Date().toLocaleDateString('fr-FR')}`;
+    return `Analyse ${month}`;
   }
 
   private baseName(fileName: string) {
@@ -162,7 +139,9 @@ export class AnalysisWizardComponent implements OnInit {
     this.error.set(null);
 
     const op = this.operation()!;
-    const refAssetId = (op === 'confrontation' || op === 'compliance') ? this.selectedRefAssetId() ?? undefined : undefined;
+    // refAsset attaché à l'analyse pour les opérations qui consomment un asset de référence
+    const refAssetId = (op === 'confrontation' || op === 'contract_draft')
+      ? this.selectedRefAssetId() ?? undefined : undefined;
 
     this.anaService.create(this.wsId, name, op, refAssetId ?? undefined).subscribe({
       next: async (ana) => {
@@ -239,7 +218,7 @@ export class AnalysisWizardComponent implements OnInit {
         const validIds = new Set(docs.map(d => d.id));
         const validRefIds = new Set(this.referenceAssets().map(a => a.id));
 
-        this.operation.set(intent.operation as Operation);
+        this.operation.set(this.normalizeOperation(intent.operation));
         this.selectedTargetDocIds.set(new Set(intent.targetDocumentIds.filter(id => validIds.has(id))));
         this.selectedRefDocId.set(intent.referenceDocumentId && validIds.has(intent.referenceDocumentId) ? intent.referenceDocumentId : null);
         this.selectedRefAssetId.set(intent.referenceAssetId && validRefIds.has(intent.referenceAssetId) ? intent.referenceAssetId : null);
@@ -260,14 +239,22 @@ export class AnalysisWizardComponent implements OnInit {
       alignment: 'Comparaison',
       contract_draft: 'Création de contrat',
       multi_doc_redline: 'Redline multi-documents',
-      aggregation: 'Clausier',
-      dd: 'Due Diligence',
-      ma_mapping: 'Cartographie M&A',
-      deadlines: 'Échéances contractuelles',
-      compliance: 'Conformité réglementaire',
-      inconsistencies: 'Incohérences inter-contrats',
-      unclear: 'Démarrage libre',
     }[op];
+  }
+
+  // R4 — mapping legacy operation (NLU peut renvoyer aggregation/dd/ma_mapping/etc.) → Operation actuelle
+  private normalizeOperation(op: string | undefined | null): Operation {
+    switch (op) {
+      case 'tabular':
+      case 'confrontation':
+      case 'alignment':
+      case 'contract_draft':
+      case 'multi_doc_redline':
+        return op;
+      // Toutes les opérations legacy tombent dans tabular (mapping Brief 7)
+      default:
+        return 'tabular';
+    }
   }
 
   stepLabel(s: 1 | 2 | 3) {
