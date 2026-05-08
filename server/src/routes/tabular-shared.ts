@@ -60,6 +60,53 @@ export async function loadClausesForLegalObject(legalObjectId: string): Promise<
   });
 }
 
+// Si la review provient d'un workflow OOTB, sync les annotations d'extraction
+// (extractionStrategy/clauseType/attributePath) depuis le workflow asset vers les
+// colonnes de la review qui n'en ont pas encore — préserve les overrides user.
+// Persiste si des updates ont été appliquées.
+import { referenceAssets } from '../db/schema.js';
+export async function syncColumnsWithWorkflow(trId: string, columns: TabularColumn[], workflowId: string | null): Promise<TabularColumn[]> {
+  if (!workflowId) return columns;
+  const wfAssetId = workflowId.startsWith('wf_') ? workflowId : `wf_${workflowId}`;
+  const [asset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, wfAssetId));
+  if (!asset) return columns;
+  let wfColumns: Array<{ id?: string; label?: string; extractionStrategy?: string; clauseTypeOntologyId?: string; attributePath?: string }> = [];
+  try {
+    const content = JSON.parse(asset.contentJson) as { columns?: typeof wfColumns };
+    wfColumns = content.columns ?? [];
+  } catch { return columns; }
+
+  let dirty = false;
+  const next = columns.map((c, i) => {
+    // Match par id si possible, sinon par index, sinon par label
+    const wf = wfColumns.find(w => w.id === c.id)
+      ?? wfColumns[i]
+      ?? wfColumns.find(w => w.label === c.label);
+    if (!wf) return c;
+    const updated = { ...c };
+    if (!c.extractionStrategy && wf.extractionStrategy) {
+      updated.extractionStrategy = wf.extractionStrategy as TabularColumn['extractionStrategy'];
+      dirty = true;
+    }
+    if (!c.clauseTypeOntologyId && wf.clauseTypeOntologyId) {
+      updated.clauseTypeOntologyId = wf.clauseTypeOntologyId;
+      dirty = true;
+    }
+    if (!c.attributePath && wf.attributePath) {
+      updated.attributePath = wf.attributePath;
+      dirty = true;
+    }
+    return updated;
+  });
+  if (dirty) {
+    await db.update(tabularReviews)
+      .set({ columnsJson: JSON.stringify(next) })
+      .where(eq(tabularReviews.id, trId));
+    console.log(`[sync-workflow] ${trId}: enriched columns from workflow ${workflowId}`);
+  }
+  return next;
+}
+
 // Lecture déterministe d'un attribut via path (dot notation : "cap.amount" ou "duration_months")
 function readAttribute(attributes: Record<string, unknown>, path: string): unknown {
   const parts = path.split('.');

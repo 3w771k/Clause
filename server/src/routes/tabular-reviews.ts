@@ -8,7 +8,7 @@ import {
 import { eq, and } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
 import {
-  TabularColumn, parseColumns, cellId, extractCellValue,
+  TabularColumn, parseColumns, cellId, extractCellValue, syncColumnsWithWorkflow,
 } from './tabular-shared.js';
 
 export const tabularReviewsRouter = Router({ mergeParams: true });
@@ -74,9 +74,12 @@ tabularReviewsRouter.get('/:trId', async (req, res) => {
 
   const cells = await db.select().from(tabularCells).where(eq(tabularCells.tabularReviewId, trId));
 
+  // Brief F1 — sync les annotations workflow → colonnes (idempotent)
+  const syncedColumns = await syncColumnsWithWorkflow(trId, parseColumns(review.columnsJson), review.workflowId);
+
   res.json({
     ...review,
-    columns: parseColumns(review.columnsJson),
+    columns: syncedColumns,
     analysis: review.analysisJson ? JSON.parse(review.analysisJson) : null,
     rows: rowsRaw.map(({ row: r, fileName }) => ({
       ...r,
@@ -187,7 +190,8 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
     .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
   if (!review) return res.status(404).json({ error: 'Tabular review not found' });
 
-  const columns = parseColumns(review.columnsJson);
+  // Brief F1 — auto-resync les annotations d'extraction depuis le workflow OOTB
+  const columns = await syncColumnsWithWorkflow(trId, parseColumns(review.columnsJson), review.workflowId);
   if (!columns.length) return res.status(400).json({ error: 'No columns defined' });
 
   const adRows = await db.select({
