@@ -111,6 +111,15 @@ export class WorkspaceDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/workspaces', this.wsId, 'analyses', ana.id]);
   }
 
+  deleteAnalysis(ana: Analysis, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Supprimer l'analyse "${ana.name}" ? Tous les livrables seront perdus.`)) return;
+    this.anaService.delete(this.wsId, ana.id).subscribe({
+      next: () => this.analyses.update(list => list.filter(a => a.id !== ana.id)),
+      error: () => alert('Erreur lors de la suppression'),
+    });
+  }
+
   deleteDoc(doc: Document, event: Event) {
     event.stopPropagation();
     if (!confirm(`Supprimer "${doc.fileName}" ?`)) return;

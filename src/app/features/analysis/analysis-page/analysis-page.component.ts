@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AnalysisService } from '../../../core/services/analysis.service';
@@ -38,6 +38,7 @@ const VIEW_TYPE_LABELS: Record<string, string> = {
 })
 export class AnalysisPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private anaService = inject(AnalysisService);
   private docService = inject(DocumentService);
   private refService = inject(ReferenceBaseService);
@@ -142,6 +143,16 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
     this.anaService.addDocument(this.wsId, this.anaId, legalObjectId, role).subscribe(() => {
       this.anaService.get(this.wsId, this.anaId).subscribe(a => this.analysis.set(a));
       this.showAddDoc.set(false);
+    });
+  }
+
+  deleteAnalysis() {
+    const ana = this.analysis();
+    if (!ana) return;
+    if (!confirm(`Supprimer l'analyse "${ana.name}" ? Tous les livrables seront perdus.`)) return;
+    this.anaService.delete(this.wsId, this.anaId).subscribe({
+      next: () => this.router.navigate(['/workspaces', this.wsId]),
+      error: (err) => alert(err?.error?.error ?? 'Erreur lors de la suppression'),
     });
   }
 
