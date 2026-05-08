@@ -26,14 +26,14 @@
         "question": "Quelles sont les conditions tarifaires (forfait, régie, prix unitaires) ? / What are the pricing arrangements?",
         "expectedType": "text",
         "extractionStrategy": "lookup_first",
-        "clauseTypeOntologyId": "PRIX"
+        "clauseTypeOntologyId": "PRIX_REMUNERATION"
       },
       {
         "label": "Paiement / Payment",
         "question": "Quels sont les délais de paiement et les conditions de facturation ? / Payment terms?",
         "expectedType": "text",
         "extractionStrategy": "lookup_first",
-        "clauseTypeOntologyId": "PAIEMENT"
+        "clauseTypeOntologyId": "MODALITES_PAIEMENT"
       },
       {
         "label": "Plafond responsabilité / Liability cap",

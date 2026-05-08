@@ -37,6 +37,7 @@ export class TabularReviewComponent implements OnInit {
   // Brief G — preview des types de clauses pour mode "Auto"
   autoTypesPreview = signal<Array<{ type: string; count: number; sample: string; selected: boolean }>>([]);
   autoLoading = signal(false);
+  autoDiagnostic = signal<{ hint?: string; docs?: Array<{ fileName: string; extractionStatus: string; clausesCount: number; typedClausesCount: number }> } | null>(null);
 
   // Run state
   running = signal(false);
@@ -282,11 +283,13 @@ export class TabularReviewComponent implements OnInit {
   // Brief G — charger preview des clause types quand on passe en mode auto
   switchToAutoMode() {
     this.mode.set('auto');
-    if (this.autoTypesPreview().length === 0) {
+    if (this.autoTypesPreview().length === 0 || this.autoDiagnostic()) {
       this.autoLoading.set(true);
+      this.autoDiagnostic.set(null);
       this.svc.previewAnalysisClauseTypes(this.anaId).subscribe({
         next: (res) => {
           this.autoTypesPreview.set(res.types.map(t => ({ ...t, selected: true })));
+          this.autoDiagnostic.set(res.diagnostic ?? null);
           this.autoLoading.set(false);
         },
         error: () => this.autoLoading.set(false),

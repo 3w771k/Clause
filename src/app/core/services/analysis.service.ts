@@ -155,9 +155,13 @@ export class AnalysisService {
 
   // Brief G — preview clause types disponibles avant création (no review id requis)
   previewAnalysisClauseTypes(anaId: string) {
-    return this.api.http.get<{ types: Array<{ type: string; count: number; sample: string }> }>(
-      `${this.api.base}/analyses/${anaId}/tabular-reviews/clause-types-preview`,
-    );
+    return this.api.http.get<{
+      types: Array<{ type: string; count: number; sample: string }>;
+      diagnostic?: {
+        hint?: string;
+        docs?: Array<{ documentId: string; fileName: string; extractionStatus: string; clausesCount: number; typedClausesCount: number }>;
+      };
+    }>(`${this.api.base}/analyses/${anaId}/tabular-reviews/clause-types-preview`);
   }
 
   // Brief E — preview des types de clauses présents dans les docs de l'analyse
