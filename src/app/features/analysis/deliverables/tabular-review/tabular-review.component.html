@@ -483,41 +483,94 @@
     </div>
   }
 
-  <!-- Create modal -->
+  <!-- Create modal — Brief I refonte 2-step -->
   @if (showCreate()) {
-    <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" (click)="showCreate.set(false)">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[85vh]" (click)="$event.stopPropagation()">
-        <div class="px-5 py-4 border-b border-gray-100 shrink-0">
-          <h2 class="text-sm font-semibold text-gray-900">Nouveau tableau d'analyse</h2>
+    <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" (click)="resetCreateModal()">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col max-h-[88vh]" (click)="$event.stopPropagation()">
+
+        <!-- Header — change selon le step -->
+        <div class="px-5 py-4 border-b border-gray-100 shrink-0 flex items-center gap-3">
+          @if (modalStep() !== 'choose') {
+            <button (click)="modalStep.set('choose')" class="text-gray-400 hover:text-gray-700">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+              </svg>
+            </button>
+          }
+          <h2 class="text-sm font-semibold text-gray-900 flex-1">
+            @switch (modalStep()) {
+              @case ('choose') { Nouveau tableau d'analyse }
+              @case ('auto') { ⚡ Mode Auto — depuis les clauses extraites }
+              @case ('template') { Mode Template — workflow prédéfini }
+              @case ('free') { Mode Libre — colonnes à la carte }
+            }
+          </h2>
         </div>
-        <div class="px-5 py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
-          <!-- Name -->
-          <div>
+
+        <div class="px-5 py-4 overflow-y-auto flex-1 min-h-0">
+
+        @if (modalStep() === 'choose') {
+          <!-- ─── STEP 1 : 3 cards Auto / Template / Libre ─── -->
+          <p class="text-xs text-gray-500 mb-4">Comment veux-tu construire ton tableau ?</p>
+          <div class="grid grid-cols-1 gap-3">
+            <button (click)="goToAutoMode()"
+              class="text-left p-4 border-2 border-gray-200 rounded-xl hover:border-gray-700 hover:shadow-sm transition-all group">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-semibold text-gray-900 mb-0.5">Auto · depuis tes documents</h3>
+                  <p class="text-xs text-gray-500">Le tableau se construit tout seul à partir des clauses déjà extraites de tes documents. <span class="text-emerald-700 font-medium">0 appel LLM</span> — restitution verbatim immédiate.</p>
+                </div>
+              </div>
+            </button>
+
+            <button (click)="goToTemplateMode()"
+              class="text-left p-4 border-2 border-gray-200 rounded-xl hover:border-gray-700 hover:shadow-sm transition-all group">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-semibold text-gray-900 mb-0.5">Template · workflow prédéfini</h3>
+                  <p class="text-xs text-gray-500">Choisis un template métier (Clausier MSA, NDA, DD M&A, RGPD…). On vérifie le match avec tes documents <span class="font-medium">avant création</span>.</p>
+                </div>
+              </div>
+            </button>
+
+            <button (click)="goToFreeMode()"
+              class="text-left p-4 border-2 border-gray-200 rounded-xl hover:border-gray-700 hover:shadow-sm transition-all group">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                  <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-sm font-semibold text-gray-900 mb-0.5">Libre · à la carte</h3>
+                  <p class="text-xs text-gray-500">Construis ton tableau colonne par colonne. Soit en piochant dans les entités déjà extraites (déterministe), soit en posant une question libre au LLM.</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        }
+
+        @if (modalStep() !== 'choose') {
+          <!-- Nom : commun à tous les modes -->
+          <div class="mb-4">
             <label class="text-xs font-medium text-gray-700 mb-1 block">Nom du tableau</label>
             <input [ngModel]="newName()" (ngModelChange)="newName.set($event)" type="text"
               placeholder="Ex : Clausier MSA — Lot 1"
               class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-900" />
           </div>
-          <!-- Mode tabs -->
-          <div class="flex gap-2">
-            <button (click)="switchToAutoMode()"
-              [class]="mode() === 'auto' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
-              class="flex-1 text-xs font-medium py-2 rounded-lg border transition-all">
-              ⚡ Auto (depuis clauses)
-            </button>
-            <button (click)="mode.set('workflow')"
-              [class]="mode() === 'workflow' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
-              class="flex-1 text-xs font-medium py-2 rounded-lg border transition-all">
-              Workflow prédéfini
-            </button>
-            <button (click)="mode.set('custom')"
-              [class]="mode() === 'custom' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
-              class="flex-1 text-xs font-medium py-2 rounded-lg border transition-all">
-              Colonnes personnalisées
-            </button>
-          </div>
+        }
 
-          @if (mode() === 'auto') {
+        @if (modalStep() === 'auto') {
             <!-- Auto-build : un type de clause = une colonne, lookup_first par défaut -->
             <div>
               <p class="text-xs text-gray-500 mb-2">
@@ -575,13 +628,15 @@
                 </div>
               }
             </div>
-          } @else if (mode() === 'workflow') {
-            <!-- Workflow selector -->
+        }
+
+        @if (modalStep() === 'template') {
+          @if (!selectedWorkflowId()) {
+            <p class="text-xs text-gray-500 mb-3">Choisis un template, on va vérifier le match avant création.</p>
             <div class="space-y-2">
               @for (wf of workflows(); track wf.id) {
-                <button (click)="selectedWorkflowId.set(wf.id)"
-                  [class]="selectedWorkflowId() === wf.id ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'"
-                  class="w-full text-left px-3 py-2.5 rounded-lg border transition-all">
+                <button (click)="loadTemplatePreview(wf.id)"
+                  class="w-full text-left px-3 py-2.5 rounded-lg border border-gray-200 hover:border-gray-700 transition-all">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-medium text-gray-900">{{ wf.name }}</span>
                     <span class="text-[10px] text-gray-400 uppercase">{{ wf.language === 'multi' ? 'FR/EN' : wf.language }}</span>
@@ -598,56 +653,154 @@
                 </button>
               }
               @if (!workflows().length) {
-                <p class="text-xs text-gray-400 text-center py-4">Chargement des workflows…</p>
+                <p class="text-xs text-gray-400 text-center py-4">Aucun template disponible.</p>
               }
             </div>
           } @else {
-            <!-- Custom columns -->
-            <div class="space-y-2 max-h-48 overflow-y-auto">
-              @for (col of customColumns(); track $index; let i = $index) {
-                <div class="flex gap-2 items-start">
-                  <div class="flex-1 space-y-1">
-                    <input [ngModel]="col.label" (ngModelChange)="updateCustomColumn(i, 'label', $event)"
-                      type="text" placeholder="Label de la colonne"
-                      class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-900" />
-                    <input [ngModel]="col.question" (ngModelChange)="updateCustomColumn(i, 'question', $event)"
-                      type="text" placeholder="Question posée au document"
-                      class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-900" />
+            <!-- Preview du template choisi -->
+            @if (templateLoading()) {
+              <p class="text-xs text-gray-400 text-center py-6">Vérification du match…</p>
+            } @else if (templatePreview(); as tp) {
+              <div class="mb-3">
+                <p class="text-xs font-medium text-gray-900">{{ tp.workflowName }}</p>
+                <p class="text-[11px] text-gray-500 mb-2">{{ tp.workflowDescription }}</p>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] text-gray-600">Match colonne par colonne sur {{ tp.totalDocs }} doc{{ tp.totalDocs > 1 ? 's' : '' }}</span>
+                  <div class="flex gap-1">
+                    <button (click)="templateSelectAll(true)" class="text-[10px] text-gray-700 hover:text-gray-900 underline">tout</button>
+                    <span class="text-gray-300">·</span>
+                    <button (click)="templateSelectAll(false)" class="text-[10px] text-gray-700 hover:text-gray-900 underline">aucun</button>
                   </div>
-                  <button (click)="removeCustomColumn(i)"
-                    class="text-gray-300 hover:text-red-400 mt-1 transition-colors">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                </div>
+                <div class="space-y-1 max-h-72 overflow-y-auto border border-gray-100 rounded-lg p-1">
+                  @for (col of tp.columns; track col.label) {
+                    <label class="flex items-start gap-2 px-2 py-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input type="checkbox" [checked]="col.selected" (change)="toggleTemplateColumn(col.label)" class="mt-0.5 w-3.5 h-3.5" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-xs font-medium text-gray-900 truncate">{{ col.label }}</span>
+                          @if (col.willUseLookup) {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">⚡ {{ col.matchedDocs }}/{{ col.totalDocs }} docs</span>
+                          } @else {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">LLM fallback (clause absente)</span>
+                          }
+                          @if (col.attributePath) {
+                            <span class="text-[10px] text-gray-400">attr: {{ col.attributePath }}</span>
+                          } @else if (col.clauseTypeOntologyId) {
+                            <span class="text-[10px] text-gray-400">type: {{ col.clauseTypeOntologyId }}</span>
+                          }
+                        </div>
+                        @if (col.sampleValue) {
+                          <p class="text-[10px] text-gray-500 truncate italic mt-0.5">"{{ col.sampleValue }}"</p>
+                        }
+                      </div>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+          }
+        }
+
+        @if (modalStep() === 'free') {
+          <p class="text-xs text-gray-500 mb-3">Ajoute des colonnes une par une — déterministes (depuis l'extraction) ou via LLM (question libre).</p>
+          <!-- Sub-tabs -->
+          <div class="flex gap-2 mb-3">
+            <button (click)="freeSubMode.set('extraction')"
+              [class]="freeSubMode() === 'extraction' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="flex-1 text-xs font-medium py-1.5 rounded-md border transition-all">
+              ⚡ Depuis l'extraction
+            </button>
+            <button (click)="freeSubMode.set('question')"
+              [class]="freeSubMode() === 'question' ? 'bg-gray-100 text-gray-900 border-gray-300' : 'text-gray-600 border-gray-200 hover:bg-gray-50'"
+              class="flex-1 text-xs font-medium py-1.5 rounded-md border transition-all">
+              Question libre (LLM)
+            </button>
+          </div>
+
+          @if (freeSubMode() === 'extraction') {
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 space-y-2">
+              <input [ngModel]="freeNewLabel()" (ngModelChange)="freeNewLabel.set($event)"
+                type="text" placeholder="Label de la colonne (ex : Plafond responsabilité)"
+                class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white" />
+              <select [ngModel]="freeNewClauseType()" (ngModelChange)="freeNewClauseType.set($event); freeNewAttributePath.set('')"
+                class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white">
+                <option [ngValue]="''">— Type de clause —</option>
+                @for (ct of clauseTypes(); track ct.type) {
+                  <option [ngValue]="ct.type">{{ ct.type }} ({{ ct.occurrences }}×)</option>
+                }
+              </select>
+              @if (freeNewClauseType() && attributesForClauseType(freeNewClauseType()).length) {
+                <select [ngModel]="freeNewAttributePath()" (ngModelChange)="freeNewAttributePath.set($event)"
+                  class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white">
+                  <option [ngValue]="''">— Attribut spécifique (optionnel : sinon texte clause) —</option>
+                  @for (a of attributesForClauseType(freeNewClauseType()); track a) {
+                    <option [ngValue]="a">{{ a }}</option>
+                  }
+                </select>
+              }
+              <button (click)="addFreeExtractionColumn()" [disabled]="!freeNewLabel().trim() || !freeNewClauseType()"
+                class="btn-secondary w-full justify-center disabled:opacity-50">+ Ajouter cette colonne</button>
+            </div>
+          } @else {
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 space-y-2">
+              <input [ngModel]="freeNewLabel()" (ngModelChange)="freeNewLabel.set($event)"
+                type="text" placeholder="Label de la colonne"
+                class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white" />
+              <textarea [ngModel]="freeNewQuestion()" (ngModelChange)="freeNewQuestion.set($event)" rows="3"
+                placeholder="Question posée au LLM (ex : Y a-t-il une clause d'arbitrage international ?)"
+                class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white resize-y"></textarea>
+              <button (click)="addFreeQuestionColumn()" [disabled]="!freeNewLabel().trim() || !freeNewQuestion().trim()"
+                class="btn-secondary w-full justify-center disabled:opacity-50">+ Ajouter cette colonne</button>
+            </div>
+          }
+
+          <!-- Liste cumulative des colonnes en construction -->
+          @if (customColumns().length) {
+            <div class="space-y-1 mt-2">
+              <p class="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">{{ customColumns().length }} colonne{{ customColumns().length > 1 ? 's' : '' }} en construction</p>
+              @for (col of customColumns(); track $index; let i = $index) {
+                <div class="flex items-center gap-2 bg-white border border-gray-200 rounded px-2 py-1.5">
+                  <span class="text-xs font-medium text-gray-900 flex-1 truncate">{{ col.label }}</span>
+                  @if (col.clauseTypeOntologyId) {
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">⚡ {{ col.clauseTypeOntologyId }}{{ col.attributePath ? '.' + col.attributePath : '' }}</span>
+                  } @else {
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">LLM</span>
+                  }
+                  <button (click)="removeCustomColumn(i)" class="text-gray-300 hover:text-red-500 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                   </button>
                 </div>
               }
             </div>
-            <button (click)="addCustomColumn()"
-              class="w-full text-xs text-gray-700 hover:text-gray-900 py-2 border border-dashed border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-              + Ajouter une colonne
-            </button>
           }
-        </div>
-        <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
-          <button (click)="showCreate.set(false)"
-            class="text-xs px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-            Annuler
-          </button>
-          @if (mode() === 'auto') {
-            <button (click)="buildAutoReview()"
-              [disabled]="!newName().trim() || autoLoading() || autoTypesPreview().length === 0"
-              class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
-              ⚡ Construire automatiquement
+        }
+
+        </div><!-- /body scroll -->
+
+        <!-- Footer -->
+        @if (modalStep() !== 'choose') {
+          <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
+            <button (click)="resetCreateModal()" class="text-xs px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+              Annuler
             </button>
-          } @else {
-            <button (click)="createReview()"
-              [disabled]="!newName().trim() || (mode() === 'workflow' && !selectedWorkflowId()) || (mode() === 'custom' && !customColumns().length)"
-              class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
-              Créer
-            </button>
-          }
-        </div>
+            @if (modalStep() === 'auto') {
+              <button (click)="buildAutoReview()"
+                [disabled]="!newName().trim() || autoLoading() || autoTypesPreview().length === 0"
+                class="btn-primary disabled:opacity-50">⚡ Construire</button>
+            } @else if (modalStep() === 'template') {
+              <button (click)="buildFromTemplate()"
+                [disabled]="!newName().trim() || !templatePreview() || templateLoading()"
+                class="btn-primary disabled:opacity-50">Créer le tableau</button>
+            } @else if (modalStep() === 'free') {
+              <button (click)="buildFromFree()"
+                [disabled]="!newName().trim() || customColumns().length === 0"
+                class="btn-primary disabled:opacity-50">Créer le tableau</button>
+            }
+          </div>
+        }
       </div>
     </div>
   }

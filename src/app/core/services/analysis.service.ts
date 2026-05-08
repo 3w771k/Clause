@@ -153,6 +153,26 @@ export class AnalysisService {
     );
   }
 
+  // Brief I2 — preview du match colonne-par-colonne d'un template avant création
+  previewTemplate(anaId: string, workflowId: string) {
+    return this.api.http.post<{
+      workflowId: string;
+      workflowName: string;
+      workflowDescription: string;
+      totalDocs: number;
+      columns: Array<{
+        label: string;
+        clauseTypeOntologyId: string | null;
+        attributePath: string | null;
+        extractionStrategy: string;
+        matchedDocs: number;
+        totalDocs: number;
+        willUseLookup: boolean;
+        sampleValue: string | null;
+      }>;
+    }>(`${this.api.base}/analyses/${anaId}/tabular-reviews/template-preview`, { workflowId });
+  }
+
   // Brief G — preview clause types disponibles avant création (no review id requis)
   previewAnalysisClauseTypes(anaId: string) {
     return this.api.http.get<{
@@ -173,8 +193,11 @@ export class AnalysisService {
 
   updateTabularColumn(
     anaId: string, trId: string, colId: string,
-    payload: { label?: string; question?: string; expectedType?: string;
-      extractionStrategy?: string; clauseTypeOntologyId?: string | null; attributePath?: string | null; },
+    payload: {
+      label?: string; question?: string; expectedType?: string;
+      extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm' | string;
+      clauseTypeOntologyId?: string | null; attributePath?: string | null;
+    },
     rerun = false,
   ) {
     const url = `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns/${colId}${rerun ? '?rerun=true' : ''}`;
@@ -276,7 +299,7 @@ export interface TabularColumn {
   question: string;
   expectedType: string;
   // Brief E — extraction hybride
-  extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+  extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
   clauseTypeOntologyId?: string;
   attributePath?: string;
 }
@@ -294,8 +317,8 @@ export interface TabularCell {
   citationJson: string | null;
   isUserEdited: boolean;
   lastRunAt: string | null;
-  // Brief E — comment cette cellule a été produite
-  extractionMode?: 'attribute' | 'clause_llm' | 'doc_llm' | 'absent';
+  // Brief E/G — comment cette cellule a été produite
+  extractionMode?: 'attribute' | 'clause_direct' | 'clause_llm' | 'doc_llm' | 'absent';
 }
 
 export interface TabularRow {

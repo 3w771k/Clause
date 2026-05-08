@@ -32,12 +32,24 @@ export class TabularReviewComponent implements OnInit {
   showCreate = signal(false);
   newName = signal('');
   selectedWorkflowId = signal('');
-  customColumns = signal<Array<{ label: string; question: string }>>([]);
+  customColumns = signal<Array<{ label: string; question: string; clauseTypeOntologyId?: string; attributePath?: string }>>([]);
+  // Brief I — modale 2-step : chooser → configurateur
+  modalStep = signal<'choose' | 'auto' | 'template' | 'free'>('choose');
+  // Backwards-compat : `mode` resté pour quelques templates HTML
   mode = signal<'workflow' | 'custom' | 'auto'>('workflow');
-  // Brief G — preview des types de clauses pour mode "Auto"
+  // Auto preview
   autoTypesPreview = signal<Array<{ type: string; count: number; sample: string; selected: boolean }>>([]);
   autoLoading = signal(false);
   autoDiagnostic = signal<{ hint?: string; docs?: Array<{ fileName: string; extractionStatus: string; clausesCount: number; typedClausesCount: number }> } | null>(null);
+  // Template preview
+  templatePreview = signal<{ workflowName: string; workflowDescription: string; totalDocs: number; columns: Array<{ label: string; clauseTypeOntologyId: string | null; attributePath: string | null; extractionStrategy: string; matchedDocs: number; totalDocs: number; willUseLookup: boolean; sampleValue: string | null; selected: boolean }> } | null>(null);
+  templateLoading = signal(false);
+  // Libre mode : sub-tab + list cumulative
+  freeSubMode = signal<'extraction' | 'question'>('extraction');
+  freeNewLabel = signal('');
+  freeNewClauseType = signal<string>('');
+  freeNewAttributePath = signal<string>('');
+  freeNewQuestion = signal('');
 
   // Run state
   running = signal(false);
@@ -281,20 +293,149 @@ export class TabularReviewComponent implements OnInit {
   }
 
   // Brief G — charger preview des clause types quand on passe en mode auto
-  switchToAutoMode() {
-    this.mode.set('auto');
-    if (this.autoTypesPreview().length === 0 || this.autoDiagnostic()) {
-      this.autoLoading.set(true);
-      this.autoDiagnostic.set(null);
-      this.svc.previewAnalysisClauseTypes(this.anaId).subscribe({
-        next: (res) => {
-          this.autoTypesPreview.set(res.types.map(t => ({ ...t, selected: true })));
-          this.autoDiagnostic.set(res.diagnostic ?? null);
-          this.autoLoading.set(false);
-        },
-        error: () => this.autoLoading.set(false),
-      });
-    }
+  // Brief I — chooser : passe à un sous-mode et précharge ce qui est utile
+  goToAutoMode() {
+    this.modalStep.set('auto');
+    this.autoLoading.set(true);
+    this.autoDiagnostic.set(null);
+    this.svc.previewAnalysisClauseTypes(this.anaId).subscribe({
+      next: (res) => {
+        this.autoTypesPreview.set(res.types.map(t => ({ ...t, selected: true })));
+        this.autoDiagnostic.set(res.diagnostic ?? null);
+        this.autoLoading.set(false);
+      },
+      error: () => this.autoLoading.set(false),
+    });
+  }
+
+  goToTemplateMode() {
+    this.modalStep.set('template');
+    this.templatePreview.set(null);
+    this.selectedWorkflowId.set('');
+  }
+
+  goToFreeMode() {
+    this.modalStep.set('free');
+    if (this.clauseTypes().length === 0) this.loadClauseTypes();
+    if (this.customColumns().length === 0) this.customColumns.set([]);
+  }
+
+  loadTemplatePreview(workflowId: string) {
+    this.selectedWorkflowId.set(workflowId);
+    this.templateLoading.set(true);
+    this.svc.previewTemplate(this.anaId, workflowId).subscribe({
+      next: (res) => {
+        this.templatePreview.set({
+          workflowName: res.workflowName,
+          workflowDescription: res.workflowDescription,
+          totalDocs: res.totalDocs,
+          columns: res.columns.map(c => ({ ...c, selected: c.willUseLookup })),
+        });
+        this.templateLoading.set(false);
+      },
+      error: () => this.templateLoading.set(false),
+    });
+  }
+
+  toggleTemplateColumn(label: string) {
+    this.templatePreview.update(p => p ? { ...p, columns: p.columns.map(c => c.label === label ? { ...c, selected: !c.selected } : c) } : p);
+  }
+
+  templateSelectAll(value: boolean) {
+    this.templatePreview.update(p => p ? { ...p, columns: p.columns.map(c => ({ ...c, selected: value })) } : p);
+  }
+
+  buildFromTemplate() {
+    const name = this.newName().trim();
+    const tp = this.templatePreview();
+    const wfId = this.selectedWorkflowId();
+    if (!name || !tp || !wfId) return;
+    const wf = this.workflows().find(w => w.id === wfId);
+    if (!wf) return;
+    const selectedLabels = new Set(tp.columns.filter(c => c.selected).map(c => c.label));
+    const columns = wf.definition.columns
+      .filter(c => selectedLabels.has(c.label))
+      .map((c, i) => ({
+        id: `col_${i}`,
+        label: c.label,
+        question: c.question,
+        expectedType: c.expectedType,
+        ...(c.extractionStrategy && { extractionStrategy: c.extractionStrategy as 'llm_only' | 'attribute_first' | 'clause_filtered_llm' }),
+        ...(c.clauseTypeOntologyId && { clauseTypeOntologyId: c.clauseTypeOntologyId }),
+        ...(c.attributePath && { attributePath: c.attributePath }),
+      }));
+    if (!columns.length) { this.flashError('Sélectionne au moins une colonne'); return; }
+    this.svc.createTabularReview(this.anaId, { name, workflowId: wfId, columns }).subscribe({
+      next: created => {
+        this.reviews.update(list => [...list, created]);
+        this.openReview(created);
+        this.resetCreateModal();
+      },
+      error: () => this.flashError('Erreur création depuis template'),
+    });
+  }
+
+  // Brief I3 — Libre mode : ajout cumulé de colonnes
+  addFreeExtractionColumn() {
+    const label = this.freeNewLabel().trim();
+    const ct = this.freeNewClauseType().trim();
+    if (!label || !ct) return;
+    this.customColumns.update(list => [...list, {
+      label,
+      question: `Que dit la clause "${label}" ?`,
+      clauseTypeOntologyId: ct,
+      attributePath: this.freeNewAttributePath().trim() || undefined,
+    }]);
+    this.freeNewLabel.set('');
+    this.freeNewClauseType.set('');
+    this.freeNewAttributePath.set('');
+  }
+
+  addFreeQuestionColumn() {
+    const label = this.freeNewLabel().trim();
+    const question = this.freeNewQuestion().trim();
+    if (!label || !question) return;
+    this.customColumns.update(list => [...list, { label, question }]);
+    this.freeNewLabel.set('');
+    this.freeNewQuestion.set('');
+  }
+
+  attributesForClauseType(type: string): string[] {
+    return this.clauseTypes().find(c => c.type === type)?.attributeKeys ?? [];
+  }
+
+  buildFromFree() {
+    const name = this.newName().trim();
+    if (!name || this.customColumns().length === 0) return;
+    const columns = this.customColumns().map((c, i) => ({
+      id: `col_${i}`,
+      label: c.label,
+      question: c.question,
+      expectedType: 'text',
+      ...(c.clauseTypeOntologyId && {
+        extractionStrategy: 'lookup_first' as const,
+        clauseTypeOntologyId: c.clauseTypeOntologyId,
+        ...(c.attributePath && { attributePath: c.attributePath }),
+      }),
+    }));
+    this.svc.createTabularReview(this.anaId, { name, columns }).subscribe({
+      next: created => {
+        this.reviews.update(list => [...list, created]);
+        this.openReview(created);
+        this.resetCreateModal();
+      },
+      error: () => this.flashError('Erreur création'),
+    });
+  }
+
+  resetCreateModal() {
+    this.showCreate.set(false);
+    this.modalStep.set('choose');
+    this.newName.set('');
+    this.selectedWorkflowId.set('');
+    this.customColumns.set([]);
+    this.autoTypesPreview.set([]);
+    this.templatePreview.set(null);
   }
 
   toggleAutoType(type: string) {

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
   tabularReviews, tabularRows, tabularCells,
-  analyses, analysisDocuments, documents, legalObjects, clauses,
+  analyses, analysisDocuments, documents, legalObjects, clauses, referenceAssets,
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
@@ -413,6 +413,72 @@ tabularReviewsRouter.get('/clause-types-preview', async (req, res) => {
   }
 
   res.json({ types, diagnostic: { hint, docs: docDiagnostics } });
+});
+
+// ─── Brief I2 — Template preview : voir le match colonne-par-colonne avant créer ─
+// POST /tabular-reviews/template-preview body { workflowId }
+// Pour chaque colonne du template, indique combien de docs ont une clause
+// du type cible (et un sample de texte). L'user voit avant création quels
+// colonnes seront populées en lookup_first vs en fallback LLM.
+tabularReviewsRouter.post('/template-preview', async (req, res) => {
+  const { analysisId } = req.params;
+  const { workflowId } = req.body as { workflowId: string };
+  if (!workflowId) return res.status(400).json({ error: 'workflowId requis' });
+
+  const wfAssetId = workflowId.startsWith('wf_') ? workflowId : `wf_${workflowId}`;
+  const [asset] = await db.select().from(referenceAssets).where(eq(referenceAssets.id, wfAssetId));
+  if (!asset) return res.status(404).json({ error: 'Workflow introuvable' });
+
+  let wfColumns: Array<{ id?: string; label: string; question: string; expectedType: string; clauseTypeOntologyId?: string; attributePath?: string; extractionStrategy?: string }>;
+  try {
+    const content = JSON.parse(asset.contentJson) as { columns: typeof wfColumns };
+    wfColumns = content.columns ?? [];
+  } catch { return res.status(500).json({ error: 'Workflow content malformé' }); }
+
+  const ads = await db.select({ legalObjectId: analysisDocuments.legalObjectId })
+    .from(analysisDocuments).where(eq(analysisDocuments.analysisId, analysisId));
+  const legalObjectIds = ads.map(a => a.legalObjectId);
+
+  // Collecte les types de clauses présents par doc
+  const typesByDoc = new Map<string, Set<string>>();
+  const sampleByType = new Map<string, string>();
+  for (const loId of legalObjectIds) {
+    const cls = await db.select({ type: clauses.type, text: clauses.text, attrs: clauses.attributesJson })
+      .from(clauses).where(eq(clauses.legalObjectId, loId));
+    const set = new Set<string>();
+    for (const c of cls) {
+      if (c.type) {
+        set.add(c.type);
+        if (!sampleByType.has(c.type)) sampleByType.set(c.type, c.text.substring(0, 200));
+      }
+    }
+    typesByDoc.set(loId, set);
+  }
+
+  const totalDocs = legalObjectIds.length;
+  const columns = wfColumns.map(col => {
+    const matchedDocs = col.clauseTypeOntologyId
+      ? legalObjectIds.filter(id => typesByDoc.get(id)?.has(col.clauseTypeOntologyId!)).length
+      : 0;
+    return {
+      label: col.label,
+      clauseTypeOntologyId: col.clauseTypeOntologyId ?? null,
+      attributePath: col.attributePath ?? null,
+      extractionStrategy: col.extractionStrategy ?? (col.clauseTypeOntologyId ? 'lookup_first' : 'llm_only'),
+      matchedDocs,
+      totalDocs,
+      willUseLookup: matchedDocs > 0,
+      sampleValue: col.clauseTypeOntologyId ? sampleByType.get(col.clauseTypeOntologyId) ?? null : null,
+    };
+  });
+
+  res.json({
+    workflowId,
+    workflowName: asset.name,
+    workflowDescription: asset.description,
+    totalDocs,
+    columns,
+  });
 });
 
 // ─── Brief G — Auto-build : créer une review depuis les clauses extraites ─────

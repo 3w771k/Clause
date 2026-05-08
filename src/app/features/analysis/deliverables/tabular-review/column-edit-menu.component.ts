@@ -13,7 +13,7 @@ export interface ColumnSavePayload {
   label: string;
   question: string;
   expectedType: string;
-  extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+  extractionStrategy?: 'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
   clauseTypeOntologyId?: string | null;
   attributePath?: string | null;
   rerun: boolean;
@@ -69,9 +69,10 @@ export interface ColumnSavePayload {
           <label class="block text-gray-600 mb-1 text-[11px]">Stratégie</label>
           <select [ngModel]="extractionStrategy()" (ngModelChange)="extractionStrategy.set($event)"
             class="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white">
-            <option value="llm_only">LLM seul (sur tout le doc) — défaut</option>
-            <option value="attribute_first">Attribut direct (lookup, fallback LLM)</option>
+            <option value="lookup_first">⚡ Lookup d'abord (attr → texte clause → LLM doc) — recommandé</option>
+            <option value="attribute_first">Attribut seul (lookup, fallback LLM)</option>
             <option value="clause_filtered_llm">LLM filtré sur 1 type de clause</option>
+            <option value="llm_only">LLM seul (sur tout le doc)</option>
           </select>
           <p class="text-[10px] text-gray-500 mt-1 leading-snug">
             @if (extractionStrategy() === 'attribute_first') {
@@ -167,7 +168,7 @@ export class ColumnEditMenuComponent implements OnInit {
   label = signal('');
   question = signal('');
   expectedType = signal('text');
-  extractionStrategy = signal<'llm_only' | 'attribute_first' | 'clause_filtered_llm'>('llm_only');
+  extractionStrategy = signal<'lookup_first' | 'llm_only' | 'attribute_first' | 'clause_filtered_llm'>('llm_only');
   clauseTypeOntologyId = signal<string>('');
   attributePath = signal<string>('');
   rerun = true;
