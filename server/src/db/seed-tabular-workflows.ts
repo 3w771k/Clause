@@ -19,7 +19,14 @@ interface WorkflowJson {
   kind: string;
   applicableDocumentTypes: string[];
   language: string;
-  definition: { columns: Array<{ label: string; question: string; expectedType: string }> };
+  definition: {
+    columns: Array<{
+      label: string; question: string; expectedType: string;
+      extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+      clauseTypeOntologyId?: string;
+      attributePath?: string;
+    }>;
+  };
 }
 
 export async function seedTabularWorkflows(opts: { force?: boolean; pruneObsolete?: boolean } = {}) {
@@ -67,6 +74,9 @@ export async function seedTabularWorkflows(opts: { force?: boolean; pruneObsolet
           expectedType: (['text', 'number', 'date', 'boolean', 'enum'].includes(c.expectedType)
             ? c.expectedType : 'text') as 'text' | 'number' | 'date' | 'boolean' | 'enum',
           order: i,
+          ...(c.extractionStrategy && { extractionStrategy: c.extractionStrategy }),
+          ...(c.clauseTypeOntologyId && { clauseTypeOntologyId: c.clauseTypeOntologyId }),
+          ...(c.attributePath && { attributePath: c.attributePath }),
         })),
       };
 

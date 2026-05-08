@@ -146,9 +146,17 @@ export class AnalysisService {
     );
   }
 
+  // Brief E — preview des types de clauses présents dans les docs de l'analyse
+  listClauseTypes(anaId: string, trId: string) {
+    return this.api.http.get<{ types: Array<{ type: string; occurrences: number; attributeKeys: string[]; sampleText: string }> }>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/clause-types`,
+    );
+  }
+
   updateTabularColumn(
     anaId: string, trId: string, colId: string,
-    payload: { label?: string; question?: string; expectedType?: string },
+    payload: { label?: string; question?: string; expectedType?: string;
+      extractionStrategy?: string; clauseTypeOntologyId?: string | null; attributePath?: string | null; },
     rerun = false,
   ) {
     const url = `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/columns/${colId}${rerun ? '?rerun=true' : ''}`;
@@ -249,6 +257,10 @@ export interface TabularColumn {
   label: string;
   question: string;
   expectedType: string;
+  // Brief E — extraction hybride
+  extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+  clauseTypeOntologyId?: string;
+  attributePath?: string;
 }
 
 export interface TabularCell {
@@ -264,6 +276,8 @@ export interface TabularCell {
   citationJson: string | null;
   isUserEdited: boolean;
   lastRunAt: string | null;
+  // Brief E — comment cette cellule a été produite
+  extractionMode?: 'attribute' | 'clause_llm' | 'doc_llm' | 'absent';
 }
 
 export interface TabularRow {
@@ -350,5 +364,10 @@ export interface Workflow {
   kind: string;
   language: string;
   applicableDocumentTypes: string[];
-  definition: { columns: Array<{ label: string; question: string; expectedType: string }> };
+  definition: {
+    columns: Array<{
+      label: string; question: string; expectedType: string;
+      extractionStrategy?: string; clauseTypeOntologyId?: string; attributePath?: string;
+    }>;
+  };
 }

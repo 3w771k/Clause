@@ -17,13 +17,21 @@ interface LegacyWorkflow {
   kind: string;
   applicableDocumentTypes: string[];
   language: string;
-  definition: { columns: Array<{ label: string; question: string; expectedType: string }> };
+  definition: {
+    columns: Array<{
+      label: string; question: string; expectedType: string;
+      extractionStrategy?: string; clauseTypeOntologyId?: string; attributePath?: string;
+    }>;
+  };
 }
 
 interface TabularWorkflowContent {
   schemaVersion: number;
   applicableDocumentTypes: string[];
-  columns: Array<{ id?: string; label: string; question: string; expectedType: string; order?: number }>;
+  columns: Array<{
+    id?: string; label: string; question: string; expectedType: string; order?: number;
+    extractionStrategy?: string; clauseTypeOntologyId?: string; attributePath?: string;
+  }>;
 }
 
 function assetToLegacy(asset: typeof referenceAssets.$inferSelect): LegacyWorkflow {
@@ -45,6 +53,9 @@ function assetToLegacy(asset: typeof referenceAssets.$inferSelect): LegacyWorkfl
         label: c.label,
         question: c.question,
         expectedType: c.expectedType,
+        ...(c.extractionStrategy && { extractionStrategy: c.extractionStrategy }),
+        ...(c.clauseTypeOntologyId && { clauseTypeOntologyId: c.clauseTypeOntologyId }),
+        ...(c.attributePath && { attributePath: c.attributePath }),
       })),
     },
   };

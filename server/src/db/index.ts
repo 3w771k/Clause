@@ -295,5 +295,6 @@ try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN analysis_json TEXT`); 
 try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN last_analysis_at TEXT`); } catch {}
 try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN playbook_asset_id TEXT`); } catch {}
 try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN custom_checks_json TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE tabular_cells ADD COLUMN extraction_mode TEXT`); } catch {}
 
 export { sqlite };

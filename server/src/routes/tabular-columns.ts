@@ -15,8 +15,9 @@ export const tabularColumnsRouter = Router({ mergeParams: true });
 tabularColumnsRouter.patch('/:trId/columns/:colId', async (req, res) => {
   const { analysisId, trId, colId } = req.params;
   const rerun = req.query.rerun === 'true' || req.query.rerun === '1';
-  const { label, question, expectedType } = req.body as {
+  const { label, question, expectedType, extractionStrategy, clauseTypeOntologyId, attributePath } = req.body as {
     label?: string; question?: string; expectedType?: string;
+    extractionStrategy?: string; clauseTypeOntologyId?: string | null; attributePath?: string | null;
   };
 
   const [review] = await db.select().from(tabularReviews)
@@ -44,6 +45,20 @@ tabularColumnsRouter.patch('/:trId/columns/:colId', async (req, res) => {
   if (expectedType !== undefined) {
     if (!ALLOWED_TYPES.has(expectedType)) return res.status(400).json({ error: 'expectedType invalide' });
     if (expectedType !== prev.expectedType) { next.expectedType = expectedType; typeChanged = true; }
+  }
+  // Brief E — extraction hybride
+  const ALLOWED_STRATEGIES = new Set(['llm_only', 'attribute_first', 'clause_filtered_llm']);
+  if (extractionStrategy !== undefined) {
+    if (!ALLOWED_STRATEGIES.has(extractionStrategy)) return res.status(400).json({ error: 'extractionStrategy invalide' });
+    if (extractionStrategy !== prev.extractionStrategy) { next.extractionStrategy = extractionStrategy as TabularColumn['extractionStrategy']; questionChanged = true; }
+  }
+  if (clauseTypeOntologyId !== undefined) {
+    const v = clauseTypeOntologyId === null || clauseTypeOntologyId === '' ? undefined : String(clauseTypeOntologyId).slice(0, 200);
+    if (v !== prev.clauseTypeOntologyId) { next.clauseTypeOntologyId = v; questionChanged = true; }
+  }
+  if (attributePath !== undefined) {
+    const v = attributePath === null || attributePath === '' ? undefined : String(attributePath).slice(0, 200);
+    if (v !== prev.attributePath) { next.attributePath = v; questionChanged = true; }
   }
 
   columns[idx] = next;
@@ -75,8 +90,10 @@ tabularColumnsRouter.patch('/:trId/columns/:colId', async (req, res) => {
 // POST /:trId/columns — add column
 tabularColumnsRouter.post('/:trId/columns', async (req, res) => {
   const { analysisId, trId } = req.params;
-  const { label, question, expectedType, afterColumnId } = req.body as {
+  const { label, question, expectedType, afterColumnId, extractionStrategy, clauseTypeOntologyId, attributePath } = req.body as {
     label: string; question: string; expectedType?: string; afterColumnId?: string;
+    extractionStrategy?: 'llm_only' | 'attribute_first' | 'clause_filtered_llm';
+    clauseTypeOntologyId?: string; attributePath?: string;
   };
 
   const safeLabel = sanitizeText(label, 200);
@@ -94,6 +111,9 @@ tabularColumnsRouter.post('/:trId/columns', async (req, res) => {
   const newCol: TabularColumn = {
     id: `col_${uuidv4().replace(/-/g, '').substring(0, 10)}`,
     label: safeLabel, question: safeQuestion, expectedType: type,
+    ...(extractionStrategy && { extractionStrategy }),
+    ...(clauseTypeOntologyId && { clauseTypeOntologyId }),
+    ...(attributePath && { attributePath }),
   };
 
   if (afterColumnId) {

@@ -60,6 +60,8 @@ export class TabularReviewComponent implements OnInit {
   showPlaybookPicker = signal(false);
   availablePlaybooks = signal<ReferenceAsset[]>([]);
   customChecks = signal<CustomCheck[]>([]);
+  // Brief E — types de clauses présents dans les docs (pour menu colonne avancé)
+  clauseTypes = signal<Array<{ type: string; occurrences: number; attributeKeys: string[]; sampleText: string }>>([]);
   // Brief B2 — add row modal
   showAddRowModal = signal(false);
   availableLegalObjects = signal<Array<{ legalObjectId: string; documentId: string; fileName: string }>>([]);
@@ -115,8 +117,18 @@ export class TabularReviewComponent implements OnInit {
         });
         this.refreshOutlierKeys(full.analysis ?? null);
         this.loadCustomChecks();
+        this.loadClauseTypes();
       },
       error: () => this.activeReview.set(review),
+    });
+  }
+
+  private loadClauseTypes() {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.listClauseTypes(this.anaId, r.id).subscribe({
+      next: (res) => this.clauseTypes.set(res.types),
+      error: () => {},
     });
   }
 
@@ -279,6 +291,9 @@ export class TabularReviewComponent implements OnInit {
           label: c.label,
           question: c.question,
           expectedType: c.expectedType,
+          ...(c.extractionStrategy && { extractionStrategy: c.extractionStrategy as 'llm_only' | 'attribute_first' | 'clause_filtered_llm' }),
+          ...(c.clauseTypeOntologyId && { clauseTypeOntologyId: c.clauseTypeOntologyId }),
+          ...(c.attributePath && { attributePath: c.attributePath }),
         }));
       }
     } else {
@@ -445,13 +460,26 @@ export class TabularReviewComponent implements OnInit {
     setTimeout(() => this.toastError.set(''), 3000);
   }
 
-  onColumnSave(col: TabularColumn, payload: { label: string; question: string; expectedType: string; rerun: boolean }) {
+  onColumnSave(col: TabularColumn, payload: {
+    label: string; question: string; expectedType: string; rerun: boolean;
+    extractionStrategy?: string; clauseTypeOntologyId?: string | null; attributePath?: string | null;
+  }) {
     const r = this.activeReview();
     if (!r) return;
-    const patch: { label?: string; question?: string; expectedType?: string } = {};
+    const patch: { label?: string; question?: string; expectedType?: string;
+      extractionStrategy?: string; clauseTypeOntologyId?: string | null; attributePath?: string | null; } = {};
     if (payload.label !== col.label) patch.label = payload.label;
     if (payload.question !== col.question) patch.question = payload.question;
     if (payload.expectedType !== (col.expectedType ?? 'text')) patch.expectedType = payload.expectedType;
+    if (payload.extractionStrategy && payload.extractionStrategy !== (col.extractionStrategy ?? 'llm_only')) {
+      patch.extractionStrategy = payload.extractionStrategy;
+    }
+    if (payload.clauseTypeOntologyId !== undefined && payload.clauseTypeOntologyId !== (col.clauseTypeOntologyId ?? null)) {
+      patch.clauseTypeOntologyId = payload.clauseTypeOntologyId;
+    }
+    if (payload.attributePath !== undefined && payload.attributePath !== (col.attributePath ?? null)) {
+      patch.attributePath = payload.attributePath;
+    }
     if (!Object.keys(patch).length) { this.openColumnMenu.set(null); return; }
 
     if (payload.rerun) this.markColumnRerunning(col.id, true);

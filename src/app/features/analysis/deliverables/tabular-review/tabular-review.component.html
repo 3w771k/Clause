@@ -234,6 +234,11 @@
                           @if (cell.isUserEdited) {
                             <span class="text-[10px] text-amber-600 font-medium">modifié</span>
                           }
+                          @if (cell.extractionMode === 'attribute') {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium" title="Extrait directement de l'attribut structuré (pas d'appel LLM)">⚡ direct</span>
+                          } @else if (cell.extractionMode === 'clause_llm') {
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 font-medium" title="LLM filtré sur la clause ciblée">clause</span>
+                          }
                           @if (isOutlier(row.id, col.id)) {
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 font-medium" title="Outlier détecté par l'analyse de cohérence">outlier</span>
                           }
@@ -394,6 +399,7 @@
     <div class="fixed z-50" [style.top.px]="columnMenuPos().top" [style.left.px]="columnMenuPos().left">
       <app-column-edit-menu
         [column]="menuCol"
+        [clauseTypes]="clauseTypes()"
         (save)="onColumnSave(menuCol, $event)"
         (delete)="onColumnDelete(menuCol)"
         (addAfter)="onColumnAddAfter(menuCol)"

@@ -156,7 +156,7 @@ tabularReviewsRouter.post('/:trId/rows', async (req, res) => {
   const now = new Date().toISOString();
   const cells = [];
   for (const col of columns) {
-    const extracted = await extractCellValue(docText, col);
+    const extracted = await extractCellValue(docText, col, { legalObjectId: lo.id });
     const [inserted] = await db.insert(tabularCells).values({
       id: cellId(),
       tabularReviewId: trId,
@@ -167,6 +167,7 @@ tabularReviewsRouter.post('/:trId/rows', async (req, res) => {
       rawValue: extracted.rawValue,
       confidence: extracted.confidence,
       citationJson: extracted.citationJson,
+      extractionMode: extracted.extractionMode,
       status: 'fresh',
       lastRunAt: now,
     }).returning();
@@ -224,7 +225,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
     const cellResults = [];
 
     for (const col of columns) {
-      const extracted = await extractCellValue(docText, col);
+      const extracted = await extractCellValue(docText, col, { legalObjectId: doc.legalObjectId ?? undefined });
 
       const [existingCell] = await db.select().from(tabularCells)
         .where(and(
@@ -242,6 +243,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
           status: 'fresh',
           lastRunAt: now,
           isUserEdited: false,
+          extractionMode: extracted.extractionMode,
         }).where(eq(tabularCells.id, existingCell.id)).returning();
         cellResults.push(updated);
       } else {
@@ -257,6 +259,7 @@ tabularReviewsRouter.post('/:trId/run', async (req, res) => {
           citationJson: extracted.citationJson,
           status: 'fresh',
           lastRunAt: now,
+          extractionMode: extracted.extractionMode,
         }).returning();
         cellResults.push(inserted);
       }
@@ -288,7 +291,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
   const [doc] = await db.select().from(documents).where(eq(documents.id, row.documentId));
   if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-  const extracted = await extractCellValue(doc.extractedText || '', col);
+  const extracted = await extractCellValue(doc.extractedText || '', col, { legalObjectId: row.legalObjectId ?? undefined });
   const now = new Date().toISOString();
 
   const [existingCell] = await db.select().from(tabularCells)
@@ -308,6 +311,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
       status: 'fresh',
       lastRunAt: now,
       isUserEdited: false,
+      extractionMode: extracted.extractionMode,
     }).where(eq(tabularCells.id, existingCell.id)).returning();
   } else {
     [cell] = await db.insert(tabularCells).values({
@@ -322,6 +326,7 @@ tabularReviewsRouter.post('/:trId/rows/:rowId/cells/:colId/rerun', async (req, r
       citationJson: extracted.citationJson,
       status: 'fresh',
       lastRunAt: now,
+      extractionMode: extracted.extractionMode,
     }).returning();
   }
 
@@ -349,6 +354,45 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
   }).where(eq(tabularCells.id, existingCell.id)).returning();
 
   res.json(updated);
+});
+
+// ─── Brief E — Preview des types de clauses + attributs disponibles dans l'analyse ─
+import { clauses as clausesTable, analysisDocuments as adTable } from '../db/schema.js';
+
+tabularReviewsRouter.get('/:trId/clause-types', async (req, res) => {
+  const { analysisId } = req.params;
+  // Tous les legalObjectIds des docs de l'analyse
+  const ads = await db.select({ legalObjectId: adTable.legalObjectId })
+    .from(adTable).where(eq(adTable.analysisId, analysisId));
+  if (!ads.length) return res.json({ types: [] });
+
+  const summary = new Map<string, { count: number; attributeKeys: Set<string>; sample: string }>();
+  for (const ad of ads) {
+    const cl = await db.select({ type: clausesTable.type, text: clausesTable.text, attrs: clausesTable.attributesJson })
+      .from(clausesTable).where(eq(clausesTable.legalObjectId, ad.legalObjectId));
+    for (const c of cl) {
+      let entry = summary.get(c.type);
+      if (!entry) {
+        entry = { count: 0, attributeKeys: new Set(), sample: c.text.substring(0, 200) };
+        summary.set(c.type, entry);
+      }
+      entry.count++;
+      try {
+        const a = JSON.parse(c.attrs) as Record<string, unknown>;
+        for (const k of Object.keys(a)) entry.attributeKeys.add(k);
+      } catch { /* ignore */ }
+    }
+  }
+  res.json({
+    types: Array.from(summary.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([type, v]) => ({
+        type,
+        occurrences: v.count,
+        attributeKeys: Array.from(v.attributeKeys),
+        sampleText: v.sample,
+      })),
+  });
 });
 
 // ─── Tabular Analysis (Brief A) ───────────────────────────────────────────────

@@ -261,6 +261,8 @@ export const tabularCells = sqliteTable('tabular_cells', {
   status: text('status').notNull().default('fresh'),
   isUserEdited: integer('is_user_edited', { mode: 'boolean' }).notNull().default(false),
   lastRunAt: text('last_run_at'),
+  // Brief E — comment cette cellule a été produite (attribute = direct, pas de LLM)
+  extractionMode: text('extraction_mode'),
 });
 
 // ─── Redline (v2 — entité de premier rang) ────────────────────────────────────
