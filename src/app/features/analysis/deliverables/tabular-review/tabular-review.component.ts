@@ -232,6 +232,12 @@ export class TabularReviewComponent implements OnInit {
     this.customColumns.update(cols => cols.filter((_, idx) => idx !== i));
   }
 
+  updateCustomColumn(i: number, key: 'label' | 'question', value: string) {
+    this.customColumns.update(cols =>
+      cols.map((c, idx) => idx === i ? { ...c, [key]: value } : c),
+    );
+  }
+
   sendChatQuestion() {
     const r = this.activeReview();
     if (!r || !this.chatQuestion().trim()) return;
