@@ -72,11 +72,11 @@
         <app-tabular-view [anaId]="anaId" [wsId]="wsId" />
       }
       @case ('audit') {
-        <app-audit-view [deliverables]="deliverables()"
+        <app-audit-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('comparison') {
-        <app-comparison-view [deliverables]="deliverables()"
+        <app-comparison-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('contract_draft') {
@@ -88,11 +88,11 @@
           (reload)="load()" />
       }
       @case ('alignment') {
-        <app-comparison-view [deliverables]="deliverables()"
+        <app-comparison-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('confrontation') {
-        <app-audit-view [deliverables]="deliverables()"
+        <app-audit-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('dd') {
