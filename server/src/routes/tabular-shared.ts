@@ -30,24 +30,30 @@ export async function extractCellValue(
   docText: string,
   column: TabularColumn,
 ): Promise<{ value: string | null; rawValue: string | null; confidence: string; citationJson: string }> {
-  const prompt = `You are a legal analyst. Answer the following question based solely on the document text below.
+  const prompt = `Tu es analyste juridique. Réponds à la question posée en te basant UNIQUEMENT sur le texte du document ci-dessous.
 
-The question may be bilingual (French / English separated by " / "). Detect the language of the DOCUMENT and answer in that language. The "rawValue" must be a verbatim excerpt from the document, in the document's original language.
+RÈGLES DE LANGUE — IMPÉRATIF :
+1. Détecte la langue du DOCUMENT (français / anglais / autre).
+2. Ta réponse "value" doit être STRICTEMENT dans la langue du document. Si le doc est en anglais, réponds en anglais. Si le doc est en français, réponds en français. NE PAS traduire.
+3. La "rawValue" est un extrait VERBATIM du document, dans sa langue d'origine, sans modification ni reformulation. C'est essentiel pour une restitution fidèle des clauses.
+4. La question peut être bilingue (séparée par " / ") — c'est juste pour t'aider, choisis la formulation qui correspond à la langue du document.
 
-Question: ${column.question}
+Question : ${column.question}
 
-Document:
+Document :
 <document>
 ${docText.substring(0, 10000)}
 </document>
 
-Return a JSON object with:
-- "value": concise answer (1-3 sentences max), in the document's language, or null if absent
-- "rawValue": verbatim excerpt from the document that supports your answer (original language), or null
-- "confidence": "high" | "medium" | "low" | "absent"
-- "page": page number if identifiable, or null
+Retourne UN objet JSON :
+{
+  "value": "réponse concise (1-3 phrases max) dans la langue du document, ou null si l'info est absente",
+  "rawValue": "extrait verbatim du document en langue originale, ou null",
+  "confidence": "high" | "medium" | "low" | "absent",
+  "page": numéro de page si identifiable, ou null
+}
 
-Return only valid JSON.`;
+Retourne UNIQUEMENT le JSON, pas de wrapper, pas de markdown.`;
 
   try {
     const msg = await anthropic.messages.create({

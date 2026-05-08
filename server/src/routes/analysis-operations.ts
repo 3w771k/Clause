@@ -299,6 +299,11 @@ analysisOperationsRouter.post('/:anaId/multi-doc-redline', async (req, res) => {
         };
       }
     }
+    if (!sourceRedline || sourceRedline.proposals.length === 0) {
+      return res.status(400).json({
+        error: 'Aucune décision source à propager. Crée d\'abord un redline (audit ou comparison) puis utilise multi-doc pour le propager.',
+      });
+    }
 
     const generatedIds: string[] = [];
     const now = new Date().toISOString();

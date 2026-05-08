@@ -81,18 +81,6 @@
           </button>
         </div>
 
-      } @else if (!activeReview()!.rows?.length) {
-        <!-- Review created but not yet run -->
-        <div class="h-full flex flex-col items-center justify-center text-center p-8">
-          <div class="text-4xl mb-4">📊</div>
-          <h3 class="text-sm font-semibold text-gray-900 mb-1">Tableau créé — {{ activeReview()!.columns.length }} colonnes</h3>
-          <p class="text-xs text-gray-500 mb-4">Lancez l'analyse pour extraire les données de tous les documents.</p>
-          <button (click)="runReview()" [disabled]="running()"
-            class="text-xs font-medium px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors">
-            Lancer l'analyse
-          </button>
-        </div>
-
       } @else {
         <!-- The grid -->
         <table class="w-full text-xs border-collapse">
@@ -123,6 +111,18 @@
             </tr>
           </thead>
           <tbody>
+            @if (!activeReview()!.rows?.length) {
+              <tr>
+                <td [attr.colspan]="(activeReview()!.columns.length + 2)" class="px-4 py-10 text-center bg-white">
+                  <p class="text-sm text-gray-700 font-medium mb-1">Tableau prêt — {{ activeReview()!.columns.length }} colonne{{ activeReview()!.columns.length > 1 ? 's' : '' }}</p>
+                  <p class="text-xs text-gray-500 mb-4">Ajustez les questions par colonne (icône ⋮) puis lancez l'analyse pour extraire les données de chaque document.</p>
+                  <button (click)="runReview()" [disabled]="running()"
+                    class="btn-primary inline-flex">
+                    @if (running()) { Analyse en cours… } @else { Lancer l'analyse }
+                  </button>
+                </td>
+              </tr>
+            }
             @for (row of activeReview()!.rows; track row.id) {
               <tr class="border-b border-gray-100 hover:bg-gray-50 group">
                 <!-- Document name -->

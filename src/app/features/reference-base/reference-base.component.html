@@ -34,28 +34,36 @@
       }
     </div>
 
-    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
-      @for (asset of filtered(); track asset.id) {
-        <button (click)="select(asset)"
-          [class]="selected()?.id === asset.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200 bg-white'"
-          class="w-full text-left border rounded-xl p-3 transition-all">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-900 truncate">{{ asset.name }}</p>
-              @if (asset.description) {
-                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ asset.description }}</p>
-              }
-            </div>
+    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+      @for (group of groupedAssets(); track group.label) {
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2 px-1 mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{{ group.label }}</span>
+            <span class="text-[10px] text-gray-300">{{ group.assets.length }}</span>
+            <div class="flex-1 h-px bg-gray-100"></div>
           </div>
-          <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span [class]="typeColor(asset.type)" class="text-[10px] font-semibold px-2 py-0.5 rounded-full">{{ typeLabel(asset.type) }}</span>
-            <span [class]="statusColor(asset.governanceStatus)" class="text-[10px] font-medium px-2 py-0.5 rounded-full">{{ statusLabel(asset.governanceStatus) }}</span>
-            <span class="text-[10px] text-gray-400 ml-auto">v{{ asset.currentVersion }}</span>
-          </div>
-        </button>
+          @for (asset of group.assets; track asset.id) {
+            <button (click)="select(asset)"
+              [class]="selected()?.id === asset.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200 bg-white'"
+              class="w-full text-left border rounded-xl p-3 transition-all">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 truncate">{{ asset.name }}</p>
+                  @if (asset.description) {
+                    <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ asset.description }}</p>
+                  }
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span [class]="statusColor(asset.governanceStatus)" class="text-[10px] font-medium px-2 py-0.5 rounded-full">{{ statusLabel(asset.governanceStatus) }}</span>
+                <span class="text-[10px] text-gray-400 ml-auto">v{{ asset.currentVersion }}</span>
+              </div>
+            </button>
+          }
+        </div>
       }
 
-      @if (filtered().length === 0) {
+      @if (groupedAssets().length === 0) {
         <div class="text-center py-10 text-gray-400 text-sm">Aucun référentiel</div>
       }
     </div>

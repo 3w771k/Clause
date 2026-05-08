@@ -237,6 +237,30 @@ export class ReferenceBaseComponent implements OnInit {
     return t ? this.assets().filter(a => a.type === t) : this.assets();
   }
 
+  // F3 — groupage par type avec ordre métier (workflows en premier)
+  groupedAssets() {
+    const list = this.filtered();
+    const order: Array<{ type: string; label: string }> = [
+      { type: 'tabular_workflow', label: 'Workflows tabulaires' },
+      { type: 'playbook', label: 'Playbooks' },
+      { type: 'standard', label: 'Standards de contrat' },
+      { type: 'dd_grid', label: 'Grilles DD' },
+      { type: 'clausier', label: 'Clausiers' },
+    ];
+    const groups: Array<{ label: string; assets: typeof list }> = [];
+    for (const { type, label } of order) {
+      const assets = list.filter(a => a.type === type)
+        .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+      if (assets.length) groups.push({ label, assets });
+    }
+    // Catch-all pour types inconnus (legacy)
+    const known = new Set(order.map(o => o.type));
+    const others = list.filter(a => !known.has(a.type))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    if (others.length) groups.push({ label: 'Autres', assets: others });
+    return groups;
+  }
+
   uniqueTypes() {
     return [...new Set(this.assets().map(a => a.type))];
   }
