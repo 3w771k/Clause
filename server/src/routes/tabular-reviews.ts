@@ -77,6 +77,7 @@ tabularReviewsRouter.get('/:trId', async (req, res) => {
   res.json({
     ...review,
     columns: parseColumns(review.columnsJson),
+    analysis: review.analysisJson ? JSON.parse(review.analysisJson) : null,
     rows: rowsRaw.map(({ row: r, fileName }) => ({
       ...r,
       fileName: fileName ?? r.documentId,
@@ -258,6 +259,48 @@ tabularReviewsRouter.patch('/:trId/rows/:rowId/cells/:colId', async (req, res) =
   }).where(eq(tabularCells.id, existingCell.id)).returning();
 
   res.json(updated);
+});
+
+// ─── Tabular Analysis (Brief A) ───────────────────────────────────────────────
+
+import { runTabularAnalysis, getTabularAnalysis, setReviewPlaybook } from '../services/tabular-analysis.service.js';
+
+// POST /:trId/analyze — exécute l'analyse cohérence (cross-row + verdicts + synthèse)
+tabularReviewsRouter.post('/:trId/analyze', async (req, res) => {
+  const { analysisId, trId } = req.params;
+  const [review] = await db.select().from(tabularReviews)
+    .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
+  if (!review) return res.status(404).json({ error: 'Tabular review not found' });
+
+  try {
+    const result = await runTabularAnalysis(trId);
+    if (!result) return res.status(500).json({ error: 'Analysis failed' });
+    res.json(result);
+  } catch (err) {
+    console.error('[tabular-analyze] error:', err);
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Analysis failed' });
+  }
+});
+
+// GET /:trId/analysis — retrouve la dernière analyse cachée
+tabularReviewsRouter.get('/:trId/analysis', async (req, res) => {
+  const { analysisId, trId } = req.params;
+  const [review] = await db.select().from(tabularReviews)
+    .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
+  if (!review) return res.status(404).json({ error: 'Tabular review not found' });
+  const analysis = await getTabularAnalysis(trId);
+  res.json(analysis ?? null);
+});
+
+// PATCH /:trId/playbook — attache/détache un playbook à la review
+tabularReviewsRouter.patch('/:trId/playbook', async (req, res) => {
+  const { analysisId, trId } = req.params;
+  const { playbookAssetId } = req.body as { playbookAssetId: string | null };
+  const [review] = await db.select().from(tabularReviews)
+    .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
+  if (!review) return res.status(404).json({ error: 'Tabular review not found' });
+  await setReviewPlaybook(trId, playbookAssetId);
+  res.json({ playbookAssetId });
 });
 
 // POST /:trId/query — NL→SQL chat

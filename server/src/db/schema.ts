@@ -230,6 +230,11 @@ export const tabularReviews = sqliteTable('tabular_reviews', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   createdBy: text('created_by').notNull().default('demo-user'),
   lastRunAt: text('last_run_at'),
+  // Cohérence cross-row (Brief A) — JSON sérialisé d'analysis result
+  analysisJson: text('analysis_json'),
+  lastAnalysisAt: text('last_analysis_at'),
+  // Optionnel : playbook lié pour verdicts par ligne
+  playbookAssetId: text('playbook_asset_id'),
 });
 
 export const tabularRows = sqliteTable('tabular_rows', {

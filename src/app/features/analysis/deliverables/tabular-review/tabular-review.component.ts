@@ -1,12 +1,15 @@
 import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AnalysisService, TabularReview, TabularColumn, TabularRow, TabularCell, Workflow } from '../../../../core/services/analysis.service';
+import { AnalysisService, TabularReview, TabularColumn, TabularRow, TabularCell, Workflow, TabularAnalysis } from '../../../../core/services/analysis.service';
+import { ReferenceBaseService } from '../../../../core/services/reference-base.service';
+import type { ReferenceAsset } from '../../../../core/models/reference-asset.model';
 import { ColumnEditMenuComponent } from './column-edit-menu.component';
+import { TabularAnalysisPanelComponent } from './tabular-analysis-panel.component';
 
 @Component({
   selector: 'app-tabular-review',
   standalone: true,
-  imports: [FormsModule, ColumnEditMenuComponent],
+  imports: [FormsModule, ColumnEditMenuComponent, TabularAnalysisPanelComponent],
   host: { class: 'flex-1 flex flex-col overflow-hidden min-h-0 min-w-0' },
   templateUrl: './tabular-review.component.html',
 })
@@ -15,6 +18,7 @@ export class TabularReviewComponent implements OnInit {
   @Input() wsId!: string;
 
   private svc = inject(AnalysisService);
+  private refSvc = inject(ReferenceBaseService);
 
   // Document labels: documentId → fileName
   private docLabels = new Map<string, string>();
@@ -48,6 +52,13 @@ export class TabularReviewComponent implements OnInit {
 
   // Citation popover
   activeCitation = signal<{ excerpt: string; page: number | null } | null>(null);
+
+  // Brief A — analyse cohérence
+  showAnalysisPanel = signal(false);
+  analysisLoading = signal(false);
+  outlierKeys = signal<Set<string>>(new Set()); // "rowId:colId" pour badge cellule
+  showPlaybookPicker = signal(false);
+  availablePlaybooks = signal<ReferenceAsset[]>([]);
 
   // Column edit menu
   openColumnMenu = signal<string | null>(null);
@@ -97,9 +108,71 @@ export class TabularReviewComponent implements OnInit {
         full.rows?.forEach(r => {
           if (r.fileName) this.docLabels.set(r.documentId, r.fileName);
         });
+        this.refreshOutlierKeys(full.analysis ?? null);
       },
       error: () => this.activeReview.set(review),
     });
+  }
+
+  // ─── Brief A — Analyse cohérence ──────────────────────────────────────────
+  toggleAnalysisPanel() {
+    this.showAnalysisPanel.update(v => !v);
+  }
+
+  runAnalysis() {
+    const r = this.activeReview();
+    if (!r) return;
+    this.analysisLoading.set(true);
+    this.svc.analyzeTabularReview(this.anaId, r.id).subscribe({
+      next: (a: TabularAnalysis) => {
+        this.activeReview.update(rev => rev ? { ...rev, analysis: a, lastAnalysisAt: a.generatedAt } : rev);
+        this.refreshOutlierKeys(a);
+        this.analysisLoading.set(false);
+      },
+      error: err => {
+        this.analysisLoading.set(false);
+        this.flashError(err?.error?.error ?? 'Erreur d\'analyse');
+      },
+    });
+  }
+
+  private refreshOutlierKeys(a: TabularAnalysis | null) {
+    const set = new Set<string>();
+    a?.columnAnalyses.forEach(c => {
+      c.outliers.forEach(o => set.add(`${o.rowId}:${c.columnId}`));
+    });
+    this.outlierKeys.set(set);
+  }
+
+  isOutlier(rowId: string, colId: string): boolean {
+    return this.outlierKeys().has(`${rowId}:${colId}`);
+  }
+
+  togglePlaybookPicker() {
+    this.showPlaybookPicker.update(v => !v);
+    if (this.showPlaybookPicker() && this.availablePlaybooks().length === 0) {
+      this.refSvc.list().subscribe(list => {
+        this.availablePlaybooks.set(list.filter(a => a.type === 'playbook'));
+      });
+    }
+  }
+
+  attachPlaybook(playbookAssetId: string | null) {
+    const r = this.activeReview();
+    if (!r) return;
+    this.svc.setTabularReviewPlaybook(this.anaId, r.id, playbookAssetId).subscribe({
+      next: () => {
+        this.activeReview.update(rev => rev ? { ...rev, playbookAssetId } : rev);
+        this.showPlaybookPicker.set(false);
+      },
+      error: () => this.flashError('Erreur lors de l\'attachement du playbook'),
+    });
+  }
+
+  attachedPlaybookName(): string | null {
+    const id = this.activeReview()?.playbookAssetId;
+    if (!id) return null;
+    return this.availablePlaybooks().find(p => p.id === id)?.name ?? id;
   }
 
   getDocLabel(documentId: string): string {

@@ -291,5 +291,8 @@ try { sqlite.exec(`ALTER TABLE tabular_cells ADD COLUMN status TEXT NOT NULL DEF
 try { sqlite.exec(`ALTER TABLE amendments ADD COLUMN target_element_id TEXT`); } catch {}
 try { sqlite.exec(`ALTER TABLE amendments ADD COLUMN target_element_path TEXT`); } catch {}
 try { sqlite.exec(`ALTER TABLE analyses ADD COLUMN view_type TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN analysis_json TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN last_analysis_at TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE tabular_reviews ADD COLUMN playbook_asset_id TEXT`); } catch {}
 
 export { sqlite };

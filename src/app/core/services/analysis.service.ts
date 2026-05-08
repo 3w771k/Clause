@@ -176,6 +176,26 @@ export class AnalysisService {
     );
   }
 
+  // Tabular Analysis (Brief A) — cross-row consistency + verdict + synthesis
+  analyzeTabularReview(anaId: string, trId: string) {
+    return this.api.http.post<TabularAnalysis>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/analyze`, {},
+    );
+  }
+
+  getTabularAnalysis(anaId: string, trId: string) {
+    return this.api.http.get<TabularAnalysis | null>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/analysis`,
+    );
+  }
+
+  setTabularReviewPlaybook(anaId: string, trId: string, playbookAssetId: string | null) {
+    return this.api.http.patch<{ playbookAssetId: string | null }>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/playbook`,
+      { playbookAssetId },
+    );
+  }
+
   queryTabularReview(anaId: string, trId: string, question: string) {
     return this.api.http.post<{ question: string; generatedSql: string; result: Record<string, unknown>[]; error: string | null }>(
       `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/query`, { question }
@@ -231,6 +251,47 @@ export interface TabularReview {
   rows?: TabularRow[];
   lastRunAt: string | null;
   createdAt: string;
+  // Brief A — analyse cohérence
+  analysis?: TabularAnalysis | null;
+  lastAnalysisAt?: string | null;
+  playbookAssetId?: string | null;
+}
+
+export interface ColumnOutlier {
+  rowId: string;
+  documentName: string;
+  value: string | null;
+  reason: string;
+}
+export interface ColumnAnalysis {
+  columnId: string;
+  columnLabel: string;
+  outliers: ColumnOutlier[];
+  synthesis: string;
+}
+export type RowVerdictLevel = 'compliant' | 'attention' | 'risk';
+export interface RowVerdict {
+  rowId: string;
+  documentName: string;
+  verdict: RowVerdictLevel;
+  rationale: string;
+  brokenRules: string[];
+}
+export interface ConsistencyRuleResult {
+  ruleId: string;
+  ruleLabel: string;
+  scope: 'cross_row' | 'cross_column';
+  findings: string[];
+}
+export interface TabularAnalysis {
+  schemaVersion: 1;
+  generatedAt: string;
+  reviewId: string;
+  columnAnalyses: ColumnAnalysis[];
+  rowVerdicts?: RowVerdict[];
+  globalSynthesis: string;
+  playbookAssetId?: string | null;
+  declaredRulesResults?: ConsistencyRuleResult[];
 }
 
 export interface Workflow {
