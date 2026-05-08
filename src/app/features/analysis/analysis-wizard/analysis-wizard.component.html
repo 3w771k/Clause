@@ -116,7 +116,7 @@
                 </svg>
               </div>
               <h3 class="font-semibold text-gray-900 mb-1">Création de contrat</h3>
-              <p class="text-sm text-gray-500">Générer un contrat depuis un Standard et un contexte projet.</p>
+              <p class="text-sm text-gray-500">Partir d'un document existant et l'adapter via chat-to-redline (instructions itératives).</p>
             </button>
 
             <!-- 5. Multi-doc redline (skeleton) -->
@@ -149,7 +149,7 @@
           <h2 class="text-xl font-semibold text-gray-900 mb-1">
             @if (operation() === 'confrontation') { Sélectionnez le contrat à auditer + le playbook }
             @else if (operation() === 'alignment') { Sélectionnez les deux documents à comparer }
-            @else if (operation() === 'contract_draft') { Sélectionnez le Standard à utiliser }
+            @else if (operation() === 'contract_draft') { Sélectionnez le document à adapter (Standard optionnel pour guider) }
             @else if (operation() === 'multi_doc_redline') { Sélectionnez les documents cibles }
             @else if (operation() === 'tabular') { Sélectionnez les documents à analyser }
             @else { Sélectionnez des documents (optionnel) }

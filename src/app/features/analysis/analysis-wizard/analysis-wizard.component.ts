@@ -86,7 +86,7 @@ export class AnalysisWizardComponent implements OnInit {
     if (!op) return false;
     if (op === 'confrontation') return targets.size === 1 && this.selectedRefAssetId() !== null;
     if (op === 'alignment') return targets.size === 1 && this.selectedRefDocId() !== null;
-    if (op === 'contract_draft') return this.selectedRefAssetId() !== null;
+    if (op === 'contract_draft') return targets.size === 1;  // 1 doc source à adapter
     if (op === 'multi_doc_redline') return targets.size >= 1;
     if (op === 'aggregation') return targets.size >= 1;
     if (op === 'tabular') return targets.size >= 1;

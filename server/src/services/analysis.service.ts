@@ -343,11 +343,67 @@ Génère une note de revue JSON avec ce format EXACT :
     sourceOperation: 'confrontation',
   });
 
+  // Brief 8 §5 — produire AUSSI un redline d'audit via le RedlineEngine
+  let redlineDeliverableId: string | null = null;
+  try {
+    const { generateRedline } = await import('./redline-engine.service.js');
+    const redlineResult = await generateRedline({
+      analysisId,
+      sourceDocumentId: targetData.id,
+      sourceLegalObjectId: target.legalObjectId,
+      producedBy: 'audit',
+      producedFromId: refAsset?.id ?? '',
+      documentText: targetData.extractedText,
+      playbookContent: refAsset?.type === 'playbook' ? refContent : undefined,
+      playbookAssetId: refAsset?.type === 'playbook' ? refAsset.id : undefined,
+    });
+    const redlineContent: RedlineContent = {
+      type: 'redline',
+      targetDocumentId: target.legalObjectId ?? '',
+      baseHtml: redlineResult.ckEditorHtml,
+      changes: redlineResult.proposals.map((p, i) => {
+        const change: RedlineContent['changes'][number] = {
+          id: p.id || `ch_${i + 1}`,
+          type: p.action === 'replace' ? 'replacement' : p.action,
+          originalText: p.originalText,
+          newText: p.proposedText,
+          location: { startOffset: 0, endOffset: 0 },
+          clauseContext: p.clauseTypeOntologyId ?? '',
+          rationale: p.rationale,
+          referenceSource: refAsset?.name ?? '',
+          status: 'pending',
+          severity: p.severity,
+        };
+        if (p.deviatesFromAssetId) change.deviatesFromAssetId = p.deviatesFromAssetId;
+        if (p.deviatesFromElementId) change.deviatesFromElementId = p.deviatesFromElementId;
+        return change;
+      }),
+      comments: [],
+    };
+    redlineDeliverableId = `del_red_${uuidv4().replace(/-/g, '').substring(0, 8)}`;
+    await db.insert(deliverables).values({
+      id: redlineDeliverableId,
+      analysisId,
+      type: 'redline',
+      name: `Redline d'audit — ${targetData.fileName}`,
+      createdAt: now,
+      createdBy: 'ai',
+      currentVersion: 1,
+      status: 'draft',
+      contentJson: JSON.stringify(redlineContent),
+      sourceDocumentIds: JSON.stringify([target.legalObjectId]),
+      referenceAssetIds: refAsset ? JSON.stringify([refAsset.id]) : '[]',
+      sourceOperation: 'confrontation',
+    });
+  } catch (err) {
+    console.warn('[runConfrontation] Redline generation failed, keeping note only:', err);
+  }
+
   await db.update(analyses)
     .set({ lastActivityAt: now })
     .where(eq(analyses.id, analysisId));
 
-  return [noteId];
+  return redlineDeliverableId ? [noteId, redlineDeliverableId] : [noteId];
 }
 
 // ─── Aggregation (clausier) ───────────────────────────────────────────────────

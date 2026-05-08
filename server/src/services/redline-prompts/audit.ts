@@ -3,29 +3,42 @@ import type { PlaybookContent } from '../../schemas/asset-content.schema.js';
 export function buildAuditPrompt(docText: string, playbook?: PlaybookContent): string {
   const playbookBlock = playbook?.requirements?.length
     ? playbook.requirements.map(r =>
-        `- [${r.id}] ${r.criticality.toUpperCase()} — ${r.title}\n  Règle: ${r.ruleText}${r.expectedValue ? `\n  Attendu: ${r.expectedValue}` : ''}`,
+        `- ID: ${r.id} | Criticité: ${r.criticality.toUpperCase()} | Titre: ${r.title}\n  Règle: ${r.ruleText}${r.expectedValue ? `\n  Valeur attendue: ${r.expectedValue}` : ''}`,
       ).join('\n\n')
-    : '(aucune exigence playbook fournie)';
+    : '(aucune exigence playbook fournie — analyse libre)';
 
-  return `Tu es senior legal counsel. Tu produis un redline d'audit du document ci-dessous au regard du playbook.
+  return `Tu es un avocat senior qui audit un contrat au regard d'un playbook d'exigences.
 
-PLAYBOOK (exigences à vérifier) :
+PLAYBOOK :
 ${playbookBlock}
 
-DOCUMENT :
+DOCUMENT À AUDITER :
 <document>
 ${docText.substring(0, 12000)}
 </document>
 
-Pour chaque exigence du playbook, identifie où elle s'applique dans le document et propose une modification si écart.
-Retourne UNIQUEMENT un tableau JSON de proposals avec ces champs :
-- id (string unique format "rdl_XXXX")
-- action ("insert"|"delete"|"replace"|"comment")
-- originalText (extrait verbatim du document, "" pour insert)
-- proposedText (texte proposé, "" pour delete)
-- rationale (1-2 phrases en français, justification)
-- severity ("critical"|"major"|"minor"|"info")
-- deviatesFromElementId (id de l'exigence playbook source, ex: "${playbook?.requirements?.[0]?.id ?? 'req_xxx'}")
+INSTRUCTIONS :
+Pour chaque exigence du playbook, identifie le passage du document concerné et propose une modification si écart.
+Si aucune exigence n'est fournie, identifie les risques contractuels classiques (responsabilité, résiliation, IP, paiement, données personnelles).
 
-Pas d'objet wrapper, juste le tableau JSON.`;
+FORMAT DE SORTIE — réponds UNIQUEMENT avec un tableau JSON valide, pas de wrapper, pas de markdown :
+[
+  {
+    "id": "rdl_001",
+    "action": "replace",
+    "originalText": "extrait verbatim du document à modifier",
+    "proposedText": "texte proposé en remplacement",
+    "rationale": "Justification courte en français (1-2 phrases).",
+    "severity": "critical",
+    "deviatesFromElementId": "id_de_l_exigence_playbook_si_applicable"
+  }
+]
+
+Valeurs autorisées :
+- action : "insert" | "delete" | "replace" | "comment"
+- severity : "critical" | "major" | "minor" | "info"
+- originalText : "" pour insert
+- proposedText : "" pour delete
+
+Vise 5-15 propositions, ciblées sur les écarts réels. Pas de propositions cosmétiques.`;
 }

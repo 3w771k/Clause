@@ -74,10 +74,10 @@ export class MultiDocRedlineViewComponent {
     if (!this.analysis) return;
     this.generating.set(true);
     this.lastError.set('');
-    const ids = (this.analysis.documents ?? []).map(d => d.id);
+    const ids = (this.analysis.documents ?? []).map(d => d.legalObjectId);
     this.api.http.post(
       `${this.api.base}/analyses/${this.analysis.id}/multi-doc-redline`,
-      { sourceRedlineId: null, targetDocumentIds: ids },
+      { sourceRedlineId: null, targetLegalObjectIds: ids },
     ).subscribe({
       next: () => { this.generating.set(false); this.reload.emit(); },
       error: (err) => {
@@ -87,11 +87,13 @@ export class MultiDocRedlineViewComponent {
     });
   }
 
-  generateOne(docId: string) {
+  generateOne(adId: string) {
     if (!this.analysis) return;
+    const ad = (this.analysis.documents ?? []).find(d => d.id === adId);
+    if (!ad?.legalObjectId) return;
     this.api.http.post(
       `${this.api.base}/analyses/${this.analysis.id}/multi-doc-redline`,
-      { sourceRedlineId: null, targetDocumentIds: [docId] },
+      { sourceRedlineId: null, targetLegalObjectIds: [ad.legalObjectId] },
     ).subscribe({
       next: () => this.reload.emit(),
       error: (err) => this.lastError.set(err?.error?.error ?? 'Bientôt disponible.'),
