@@ -217,6 +217,13 @@ export class AnalysisService {
     );
   }
 
+  // Brief C1 — supprimer une ligne
+  deleteTabularRow(anaId: string, trId: string, rowId: string) {
+    return this.api.http.delete<void>(
+      `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/rows/${rowId}`,
+    );
+  }
+
   setTabularReviewPlaybook(anaId: string, trId: string, playbookAssetId: string | null) {
     return this.api.http.patch<{ playbookAssetId: string | null }>(
       `${this.api.base}/analyses/${anaId}/tabular-reviews/${trId}/playbook`,

@@ -88,6 +88,20 @@ tabularReviewsRouter.get('/:trId', async (req, res) => {
   });
 });
 
+// DELETE /:trId/rows/:rowId — supprime la ligne (cascade sur les cells)
+// Ne touche pas à l'entrée analysis_documents : le doc peut servir ailleurs.
+tabularReviewsRouter.delete('/:trId/rows/:rowId', async (req, res) => {
+  const { analysisId, trId, rowId } = req.params;
+  const [review] = await db.select().from(tabularReviews)
+    .where(and(eq(tabularReviews.id, trId), eq(tabularReviews.analysisId, analysisId)));
+  if (!review) return res.status(404).json({ error: 'Tabular review not found' });
+
+  await db.delete(tabularRows).where(
+    and(eq(tabularRows.tabularReviewId, trId), eq(tabularRows.id, rowId)),
+  );
+  res.status(204).send();
+});
+
 // POST /:trId/rows — ajoute UN doc à la review (auto-add à l'analyse si manquant) + extraction immédiate
 tabularReviewsRouter.post('/:trId/rows', async (req, res) => {
   const { analysisId, trId } = req.params;

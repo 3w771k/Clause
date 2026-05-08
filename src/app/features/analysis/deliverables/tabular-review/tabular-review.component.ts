@@ -224,6 +224,21 @@ export class TabularReviewComponent implements OnInit {
     });
   }
 
+  deleteRow(row: TabularRow) {
+    const r = this.activeReview();
+    if (!r) return;
+    if (!confirm(`Supprimer la ligne "${row.fileName ?? row.documentId}" du tableau ?`)) return;
+    this.svc.deleteTabularRow(this.anaId, r.id, row.id).subscribe({
+      next: () => {
+        this.activeReview.update(rev => rev ? {
+          ...rev,
+          rows: (rev.rows ?? []).filter(x => x.id !== row.id),
+        } : rev);
+      },
+      error: () => this.flashError('Erreur lors de la suppression'),
+    });
+  }
+
   addRow(legalObjectId: string) {
     const r = this.activeReview();
     if (!r) return;

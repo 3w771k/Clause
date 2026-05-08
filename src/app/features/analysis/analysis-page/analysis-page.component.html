@@ -37,25 +37,28 @@
     }
   </div>
 
-  <!-- Documents bar -->
-  <div class="h-9 px-5 bg-gray-50 border-b border-gray-200 flex items-center gap-3 shrink-0 overflow-x-auto">
-    @for (doc of analysis()?.documents ?? []; track doc.id) {
-      <div class="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
-        <span>{{ doc.role === 'reference' ? 'Référence' : 'Cible' }}</span>
-        <span class="text-gray-300">·</span>
-        <span class="text-gray-700 max-w-40 truncate">{{ doc.documentName }}</span>
-        <button (click)="removeDoc(doc.id)" class="text-gray-300 hover:text-red-500 ml-0.5" title="Retirer">
-          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    }
-    <button (click)="loadAvailableDocs()"
-      class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-gray-700 hover:bg-gray-200 transition-colors shrink-0">
-      + Ajouter
-    </button>
-  </div>
+  <!-- Documents bar — cachée en vues où le rôle target/reference n'a pas de sens
+       (tabular = lignes du tableau, multi_doc_redline = liste in-view) -->
+  @if (analysis()?.viewType !== 'tabular' && analysis()?.viewType !== 'multi_doc_redline') {
+    <div class="h-9 px-5 bg-gray-50 border-b border-gray-200 flex items-center gap-3 shrink-0 overflow-x-auto">
+      @for (doc of analysis()?.documents ?? []; track doc.id) {
+        <div class="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
+          <span>{{ doc.role === 'reference' ? 'Référence' : 'Cible' }}</span>
+          <span class="text-gray-300">·</span>
+          <span class="text-gray-700 max-w-40 truncate">{{ doc.documentName }}</span>
+          <button (click)="removeDoc(doc.id)" class="text-gray-300 hover:text-red-500 ml-0.5" title="Retirer">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      }
+      <button (click)="loadAvailableDocs()"
+        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-gray-700 hover:bg-gray-200 transition-colors shrink-0">
+        + Ajouter
+      </button>
+    </div>
+  }
 
   <!-- Main content -->
   <div class="flex-1 flex overflow-hidden min-h-0 bg-gray-50">
