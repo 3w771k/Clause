@@ -367,12 +367,12 @@
 
   <!-- Create modal -->
   @if (showCreate()) {
-    <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
-        <div class="px-5 py-4 border-b border-gray-100">
+    <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" (click)="showCreate.set(false)">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[85vh]" (click)="$event.stopPropagation()">
+        <div class="px-5 py-4 border-b border-gray-100 shrink-0">
           <h2 class="text-sm font-semibold text-gray-900">Nouveau tableau d'analyse</h2>
         </div>
-        <div class="px-5 py-4 space-y-4">
+        <div class="px-5 py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           <!-- Name -->
           <div>
             <label class="text-xs font-medium text-gray-700 mb-1 block">Nom du tableau</label>
@@ -448,7 +448,7 @@
             </button>
           }
         </div>
-        <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 shrink-0">
           <button (click)="showCreate.set(false)"
             class="text-xs px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
             Annuler
