@@ -22,9 +22,30 @@ interface WorkflowJson {
   definition: { columns: Array<{ label: string; question: string; expectedType: string }> };
 }
 
-export async function seedTabularWorkflows(opts: { force?: boolean } = {}) {
+export async function seedTabularWorkflows(opts: { force?: boolean; pruneObsolete?: boolean } = {}) {
   if (!fs.existsSync(WORKFLOWS_DIR)) return [];
   const files = fs.readdirSync(WORKFLOWS_DIR).filter(f => f.endsWith('.json'));
+
+  // Pré-calcule les ids attendus à partir du JSON (id stable de chaque fichier)
+  const expectedAssetIds = new Set<string>();
+  for (const file of files) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(WORKFLOWS_DIR, file), 'utf-8')) as WorkflowJson;
+      expectedAssetIds.add(`wf_${raw.id}`);
+    } catch { /* ignore */ }
+  }
+
+  // Brief 6+: prune les anciens assets wf_* qui n'ont plus de JSON correspondant
+  if (opts.pruneObsolete !== false) {
+    const allWf = await db.select().from(referenceAssets);
+    for (const asset of allWf) {
+      if (asset.type === 'tabular_workflow' && asset.id.startsWith('wf_') && !expectedAssetIds.has(asset.id)) {
+        await db.delete(referenceAssets).where(eq(referenceAssets.id, asset.id));
+        console.log(`[seed-workflows] pruned obsolete asset: ${asset.id}`);
+      }
+    }
+  }
+
   const seeded: string[] = [];
 
   for (const file of files) {

@@ -4,7 +4,7 @@
   "description": "Grille d'analyse de la conformité RGPD des contrats de traitement et de sous-traitance de données",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "DPA", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Qualité des parties", "question": "Quelle est la qualité respective des parties au regard du RGPD (responsable de traitement, sous-traitant, co-responsable) ?", "expectedType": "text" },

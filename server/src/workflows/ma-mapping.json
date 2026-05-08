@@ -4,7 +4,7 @@
   "description": "Cartographie d'une opération M&A : mapping des engagements clés (closing, garanties, earn-out, conditions suspensives)",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Type d'opération", "question": "Quel est le type d'opération M&A (cession d'actions, cession d'actifs, fusion, apport partiel) ?", "expectedType": "text" },

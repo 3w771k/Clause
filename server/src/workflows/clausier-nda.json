@@ -1,0 +1,22 @@
+{
+  "id": "clausier-nda",
+  "name": "Clausier NDA",
+  "description": "Extraction des clauses clés d'un accord de confidentialité (FR ou EN — réponse dans la langue du document)",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT", "NDA"],
+  "language": "multi",
+  "definition": {
+    "columns": [
+      { "label": "Parties / Parties", "question": "Qui sont les parties à l'accord (noms, qualités) ? / Who are the parties (names, capacities)?", "expectedType": "text" },
+      { "label": "Informations confidentielles / Confidential info", "question": "Quelle est la définition des informations confidentielles et les exclusions ? / Definition of confidential information and exclusions?", "expectedType": "text" },
+      { "label": "Obligations / Obligations", "question": "Quelles obligations de confidentialité à la charge de chaque partie ? / Confidentiality obligations on each party?", "expectedType": "text" },
+      { "label": "Durée obligation / Duration of obligation", "question": "Quelle est la durée de l'obligation après la fin de l'accord ? / Duration of confidentiality obligation after termination?", "expectedType": "text" },
+      { "label": "Durée accord / Term", "question": "Quelle est la durée initiale de l'accord et la reconduction ? / Initial term and renewal?", "expectedType": "text" },
+      { "label": "Exceptions / Exceptions", "question": "Quelles exceptions (informations publiques, injonction judiciaire) ? / Exceptions (public information, court order)?", "expectedType": "text" },
+      { "label": "Usage / Permitted use", "question": "Dans quel cadre les informations peuvent-elles être utilisées ? / Permitted purposes for the use of the information?", "expectedType": "text" },
+      { "label": "Restitution / Return or destruction", "question": "Obligations de restitution ou destruction en fin de contrat ? / Return or destruction obligations upon termination?", "expectedType": "text" },
+      { "label": "Sanctions / Remedies", "question": "Sanctions prévues en cas de violation (indemnisation, injonction) ? / Remedies for breach (damages, injunction)?", "expectedType": "text" },
+      { "label": "Loi applicable / Governing law", "question": "Loi applicable et juridiction ? / Governing law and jurisdiction?", "expectedType": "text" }
+    ]
+  }
+}

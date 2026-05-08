@@ -4,7 +4,7 @@
   "description": "Grille d'analyse pour due diligence juridique dans le cadre d'une opération de M&A",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "NDA", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Type de document", "question": "Quel est le type de document (contrat commercial, bail, NDA, accord de prêt, etc.) ?", "expectedType": "text" },

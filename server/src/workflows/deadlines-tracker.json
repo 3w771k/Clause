@@ -4,7 +4,7 @@
   "description": "Extraction des échéances contractuelles : paiements, notifications, résiliations, révisions",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Échéance", "question": "Quel est l'objet de l'échéance (paiement, notification, renouvellement, résiliation, révision) ?", "expectedType": "text" },

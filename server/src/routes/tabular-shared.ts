@@ -32,6 +32,8 @@ export async function extractCellValue(
 ): Promise<{ value: string | null; rawValue: string | null; confidence: string; citationJson: string }> {
   const prompt = `You are a legal analyst. Answer the following question based solely on the document text below.
 
+The question may be bilingual (French / English separated by " / "). Detect the language of the DOCUMENT and answer in that language. The "rawValue" must be a verbatim excerpt from the document, in the document's original language.
+
 Question: ${column.question}
 
 Document:
@@ -40,8 +42,8 @@ ${docText.substring(0, 10000)}
 </document>
 
 Return a JSON object with:
-- "value": concise answer (1-3 sentences max), or null if absent
-- "rawValue": verbatim excerpt from the document that supports your answer, or null
+- "value": concise answer (1-3 sentences max), in the document's language, or null if absent
+- "rawValue": verbatim excerpt from the document that supports your answer (original language), or null
 - "confidence": "high" | "medium" | "low" | "absent"
 - "page": page number if identifiable, or null
 

@@ -1,0 +1,22 @@
+{
+  "id": "clausier-msa",
+  "name": "Clausier MSA",
+  "description": "Extraction des clauses clés d'un Master Service Agreement (FR ou EN — réponse dans la langue du document)",
+  "kind": "tabular_review_preset",
+  "applicableDocumentTypes": ["CONTRAT"],
+  "language": "multi",
+  "definition": {
+    "columns": [
+      { "label": "Objet / Scope", "question": "Quel est l'objet principal du contrat (services fournis) ? / What is the main scope of services?", "expectedType": "text" },
+      { "label": "Durée / Term", "question": "Quelle est la durée initiale du contrat et la reconduction ? / What is the initial term and the renewal terms?", "expectedType": "text" },
+      { "label": "Prix / Pricing", "question": "Quelles sont les conditions tarifaires (forfait, régie, prix unitaires) ? / What are the pricing arrangements (fixed fee, T&M, unit pricing)?", "expectedType": "text" },
+      { "label": "Paiement / Payment", "question": "Quels sont les délais de paiement et les conditions de facturation ? / Payment terms, invoicing schedule and late payment consequences?", "expectedType": "text" },
+      { "label": "Responsabilité / Liability", "question": "Quel est le plafond de responsabilité et les exclusions (dommages indirects) ? / What is the liability cap, exclusions and any carve-outs?", "expectedType": "text" },
+      { "label": "Garanties / Warranties", "question": "Quelles garanties sont accordées sur les services (SLA, niveaux de service) ? / What warranties are given (SLAs, fitness for purpose, compliance)?", "expectedType": "text" },
+      { "label": "Propriété intellectuelle / IP", "question": "Qui est propriétaire des livrables et des développements spécifiques ? / Who owns deliverables, work product and what background IP is granted?", "expectedType": "text" },
+      { "label": "Confidentialité / Confidentiality", "question": "Quelle est la durée de l'obligation de confidentialité ? / Duration of the confidentiality obligation and any carve-outs?", "expectedType": "text" },
+      { "label": "Résiliation / Termination", "question": "Quelles sont les conditions et le préavis de résiliation ? / Grounds, notice periods and consequences of termination?", "expectedType": "text" },
+      { "label": "Loi applicable / Governing law", "question": "Quelle est la loi applicable et la juridiction compétente ? / Governing law and jurisdiction or arbitration clause?", "expectedType": "text" }
+    ]
+  }
+}

@@ -55,10 +55,10 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 initDb();
-// Brief 6: idempotent — peuple les workflows OOTB s'ils manquent
+// Brief 6: re-sync les workflows OOTB depuis le JSON à chaque boot (force + prune)
 import('./db/seed-tabular-workflows.js')
-  .then(({ seedTabularWorkflows }) => seedTabularWorkflows({ force: false }))
-  .then((seeded) => seeded.length && console.log(`  Seeded ${seeded.length} OOTB workflows`))
+  .then(({ seedTabularWorkflows }) => seedTabularWorkflows({ force: true, pruneObsolete: true }))
+  .then((seeded) => seeded.length && console.log(`  Synced ${seeded.length} OOTB workflows`))
   .catch((err) => console.error('[seed-workflows] failed:', err));
 preloadEmbeddings().catch((err) => console.error('[embeddings] preload failed:', err));
 app.listen(PORT, () => {

@@ -4,7 +4,7 @@
   "description": "Grille d'analyse pour due diligence de baux commerciaux et actifs immobiliers",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "BAIL", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Nature du bail", "question": "Quel est le type de bail (bail commercial 3/6/9, bail dérogatoire, bail civil, contrat de location) ?", "expectedType": "text" },

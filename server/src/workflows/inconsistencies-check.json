@@ -4,7 +4,7 @@
   "description": "Workflow tabulaire dont la dernière colonne compare au reste du workspace (court terme : extraction par doc, comparaison croisée par le LLM)",
   "kind": "tabular_review_preset",
   "applicableDocumentTypes": ["CONTRAT", "AUTRE"],
-  "language": "fr",
+  "language": "multi",
   "definition": {
     "columns": [
       { "label": "Type de document", "question": "Quel est le type de document (NDA, MSA, prestation, distribution) ?", "expectedType": "text" },
