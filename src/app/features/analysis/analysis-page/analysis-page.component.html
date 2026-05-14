@@ -89,8 +89,7 @@
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('contract_draft') {
-        <app-contract-draft-view [deliverables]="deliverables()" [anaId]="anaId" [analysis]="analysis()"
-          (deliverableUpdated)="onDeliverableUpdated($event)" (reload)="load()" />
+        <app-contract-composer-view [anaId]="anaId" (reload)="load()" />
       }
       @case ('multi_doc_redline') {
         <app-multi-doc-redline-view [analysis]="analysis()" [deliverables]="deliverables()"

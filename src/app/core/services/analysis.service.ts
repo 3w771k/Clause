@@ -153,6 +153,40 @@ export class AnalysisService {
     );
   }
 
+  // ─── Contract Composer (Brief L) ──────────────────────────────────────────
+  getContractComposer(anaId: string) {
+    return this.api.http.get<{ state: ComposerState; deliverableId: string }>(
+      `${this.api.base}/analyses/${anaId}/contract-composer`,
+    );
+  }
+
+  editComposerClause(anaId: string, clauseId: string, instruction: string, standardId?: string | null) {
+    return this.api.http.post<{ proposals: ComposerProposal[]; clause: ComposerClause }>(
+      `${this.api.base}/analyses/${anaId}/contract-composer/edit-clause`,
+      { clauseId, instruction, standardId },
+    );
+  }
+
+  acceptComposerProposal(anaId: string, proposalId: string, clauseId: string) {
+    return this.api.http.post<{ clause: ComposerClause }>(
+      `${this.api.base}/analyses/${anaId}/contract-composer/proposal/${proposalId}/accept`,
+      { clauseId },
+    );
+  }
+
+  rejectComposerProposal(anaId: string, proposalId: string, clauseId: string) {
+    return this.api.http.post<{ clause: ComposerClause }>(
+      `${this.api.base}/analyses/${anaId}/contract-composer/proposal/${proposalId}/reject`,
+      { clauseId },
+    );
+  }
+
+  resetContractComposer(anaId: string) {
+    return this.api.http.post<{ ok: boolean }>(
+      `${this.api.base}/analyses/${anaId}/contract-composer/reset`, {},
+    );
+  }
+
   // Brief I2 — preview du match colonne-par-colonne d'un template avant création
   previewTemplate(anaId: string, workflowId: string) {
     return this.api.http.post<{
@@ -382,6 +416,41 @@ export interface CustomCheck {
   id: string;
   prompt: string;
   createdAt: string;
+}
+
+// ─── Contract Composer (Brief L) ──────────────────────────────────────────
+export interface ComposerProposal {
+  id: string;
+  action: 'replace' | 'insert' | 'delete' | 'comment';
+  originalText: string;
+  proposedText: string;
+  rationale: string;
+  severity: 'critical' | 'major' | 'minor' | 'info';
+}
+export interface ComposerClause {
+  id: string;
+  type: string;
+  heading: string | null;
+  sequenceNumber: string | null;
+  baseText: string;
+  workingText: string;
+  pendingProposals: ComposerProposal[];
+}
+export interface ComposerHistoryTurn {
+  id: string;
+  ts: string;
+  role: 'user' | 'system';
+  content: string;
+  clauseId?: string;
+}
+export interface ComposerState {
+  type: 'contract_composer';
+  schemaVersion: 1;
+  sourceDocumentId: string;
+  sourceDocumentName: string;
+  clauses: ComposerClause[];
+  standardId?: string | null;
+  history: ComposerHistoryTurn[];
 }
 
 export interface CustomCheckResult {

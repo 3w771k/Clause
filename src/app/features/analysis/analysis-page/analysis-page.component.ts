@@ -10,6 +10,7 @@ import { AlignmentViewComponent } from './operations/alignment-view.component';
 import { ComparisonViewComponent } from './operations/comparison-view.component';
 import { AuditViewComponent } from './operations/audit-view.component';
 import { ContractDraftViewComponent } from './operations/contract-draft-view.component';
+import { ContractComposerViewComponent } from './operations/contract-composer-view.component';
 import { MultiDocRedlineViewComponent } from './operations/multi-doc-redline-view.component';
 import { DdViewComponent } from './operations/dd-view.component';
 import { TabularViewComponent } from './operations/tabular-view.component';
@@ -32,7 +33,7 @@ const VIEW_TYPE_LABELS: Record<string, string> = {
   selector: 'app-analysis-page',
   imports: [FormsModule, AmendmentDialogComponent, ChatPanelComponent, AnalysisModalsComponent,
     AlignmentViewComponent, ComparisonViewComponent, AuditViewComponent,
-    ContractDraftViewComponent, MultiDocRedlineViewComponent,
+    ContractDraftViewComponent, ContractComposerViewComponent, MultiDocRedlineViewComponent,
     DdViewComponent, TabularViewComponent, DefaultDeliverableViewComponent],
   templateUrl: './analysis-page.component.html',
 })
