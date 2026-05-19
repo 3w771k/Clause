@@ -1,4 +1,4 @@
-export type ViewType = 'tabular' | 'audit' | 'comparison' | 'contract_draft' | 'multi_doc_redline';
+export type ViewType = 'tabular' | 'audit' | 'comparison' | 'contract_draft' | 'multi_doc_redline' | 'template_contract';
 
 // Mapping legacy operation → viewType (Brief 7).
 export function operationToViewType(op: string | null | undefined): ViewType {
@@ -6,6 +6,7 @@ export function operationToViewType(op: string | null | undefined): ViewType {
     case 'alignment': return 'comparison';
     case 'confrontation': return 'audit';
     case 'tabular': return 'tabular';
+    case 'template_contract': return 'template_contract';
     case 'dd':
     case 'ma_mapping':
     case 'deadlines':

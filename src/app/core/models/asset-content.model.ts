@@ -15,20 +15,27 @@ export interface AmendableElement {
 }
 
 // ─── Playbook ─────────────────────────────────────────────────────────────────
+// Format stocké : sections[] avec clauseType + stakes + positions (idéal/repli/red flag)
 
-export interface PlaybookRequirement extends AmendableElement {
-  clauseTypeOntologyId: string;
-  title: string;
-  ruleText: string;
-  criticality: 'critical' | 'major' | 'minor' | 'info';
-  expectedValue?: string | null;
-  acceptableVariants?: string[];
-  rationale?: string;
+export interface PlaybookPosition {
+  description: string;
+}
+
+export interface PlaybookSection {
+  clauseType: string;
+  stakes?: string;
+  positions?: {
+    ideal?: PlaybookPosition;
+    fallback?: PlaybookPosition;
+    redFlag?: PlaybookPosition;
+  };
+  sourceClauseIds?: string[];
 }
 
 export interface PlaybookContent {
-  schemaVersion: 1;
-  requirements: PlaybookRequirement[];
+  sections: PlaybookSection[];
+  scope?: string;
+  sourceDocumentName?: string;
 }
 
 // ─── Standard (template de contrat) ───────────────────────────────────────────
@@ -126,9 +133,8 @@ export function isDDGrid(a: ReferenceAsset): boolean { return a.type === 'dd_gri
 export function isClausierAsset(a: ReferenceAsset): boolean { return a.type === 'clausier'; }
 export function isTabularWorkflow(a: ReferenceAsset): boolean { return a.type === 'tabular_workflow'; }
 
-export function asPlaybook(a: ReferenceAsset): PlaybookContent | null {
-  if (!isPlaybook(a)) return null;
-  return a.content as unknown as PlaybookContent;
+export function asPlaybook(a: ReferenceAsset): PlaybookContent {
+  return (a.content ?? { sections: [] }) as unknown as PlaybookContent;
 }
 export function asStandard(a: ReferenceAsset): StandardContent | null {
   if (!isStandard(a)) return null;

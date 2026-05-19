@@ -7,18 +7,22 @@ export type AssetType = z.infer<typeof AssetTypeSchema>;
 const Amendable = z.object({ id: z.string().min(1) });
 
 // ─── Playbook ─────────────────────────────────────────────────────────────────
-export const PlaybookRequirementSchema = Amendable.extend({
-  clauseTypeOntologyId: z.string().min(1),
-  title: z.string().min(1).max(200),
-  ruleText: z.string().min(1).max(2000),
-  criticality: z.enum(['critical', 'major', 'minor', 'info']),
-  expectedValue: z.string().nullable().optional(),
-  acceptableVariants: z.array(z.string()).optional(),
-  rationale: z.string().max(2000).optional(),
+// Format: sections[] avec clauseType + stakes + positions (idéal / repli / red flag)
+const PlaybookPositionSchema = z.object({ description: z.string() });
+export const PlaybookSectionSchema = z.object({
+  clauseType: z.string().min(1),
+  stakes: z.string().optional(),
+  positions: z.object({
+    ideal: PlaybookPositionSchema.optional(),
+    fallback: PlaybookPositionSchema.optional(),
+    redFlag: PlaybookPositionSchema.optional(),
+  }).optional(),
+  sourceClauseIds: z.array(z.string()).optional(),
 });
 export const PlaybookContentSchema = z.object({
-  schemaVersion: z.literal(1),
-  requirements: z.array(PlaybookRequirementSchema),
+  sections: z.array(PlaybookSectionSchema),
+  scope: z.string().optional(),
+  sourceDocumentName: z.string().optional(),
 });
 
 // ─── Standard ─────────────────────────────────────────────────────────────────
@@ -87,6 +91,7 @@ export const TabularWorkflowContentSchema = z.object({
 });
 
 // ─── TS types inferred ────────────────────────────────────────────────────────
+export type PlaybookSection = z.infer<typeof PlaybookSectionSchema>;
 export type PlaybookContent = z.infer<typeof PlaybookContentSchema>;
 export type StandardContent = z.infer<typeof StandardContentSchema>;
 export type DDGridContent = z.infer<typeof DDGridContentSchema>;

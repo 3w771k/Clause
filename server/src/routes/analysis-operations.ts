@@ -11,7 +11,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
 import {
-  analyses, analysisDocuments, deliverables, legalObjects, documents,
+  analyses, analysisDocuments, deliverables, legalObjects, documents, clauses,
   redlines, referenceAssets,
 } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
@@ -19,8 +19,9 @@ import {
   runAlignment, runConfrontation, runAggregation, runDD, runMaMapping,
   runDeadlines, runCompliance, runInconsistencies,
 } from '../services/analysis.service.js';
-import { generateRedline, type RedlineResult } from '../services/redline-engine.service.js';
-import type { StandardContent } from '../schemas/asset-content.schema.js';
+import { generateRedline, buildMultiDocRedlineHtml, wordLevelDiff, type RedlineResult, type ClauseDiffSection } from '../services/redline-engine.service.js';
+import type { StandardContent, PlaybookContent, ClausierAssetContent } from '../schemas/asset-content.schema.js';
+import Anthropic from '@anthropic-ai/sdk';
 import { withViewType } from './_view-type.js';
 
 export const analysisOperationsRouter = Router();
@@ -262,46 +263,30 @@ analysisOperationsRouter.post('/:anaId/multi-doc-redline', async (req, res) => {
   if (targets.length > 20) return res.status(400).json({ error: 'Maximum 20 documents par run (cap LLM)' });
 
   try {
-    let sourceRedline: RedlineResult | null = null;
+    // Charge les clauseSections de la source (redline d'audit ou de comparaison)
+    let sourceSections: ClauseDiffSection[] = [];
+
     if (sourceRedlineId) {
-      const [r] = await db.select().from(redlines).where(eq(redlines.id, sourceRedlineId));
-      if (r) {
-        sourceRedline = {
-          id: r.id, analysisId: r.analysisId, sourceDocumentId: r.sourceDocumentId,
-          producedBy: r.producedBy as 'audit' | 'comparison' | 'contract_draft' | 'multi_doc',
-          producedFromId: r.producedFromId,
-          baseTextSnapshot: r.baseTextSnapshot,
-          proposals: JSON.parse(r.proposalsJson),
-          comments: JSON.parse(r.commentsJson),
-          ckEditorHtml: '',
-          status: r.status as 'draft' | 'reviewing' | 'accepted' | 'rejected',
-        };
+      const [delRow] = await db.select().from(deliverables).where(eq(deliverables.id, sourceRedlineId));
+      if (delRow) {
+        const content = JSON.parse(delRow.contentJson) as { clauseSections?: ClauseDiffSection[] };
+        sourceSections = content.clauseSections ?? [];
       }
     }
-    if (!sourceRedline) {
+
+    if (!sourceSections.length) {
+      // Fallback : premier redline de l'analyse qui a des clauseSections
       const existingRedlines = await db.select().from(deliverables)
         .where(and(eq(deliverables.analysisId, anaId), eq(deliverables.type, 'redline')));
-      if (existingRedlines.length > 0) {
-        const first = JSON.parse(existingRedlines[0].contentJson) as { changes?: Array<{ originalText: string; newText: string; rationale: string; severity?: string }> };
-        sourceRedline = {
-          id: existingRedlines[0].id,
-          analysisId: anaId, sourceDocumentId: '',
-          producedBy: 'multi_doc', producedFromId: '',
-          baseTextSnapshot: '',
-          proposals: (first.changes ?? []).map(c => ({
-            id: 'p_' + Math.random().toString(36).substring(2, 8),
-            action: 'replace' as const,
-            originalText: c.originalText, proposedText: c.newText,
-            rationale: c.rationale,
-            severity: (c.severity ?? 'minor') as 'critical' | 'major' | 'minor' | 'info',
-          })),
-          comments: [], ckEditorHtml: '', status: 'draft',
-        };
+      for (const r of existingRedlines) {
+        const content = JSON.parse(r.contentJson) as { clauseSections?: ClauseDiffSection[] };
+        if (content.clauseSections?.length) { sourceSections = content.clauseSections; break; }
       }
     }
-    if (!sourceRedline || sourceRedline.proposals.length === 0) {
+
+    if (!sourceSections.length) {
       return res.status(400).json({
-        error: 'Aucune décision source à propager. Crée d\'abord un redline (audit ou comparison) puis utilise multi-doc pour le propager.',
+        error: 'Aucune section source à propager. Génère d\'abord un redline (audit ou comparaison).',
       });
     }
 
@@ -309,55 +294,281 @@ analysisOperationsRouter.post('/:anaId/multi-doc-redline', async (req, res) => {
     const now = new Date().toISOString();
 
     for (const targetId of targets) {
-      let docId = targetId;
       const [maybeLo] = await db.select().from(legalObjects).where(eq(legalObjects.id, targetId));
-      if (maybeLo) docId = maybeLo.documentId;
-      const [doc] = await db.select().from(documents).where(eq(documents.id, docId));
-      if (!doc) continue;
+      const docId = maybeLo ? maybeLo.documentId : targetId;
+      const [doc] = await db.select({ fileName: documents.fileName }).from(documents).where(eq(documents.id, docId));
 
-      const result = await generateRedline({
-        analysisId: anaId,
-        sourceDocumentId: doc.id,
-        sourceLegalObjectId: maybeLo?.id,
-        producedBy: 'multi_doc',
-        producedFromId: sourceRedlineId ?? '',
-        documentText: doc.extractedText ?? '',
-        sourceRedline,
-      });
+      // Clauses du document cible depuis la DB
+      const targetClauseRows = maybeLo
+        ? await db.select({ type: clauses.type, text: clauses.text, heading: clauses.heading })
+            .from(clauses).where(eq(clauses.legalObjectId, maybeLo.id))
+        : [];
 
+      const { html: ckEditorHtml, sections: clauseSections } = buildMultiDocRedlineHtml(sourceSections, targetClauseRows);
+
+      const delId = `del_red_${uuidv4().replace(/-/g, '').substring(0, 8)}`;
       await db.insert(deliverables).values({
-        id: `del_red_${uuidv4().replace(/-/g, '').substring(0, 8)}`,
+        id: delId,
         analysisId: anaId,
         type: 'redline',
-        name: `Redline propagé — ${doc.fileName}`,
+        name: `Redline propagé — ${doc?.fileName ?? targetId}`,
         createdAt: now,
         createdBy: 'ai',
         currentVersion: 1,
         status: 'draft',
         contentJson: JSON.stringify({
           type: 'redline',
-          targetDocumentId: maybeLo?.id ?? doc.id,
-          baseHtml: result.ckEditorHtml,
-          changes: result.proposals.map((p, i) => ({
-            id: p.id || `ch_${i + 1}`,
-            type: p.action === 'replace' ? 'replacement' : p.action,
-            originalText: p.originalText, newText: p.proposedText,
+          targetDocumentId: maybeLo?.id ?? docId,
+          baseHtml: ckEditorHtml,
+          changes: clauseSections.map((s, i) => ({
+            id: `ch_${i + 1}`,
+            type: 'replacement',
+            originalText: s.textA,
+            newText: s.textB,
             location: { startOffset: 0, endOffset: 0 },
-            clauseContext: p.clauseTypeOntologyId ?? '',
-            rationale: p.rationale, referenceSource: 'multi-doc',
-            status: 'pending', severity: p.severity,
+            clauseContext: s.clauseType,
+            rationale: s.recommendation ?? '',
+            referenceSource: 'multi-doc',
+            status: 'pending',
           })),
           comments: [],
+          clauseSections,
         }),
-        sourceDocumentIds: JSON.stringify([maybeLo?.id ?? doc.id]),
+        sourceDocumentIds: JSON.stringify([maybeLo?.id ?? docId]),
         referenceAssetIds: '[]',
         sourceOperation: 'multi_doc_redline',
       });
-      generatedIds.push(result.id);
+      generatedIds.push(delId);
     }
     res.json({ redlineIds: generatedIds });
   } catch (err) {
     console.error('[multi-doc-redline] error:', err);
     res.status(500).json({ error: err instanceof Error ? err.message : 'Multi-doc redline failed' });
+  }
+});
+
+// ─── POST /:anaId/generate-from-template ─────────────────────────────────────
+// Génère un contrat complet depuis le template associé à l'analyse.
+// contextNotes : description du contexte (parties, objet, montant, durée…)
+// Retourne un livrable redline avec clauseSections (textA=template, textB=généré).
+
+analysisOperationsRouter.post('/:anaId/generate-from-template', async (req, res) => {
+  const { anaId } = req.params;
+  const { contextNotes = '' } = req.body as { contextNotes?: string };
+
+  try {
+    const [ana] = await db.select({ referenceAssetId: analyses.referenceAssetId })
+      .from(analyses).where(eq(analyses.id, anaId));
+    if (!ana?.referenceAssetId) {
+      return res.status(400).json({ error: 'Aucun template associé à cette analyse.' });
+    }
+
+    const [assetRow] = await db.select().from(referenceAssets)
+      .where(eq(referenceAssets.id, ana.referenceAssetId));
+    if (!assetRow) return res.status(404).json({ error: 'Template introuvable.' });
+
+    const rawContent = JSON.parse(assetRow.contentJson);
+    type TemplateClause = { clauseTypeOntologyId: string; sectionHeading: string; text: string; notes: string };
+    let allTemplateClauses: TemplateClause[] = [];
+
+    if (assetRow.type === 'standard') {
+      const content = rawContent as StandardContent;
+      if (content.sections?.length) {
+        allTemplateClauses = content.sections.flatMap(sec =>
+          sec.clauses.map(c => ({
+            clauseTypeOntologyId: c.clauseTypeOntologyId,
+            sectionHeading: sec.heading,
+            text: c.text,
+            notes: c.notes ?? '',
+          }))
+        );
+      } else {
+        // Legacy format: { clauses: [{ type, label, text }] }
+        const legacy = rawContent as { clauses?: Array<{ type?: string; clauseTypeOntologyId?: string; label?: string; text?: string }> };
+        allTemplateClauses = (legacy.clauses ?? []).map(c => ({
+          clauseTypeOntologyId: c.clauseTypeOntologyId ?? c.type ?? 'clause',
+          sectionHeading: c.label ?? c.type ?? 'Clause',
+          text: c.text ?? '',
+          notes: '',
+        })).filter(c => c.text);
+      }
+    } else if (assetRow.type === 'playbook') {
+      const content = rawContent as PlaybookContent;
+      allTemplateClauses = (content.sections ?? []).map(s => ({
+        clauseTypeOntologyId: s.clauseType,
+        sectionHeading: s.clauseType,
+        text: s.positions?.ideal?.description ?? s.positions?.fallback?.description ?? s.stakes ?? '',
+        notes: s.stakes ?? '',
+      })).filter(c => c.text);
+    } else if (assetRow.type === 'clausier') {
+      const content = rawContent as ClausierAssetContent;
+      allTemplateClauses = (content.sections ?? []).map(s => ({
+        clauseTypeOntologyId: s.clauseTypeOntologyId,
+        sectionHeading: s.title,
+        text: s.variants[0]?.text ?? '',
+        notes: s.description ?? '',
+      })).filter(c => c.text);
+    }
+
+    if (!allTemplateClauses.length) {
+      return res.status(400).json({ error: 'Le template ne contient aucune clause.' });
+    }
+
+    // Si pas de contexte → on sert directement les clauses du template sans appel LLM
+    let generated = new Map<string, string>();
+    if (contextNotes.trim()) {
+      const llmClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const prompt = `Tu es un juriste expert en rédaction contractuelle. Génère l'intégralité d'un contrat à partir des clauses modèles ci-dessous.
+
+CONTEXTE DU CONTRAT (fourni par l'utilisateur) :
+${contextNotes}
+
+Pour chaque clause modèle, rédige une version concrète et complète adaptée au contexte.
+Conserve la terminologie juridique et le registre formel.
+Respecte l'identifiant clauseTypeOntologyId de chaque clause.
+
+Retourne UNIQUEMENT un objet JSON valide (sans texte autour) :
+{
+  "clauses": [
+    { "clauseTypeOntologyId": "identifiant", "generatedText": "texte rédigé de la clause" }
+  ]
+}
+
+CLAUSES MODÈLES :
+${JSON.stringify(allTemplateClauses, null, 2)}`;
+
+      const message = await llmClient.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8192,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const raw = message.content.find(b => b.type === 'text')?.text ?? '{}';
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) as { clauses: Array<{ clauseTypeOntologyId: string; generatedText: string }> } : { clauses: [] };
+      generated = new Map(parsed.clauses.map(c => [c.clauseTypeOntologyId, c.generatedText]));
+    }
+
+    // Construire clauseSections + HTML avec diff algorithmique
+    const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const clauseSections: ClauseDiffSection[] = [];
+    let html = '<div class="ck-content redline-document">';
+
+    for (const c of allTemplateClauses) {
+      const textA = c.text.trim();
+      // Sans contexte : textB = textA (clauses servies telles quelles)
+      const textB = (generated.get(c.clauseTypeOntologyId) ?? textA).trim();
+      if (!textB) continue;
+
+      html += `<h3 class="rdl-clause-heading">${escHtml(c.sectionHeading)}</h3>`;
+      const diffHtml = wordLevelDiff(textA, textB, 'major');
+      clauseSections.push({
+        clauseType: c.clauseTypeOntologyId,
+        textA,
+        textB,
+        diffHtml,
+        recommendation: c.notes || undefined,
+        severity: 'major',
+        gap: 'substantive',
+      });
+
+      html += `<section class="rdl-clause rdl-major" data-type="${escHtml(c.clauseTypeOntologyId)}" data-gap="substantive">`;
+      html += `<p>${diffHtml}</p>`;
+      if (c.notes) html += `<p class="rdl-recommendation">${escHtml(c.notes)}</p>`;
+      html += '</section>\n';
+    }
+    html += '</div>';
+
+    const now = new Date().toISOString();
+    const delId = `del_red_${uuidv4().replace(/-/g, '').substring(0, 8)}`;
+
+    // Supprimer l'éventuel livrable précédent pour cette opération
+    await db.delete(deliverables).where(
+      and(eq(deliverables.analysisId, anaId), eq(deliverables.sourceOperation, 'template_contract'))
+    );
+
+    await db.insert(deliverables).values({
+      id: delId,
+      analysisId: anaId,
+      type: 'redline',
+      name: `Contrat généré — ${assetRow.name}`,
+      createdAt: now,
+      createdBy: 'ai',
+      currentVersion: 1,
+      status: 'draft',
+      contentJson: JSON.stringify({
+        type: 'redline',
+        targetDocumentId: assetRow.id,
+        baseHtml: html,
+        changes: clauseSections.map((s, i) => ({
+          id: `ch_${i + 1}`,
+          type: 'replacement',
+          originalText: s.textA,
+          newText: s.textB,
+          location: { startOffset: 0, endOffset: 0 },
+          clauseContext: s.clauseType,
+          rationale: 'Généré depuis le template',
+          referenceSource: assetRow.name,
+          status: 'pending',
+        })),
+        comments: [],
+        clauseSections,
+      }),
+      sourceDocumentIds: '[]',
+      referenceAssetIds: JSON.stringify([assetRow.id]),
+      sourceOperation: 'template_contract',
+    });
+
+    await db.update(analyses).set({ lastActivityAt: now }).where(eq(analyses.id, anaId));
+
+    res.json({ deliverableId: delId, clauseCount: clauseSections.length });
+  } catch (err) {
+    console.error('[generate-from-template] error:', err);
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Génération échouée' });
+  }
+});
+
+// ─── POST /:anaId/refine-clause ───────────────────────────────────────────────
+// Generates a revised clause text from a user instruction (AI-assisted editing)
+analysisOperationsRouter.post('/:anaId/refine-clause', async (req, res) => {
+  const { clauseType, textA, textB, userPrompt } = req.body as {
+    clauseType: string;
+    textA: string;
+    textB: string;
+    userPrompt: string;
+  };
+  if (!userPrompt?.trim()) return res.status(400).json({ error: 'userPrompt requis' });
+
+  const Anthropic = (await import('@anthropic-ai/sdk')).default;
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const prompt = `Tu es un juriste expert. Révise la clause contractuelle suivante selon l'instruction donnée.
+
+TYPE DE CLAUSE : ${clauseType}
+
+TEXTE ORIGINAL (document cible) :
+${textA || '(absent)'}
+
+PROPOSITION DE RÉFÉRENCE :
+${textB || '(absent)'}
+
+INSTRUCTION :
+${userPrompt}
+
+Retourne UNIQUEMENT un objet JSON :
+{"proposedText": "texte révisé de la clause"}`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const raw = message.content.find(b => b.type === 'text')?.text ?? '{}';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    res.json({ proposedText: parsed.proposedText ?? '' });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Génération échouée' });
   }
 });

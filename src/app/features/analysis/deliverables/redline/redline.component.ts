@@ -36,8 +36,8 @@ export class RedlineComponent {
   get safeHtml(): SafeHtml {
     const raw = this.content().baseHtml ?? '';
     const clean = DOMPurify.sanitize(raw, {
-      ALLOWED_TAGS: ['p', 'span', 'cite', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'div'],
-      ALLOWED_ATTR: ['class', 'data-change-id', 'data-citation-id'],
+      ALLOWED_TAGS: ['p', 'span', 'cite', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'div', 'del', 'ins', 'hr'],
+      ALLOWED_ATTR: ['class', 'data-change-id', 'data-citation-id', 'data-pid'],
     });
     return this.sanitizer.bypassSecurityTrustHtml(clean);
   }

@@ -55,6 +55,7 @@
 }
 
 /* ─── Redline styles ─────────────────────────────────────────────────────── */
+/* Utility span classes used in change cards */
 .del {
   background: #fee2e2;
   color: #b91c1c;
@@ -70,6 +71,110 @@
   padding: 0 2px;
   border-radius: 2px;
 }
+
+/* Native <del> / <ins> elements — globaux (vue par clauses + document complet) */
+del, .rdl-del {
+  background: #fee2e2;
+  color: #b91c1c;
+  text-decoration: line-through;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+ins, .rdl-ins {
+  background: #dcfce7;
+  color: #15803d;
+  text-decoration: underline;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* Intensités par sévérité */
+.rdl-del.rdl-critical { background: #fecaca; color: #991b1b; }
+.rdl-del.rdl-major    { background: #fee2e2; color: #b91c1c; }
+.rdl-del.rdl-minor    { background: #fef9c3; color: #854d0e; }
+.rdl-ins.rdl-critical { background: #bbf7d0; color: #14532d; }
+.rdl-ins.rdl-major    { background: #dcfce7; color: #15803d; }
+.rdl-ins.rdl-minor    { background: #d1fae5; color: #065f46; }
+
+/* Clause section headings (## format) */
+.redline-document h3.rdl-clause-heading, .ck-content h3.rdl-clause-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+  margin: 1.5rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Section separator */
+.redline-document hr.rdl-separator, .ck-content hr.rdl-separator {
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  margin: 0.75rem 0;
+}
+
+/* Unmatched proposals appendix */
+.redline-document .rdl-appendix, .ck-content .rdl-appendix {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px dashed #e5e7eb;
+}
+
+/* Comment proposals */
+.redline-document .rdl-comment, .ck-content .rdl-comment {
+  color: #6b7280;
+  font-style: italic;
+  padding: 0.25rem 0.5rem;
+  border-left: 2px solid #d1d5db;
+}
+
+/* ─── Clause sections in document view ──────────────────────────────────── */
+
+.rdl-document-content section.rdl-clause {
+  margin-bottom: 1.5rem;
+}
+
+.rdl-document-content h3.rdl-clause-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #374151;
+  margin: 1.75rem 0 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rdl-document-content p.rdl-recommendation {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-left: 2px solid #d1d5db;
+  background: #f9fafb;
+}
+
+.rdl-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rdl-badge-missing { background: #fef3c7; color: #92400e; }
+.rdl-badge-extra   { background: #f3f4f6; color: #6b7280; }
+
+.rdl-clause-missing h3.rdl-clause-heading { color: #d97706; border-color: #fde68a; }
+.rdl-clause-extra  h3.rdl-clause-heading  { color: #9ca3af; border-color: #e5e7eb; }
 
 /* ─── Prose markdown in chat ─────────────────────────────────────────────── */
 .prose-chat p { margin-bottom: 0.5rem; }

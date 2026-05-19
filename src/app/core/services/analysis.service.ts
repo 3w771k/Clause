@@ -78,6 +78,13 @@ export class AnalysisService {
     );
   }
 
+  refineClause(anaId: string, payload: { clauseType: string; textA: string; textB: string; userPrompt: string }) {
+    return this.api.http.post<{ proposedText: string }>(
+      `${this.api.base}/analyses/${anaId}/refine-clause`,
+      payload
+    );
+  }
+
   parseIntent(workspaceId: string, message: string) {
     return this.api.http.post<{
       operation: 'confrontation' | 'alignment' | 'aggregation' | 'dd' | 'ma_mapping' | 'deadlines' | 'compliance' | 'inconsistencies' | 'unclear';

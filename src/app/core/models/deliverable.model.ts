@@ -54,12 +54,23 @@ export interface RedlineChange {
   deviatesFromElementId?: string;
 }
 
+export interface ClauseSection {
+  clauseType: string;
+  textA: string;
+  textB: string;
+  diffHtml: string;
+  recommendation?: string;
+  severity: 'critical' | 'major' | 'minor' | 'info';
+  gap: string;
+}
+
 export interface RedlineContent {
   type: 'redline';
   targetDocumentId: string;
   baseHtml: string;
   changes: RedlineChange[];
   comments: unknown[];
+  clauseSections?: ClauseSection[];
 }
 
 // ─── Review Note ──────────────────────────────────────────────────────────────

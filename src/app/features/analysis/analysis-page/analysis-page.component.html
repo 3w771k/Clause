@@ -81,26 +81,29 @@
         <app-tabular-view [anaId]="anaId" [wsId]="wsId" />
       }
       @case ('audit') {
-        <app-audit-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
+        <app-audit-view [anaId]="anaId" [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('comparison') {
-        <app-comparison-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
+        <app-comparison-view [anaId]="anaId" [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('contract_draft') {
         <app-contract-composer-view [anaId]="anaId" (reload)="load()" />
       }
+      @case ('template_contract') {
+        <app-template-contract-view [anaId]="anaId" [analysis]="analysis()" [deliverables]="deliverables()" [referenceAsset]="referenceAsset()" (reload)="load()" />
+      }
       @case ('multi_doc_redline') {
-        <app-multi-doc-redline-view [analysis]="analysis()" [deliverables]="deliverables()"
+        <app-multi-doc-redline-view [anaId]="anaId" [analysis]="analysis()" [deliverables]="deliverables()"
           (reload)="load()" />
       }
       @case ('alignment') {
-        <app-comparison-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
+        <app-comparison-view [anaId]="anaId" [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('confrontation') {
-        <app-audit-view [deliverables]="deliverables()" [isGenerating]="isGenerating()"
+        <app-audit-view [anaId]="anaId" [deliverables]="deliverables()" [isGenerating]="isGenerating()"
           (refine)="openRefine($event)" (deliverableUpdated)="onDeliverableUpdated($event)" />
       }
       @case ('dd') {

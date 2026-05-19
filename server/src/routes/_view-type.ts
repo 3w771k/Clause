@@ -7,6 +7,7 @@ const OP_TO_VIEW: Record<string, string> = {
   tabular: 'tabular',
   contract_draft: 'contract_draft',
   multi_doc_redline: 'multi_doc_redline',
+  template_contract: 'template_contract',
 };
 
 export function mapOperationToViewType(op: string | null | undefined): string {

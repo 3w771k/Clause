@@ -137,89 +137,96 @@ export async function runAlignment(analysisId: string): Promise<string[]> {
   ]);
   if (!targetData || !refData) throw new Error('Could not load legal objects');
 
-  const targetClausesSummary = targetData.clauses
-    .map((c) => `[${c.type}] ${c.heading ?? c.type}: ${c.text.substring(0, 120)}`)
-    .join('\n');
-  const refClausesSummary = refData.clauses
-    .map((c) => `[${c.type}] ${c.heading ?? c.type}: ${c.text.substring(0, 120)}`)
-    .join('\n');
+  // Build clause summary for note (300 chars per clause = enough for gap analysis)
+  const buildSummary = (data: NonNullable<Awaited<ReturnType<typeof loadLegalObjectWithClauses>>>) =>
+    data.clauses.length
+      ? data.clauses.map(c => `[${c.type}] ${c.heading ?? c.type}:\n${c.text.substring(0, 300)}`).join('\n\n')
+      : data.extractedText?.substring(0, 8000) ?? '(aucune clause extraite)';
 
-  const prompt = `Compare ces deux documents juridiques et identifie les écarts.
+  const targetSummary = buildSummary(targetData);
+  const refSummary = buildSummary(refData);
+
+  const notePrompt = `Compare ces deux documents juridiques clause par clause.
 
 DOCUMENT CIBLE (${targetData.fileName}):
-${targetClausesSummary || '(aucune clause extraite)'}
+${targetSummary}
 
 DOCUMENT RÉFÉRENCE (${refData.fileName}):
-${refClausesSummary || '(aucune clause extraite)'}
+${refSummary}
 
-Génère une note comparative exhaustive en JSON selon ce format EXACT (respecte les noms de champs à la lettre) :
+Génère une note comparative en JSON (format EXACT) :
 {
   "type": "comparative_note",
   "synthesis": {
     "overallGapLevel": "none|minor|significant|major",
-    "topGaps": ["écart 1", "écart 2"],
+    "topGaps": ["écart 1"],
     "negotiationRecommendation": "recommandation globale",
-    "executiveSummary": "2-3 phrases résumant les écarts principaux pour un décideur non-juriste"
+    "executiveSummary": "2-3 phrases pour un décideur non-juriste"
   },
   "clauseComparison": [
     {
-      "clauseType": "TYPE_CLAUSE",
-      "documentA": { "text": "texte dans document cible ou null", "citation": null },
-      "documentB": { "text": "texte dans document référence ou null", "citation": null },
+      "clauseType": "DUREE",
+      "documentA": { "text": "texte complet de la clause dans le document cible, ou null si absente", "citation": null },
+      "documentB": { "text": "texte complet de la clause dans le document référence, ou null si absente", "citation": null },
       "gap": "none|equivalent|editorial|substantive|unfavorable|missing",
       "severity": "blocking|major|minor|ok",
-      "recommendation": "action concrète recommandée, ex: Aligner sur 5 ans, Exiger Paris",
+      "recommendation": "action concrète à prendre",
       "commentary": "analyse de l'écart"
     }
   ],
-  "onlyInA": ["clauses présentes uniquement dans le document cible"],
-  "onlyInB": ["clauses présentes uniquement dans le document référence"],
-  "pointByPointRecommendations": ["recommandation 1", "recommandation 2"],
+  "onlyInA": ["types de clauses présentes uniquement dans le document cible"],
+  "onlyInB": ["types de clauses présentes uniquement dans le document référence"],
+  "pointByPointRecommendations": ["recommandation priorisée 1"],
   "annexCitations": []
-}`;
+}
+
+IMPORTANT : pour chaque clause, inclure le texte COMPLET (pas tronqué) dans documentA.text et documentB.text.`;
 
   const noteContent = await llm.completeStructured<ComparativeNoteContent>(
     [
       { role: 'system', content: 'Tu es un avocat expert en rédaction de notes comparatives. Retourne uniquement du JSON valide.' },
-      { role: 'user', content: prompt },
+      { role: 'user', content: notePrompt },
     ],
     passthrough as unknown as import('zod').ZodSchema<ComparativeNoteContent>,
   );
 
-  // Brief 8 §4 : on passe par le RedlineEngine mutualisé au lieu d'un prompt ad hoc
-  const { generateRedline } = await import('./redline-engine.service.js');
-  const redlineResult = await generateRedline({
-    analysisId,
-    sourceDocumentId: targetData.id,
-    sourceLegalObjectId: target.legalObjectId,
-    producedBy: 'comparison',
-    producedFromId: reference.legalObjectId ?? '',
-    documentText: targetData.extractedText ?? '',
-    referenceDocumentText: refData.extractedText ?? '',
-    referenceLegalObjectId: reference.legalObjectId,
-  });
+  // Build redline from clauseComparison using algorithmic word-level diff (no LLM)
+  const { buildComparisonRedlineHtml } = await import('./redline-engine.service.js');
+  const { html: ckEditorHtml, sections: clauseSections } = buildComparisonRedlineHtml(
+    noteContent.clauseComparison ?? [],
+    noteContent.onlyInA ?? [],
+    noteContent.onlyInB ?? [],
+  );
+
+  const sevMap: Record<string, 'critical' | 'major' | 'minor' | 'info'> = {
+    blocking: 'critical', major: 'major', minor: 'minor', ok: 'info',
+  };
+  const typeMap: Record<string, 'replacement' | 'insertion' | 'deletion'> = {
+    missing: 'insertion', editorial: 'replacement', substantive: 'replacement', unfavorable: 'replacement',
+  };
+
+  const changes = (noteContent.clauseComparison ?? [])
+    .filter(cc => cc.gap && cc.gap !== 'none' && cc.gap !== 'equivalent')
+    .map((cc, idx) => ({
+      id: `ch_${idx + 1}`,
+      type: typeMap[cc.gap ?? ''] ?? 'replacement' as const,
+      originalText: cc.documentA?.text ?? '',
+      newText: cc.documentB?.text ?? '',
+      location: { startOffset: 0, endOffset: 0 },
+      clauseContext: cc.clauseType,
+      rationale: cc.recommendation ?? cc.commentary ?? '',
+      referenceSource: refData.fileName,
+      status: 'pending' as const,
+      severity: sevMap[cc.severity ?? ''] ?? 'minor' as const,
+    }));
+
   const redlineContent: RedlineContent = {
     type: 'redline',
     targetDocumentId: target.legalObjectId ?? '',
-    baseHtml: redlineResult.ckEditorHtml,
-    changes: redlineResult.proposals.map((p, i) => {
-      const change: RedlineContent['changes'][number] = {
-        id: p.id || `ch_${i + 1}`,
-        type: p.action === 'replace' ? 'replacement' : p.action,
-        originalText: p.originalText,
-        newText: p.proposedText,
-        location: { startOffset: 0, endOffset: 0 },
-        clauseContext: p.clauseTypeOntologyId ?? '',
-        rationale: p.rationale,
-        referenceSource: refData.fileName,
-        status: 'pending',
-        severity: p.severity,
-      };
-      if (p.deviatesFromAssetId) change.deviatesFromAssetId = p.deviatesFromAssetId;
-      if (p.deviatesFromElementId) change.deviatesFromElementId = p.deviatesFromElementId;
-      return change;
-    }),
+    baseHtml: ckEditorHtml,
+    changes,
     comments: [],
+    clauseSections,
   };
 
   const now = new Date().toISOString();
@@ -343,42 +350,30 @@ Génère une note de revue JSON avec ce format EXACT :
     sourceOperation: 'confrontation',
   });
 
-  // Brief 8 §5 — produire AUSSI un redline d'audit via le RedlineEngine
+  // Redline d'audit — diff algorithmique clause par clause depuis la review note
   let redlineDeliverableId: string | null = null;
   try {
-    const { generateRedline } = await import('./redline-engine.service.js');
-    const redlineResult = await generateRedline({
-      analysisId,
-      sourceDocumentId: targetData.id,
-      sourceLegalObjectId: target.legalObjectId,
-      producedBy: 'audit',
-      producedFromId: refAsset?.id ?? '',
-      documentText: targetData.extractedText,
-      playbookContent: refAsset?.type === 'playbook' ? refContent : undefined,
-      playbookAssetId: refAsset?.type === 'playbook' ? refAsset.id : undefined,
-    });
+    const { buildAuditRedlineHtml } = await import('./redline-engine.service.js');
+    const { html: ckEditorHtml, sections: clauseSections } = buildAuditRedlineHtml(noteContent.sections);
     const redlineContent: RedlineContent = {
       type: 'redline',
       targetDocumentId: target.legalObjectId ?? '',
-      baseHtml: redlineResult.ckEditorHtml,
-      changes: redlineResult.proposals.map((p, i) => {
-        const change: RedlineContent['changes'][number] = {
-          id: p.id || `ch_${i + 1}`,
-          type: p.action === 'replace' ? 'replacement' : p.action,
-          originalText: p.originalText,
-          newText: p.proposedText,
+      baseHtml: ckEditorHtml,
+      changes: noteContent.sections
+        .filter(s => s.gapLevel !== 'none')
+        .map((s, i) => ({
+          id: `ch_${i + 1}`,
+          type: 'replacement' as const,
+          originalText: s.contractText ?? '',
+          newText: s.suggestedLanguage ?? '',
           location: { startOffset: 0, endOffset: 0 },
-          clauseContext: p.clauseTypeOntologyId ?? '',
-          rationale: p.rationale,
+          clauseContext: s.clauseType,
+          rationale: s.comment,
           referenceSource: refAsset?.name ?? '',
-          status: 'pending',
-          severity: p.severity,
-        };
-        if (p.deviatesFromAssetId) change.deviatesFromAssetId = p.deviatesFromAssetId;
-        if (p.deviatesFromElementId) change.deviatesFromElementId = p.deviatesFromElementId;
-        return change;
-      }),
+          status: 'pending' as const,
+        })),
       comments: [],
+      clauseSections,
     };
     redlineDeliverableId = `del_red_${uuidv4().replace(/-/g, '').substring(0, 8)}`;
     await db.insert(deliverables).values({

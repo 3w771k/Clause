@@ -13,7 +13,7 @@ import type { ReferenceAsset } from '../../../core/models/reference-asset.model'
 // Les valeurs Operation transitoires confrontation/alignment sont conservées
 // car elles déclenchent les pipelines runConfrontation/runAlignment dans
 // start-generation côté backend.
-type Operation = 'tabular' | 'confrontation' | 'alignment' | 'contract_draft' | 'multi_doc_redline';
+type Operation = 'tabular' | 'confrontation' | 'alignment' | 'multi_doc_redline' | 'template_contract';
 
 @Component({
   selector: 'app-analysis-wizard',
@@ -84,9 +84,9 @@ export class AnalysisWizardComponent implements OnInit {
     const op = this.operation();
     const targets = this.selectedTargetDocIds();
     if (!op) return false;
+    if (op === 'template_contract') return this.selectedRefAssetId() !== null;
     if (op === 'confrontation') return targets.size === 1 && this.selectedRefAssetId() !== null;
     if (op === 'alignment') return targets.size === 1 && this.selectedRefDocId() !== null;
-    if (op === 'contract_draft') return targets.size === 1;
     if (op === 'multi_doc_redline') return targets.size >= 1;
     if (op === 'tabular') return targets.size >= 1;
     return true;
@@ -106,6 +106,10 @@ export class AnalysisWizardComponent implements OnInit {
     const targetName = targetDoc ? this.baseName(targetDoc.fileName) : '';
 
     const month = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    if (op === 'template_contract') {
+      const asset = this.referenceAssets().find(a => a.id === this.selectedRefAssetId());
+      return asset ? `Contrat depuis ${this.baseName(asset.name)} — ${month}` : `Contrat depuis template — ${month}`;
+    }
     if (op === 'confrontation') {
       const asset = this.referenceAssets().find(a => a.id === this.selectedRefAssetId());
       return asset ? `Audit ${targetName} / ${this.baseName(asset.name)}` : `Audit ${targetName}`;
@@ -117,9 +121,6 @@ export class AnalysisWizardComponent implements OnInit {
     if (op === 'tabular') {
       const count = this.selectedTargetDocIds().size;
       return `Tableau d'analyse — ${count} doc${count > 1 ? 's' : ''} — ${month}`;
-    }
-    if (op === 'contract_draft') {
-      return targetName ? `Contrat — ${targetName}` : `Création de contrat — ${month}`;
     }
     if (op === 'multi_doc_redline') {
       const count = this.selectedTargetDocIds().size;
@@ -140,11 +141,17 @@ export class AnalysisWizardComponent implements OnInit {
 
     const op = this.operation()!;
     // refAsset attaché à l'analyse pour les opérations qui consomment un asset de référence
-    const refAssetId = (op === 'confrontation' || op === 'contract_draft')
+    const refAssetId = (op === 'confrontation' || op === 'template_contract')
       ? this.selectedRefAssetId() ?? undefined : undefined;
 
     this.anaService.create(this.wsId, name, op, refAssetId ?? undefined).subscribe({
       next: async (ana) => {
+        // template_contract : pas de document, pas de startGeneration — on va directement à la page
+        if (op === 'template_contract') {
+          this.router.navigate(['/workspaces', this.wsId, 'analyses', ana.id]);
+          return;
+        }
+
         const docs = this.readyDocs();
         const addOps: Promise<void>[] = [];
 
@@ -237,9 +244,13 @@ export class AnalysisWizardComponent implements OnInit {
       tabular: 'Analyse structurée',
       confrontation: 'Audit de conformité',
       alignment: 'Comparaison',
-      contract_draft: 'Création de contrat',
       multi_doc_redline: 'Redline multi-documents',
+      template_contract: 'Créer depuis un template',
     }[op];
+  }
+
+  templateAssets() {
+    return this.referenceAssets().filter(a => ['standard', 'playbook', 'clausier'].includes(a.type));
   }
 
   // R4 — mapping legacy operation (NLU peut renvoyer aggregation/dd/ma_mapping/etc.) → Operation actuelle
@@ -248,8 +259,8 @@ export class AnalysisWizardComponent implements OnInit {
       case 'tabular':
       case 'confrontation':
       case 'alignment':
-      case 'contract_draft':
       case 'multi_doc_redline':
+      case 'template_contract':
         return op;
       // Toutes les opérations legacy tombent dans tabular (mapping Brief 7)
       default:

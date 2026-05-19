@@ -59,12 +59,14 @@ export interface ClauseComparisonEntry {
   documentA: {
     text: string | null;
     citation: { documentId: string; passageIds: string[]; page: number; extract: string } | null;
-  };
+  } | null;
   documentB: {
     text: string | null;
     citation: { documentId: string; passageIds: string[]; page: number; extract: string } | null;
-  };
+  } | null;
   gap: 'none' | 'equivalent' | 'editorial' | 'substantive' | 'unfavorable' | 'missing';
+  severity?: 'blocking' | 'major' | 'minor' | 'ok';
+  recommendation?: string;
   commentary: string;
 }
 
@@ -96,6 +98,16 @@ export interface RedlineChange {
   status: 'pending' | 'accepted' | 'rejected';
 }
 
+export interface ClauseSection {
+  clauseType: string;
+  textA: string;
+  textB: string;
+  diffHtml: string;
+  recommendation?: string;
+  severity: 'critical' | 'major' | 'minor' | 'info';
+  gap: string;
+}
+
 export interface RedlineContent {
   type: 'redline';
   targetDocumentId: string;
@@ -110,6 +122,7 @@ export interface RedlineContent {
     createdAt: string;
     thread: unknown[];
   }>;
+  clauseSections?: ClauseSection[];
 }
 
 // ─── Deliverable content — Review Note ───────────────────────────────────────

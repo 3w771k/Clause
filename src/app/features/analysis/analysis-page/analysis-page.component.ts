@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, switchMap, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AnalysisService } from '../../../core/services/analysis.service';
 import { DocumentService } from '../../../core/services/document.service';
@@ -11,6 +11,7 @@ import { ComparisonViewComponent } from './operations/comparison-view.component'
 import { AuditViewComponent } from './operations/audit-view.component';
 import { ContractDraftViewComponent } from './operations/contract-draft-view.component';
 import { ContractComposerViewComponent } from './operations/contract-composer-view.component';
+import { TemplateContractViewComponent } from './operations/template-contract-view.component';
 import { MultiDocRedlineViewComponent } from './operations/multi-doc-redline-view.component';
 import { DdViewComponent } from './operations/dd-view.component';
 import { TabularViewComponent } from './operations/tabular-view.component';
@@ -25,7 +26,7 @@ const VIEW_TYPE_LABELS: Record<string, string> = {
   tabular: 'Tabular Review',
   audit: 'Audit',
   comparison: 'Comparaison',
-  contract_draft: 'Création de contrat',
+  template_contract: 'Créer depuis un template',
   multi_doc_redline: 'Redline multi-doc',
 };
 
@@ -33,7 +34,7 @@ const VIEW_TYPE_LABELS: Record<string, string> = {
   selector: 'app-analysis-page',
   imports: [FormsModule, AmendmentDialogComponent, ChatPanelComponent, AnalysisModalsComponent,
     AlignmentViewComponent, ComparisonViewComponent, AuditViewComponent,
-    ContractDraftViewComponent, ContractComposerViewComponent, MultiDocRedlineViewComponent,
+    ContractDraftViewComponent, ContractComposerViewComponent, TemplateContractViewComponent, MultiDocRedlineViewComponent,
     DdViewComponent, TabularViewComponent, DefaultDeliverableViewComponent],
   templateUrl: './analysis-page.component.html',
 })
@@ -94,13 +95,17 @@ export class AnalysisPageComponent implements OnInit, OnDestroy {
   }
 
   load() {
-    this.anaService.get(this.wsId, this.anaId).subscribe(ana => {
-      this.analysis.set(ana);
-      if (ana.referenceAssetId) this.refService.get(ana.referenceAssetId).subscribe(a => this.referenceAsset.set(a));
-      const ids = (ana.deliverables ?? []).map(d => d.id);
-      if (ids.length) this.loadDeliverables(ids);
-      if (ana.status === 'generating') this.scheduleRefresh();
-    });
+    this.anaService.get(this.wsId, this.anaId).pipe(
+      switchMap(ana => {
+        this.analysis.set(ana);
+        const ids = (ana.deliverables ?? []).map(d => d.id);
+        if (ids.length) this.loadDeliverables(ids);
+        if (ana.status === 'generating') this.scheduleRefresh();
+        return ana.referenceAssetId
+          ? this.refService.get(ana.referenceAssetId)
+          : of(null);
+      })
+    ).subscribe(asset => this.referenceAsset.set(asset));
   }
 
   private scheduleRefresh() {
